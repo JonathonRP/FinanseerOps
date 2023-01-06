@@ -5,7 +5,5 @@ import type { PageLoad } from './$types';
 export const prerender = true;
 
 export const load = (({ params, fetch }) => {
-    return {
-        transactions: fetch('/api/transactions', { method: 'POST', body: JSON.stringify({ startDate: '2022-01-01', endDate: '2022-12-31' }) }).then(async (resp: Response) => (await resp.json()).transactions)
-    }
+    
 }) satisfies PageLoad
