@@ -1,2 +1,2 @@
 export type { Color } from './Color';
-export type { BuxferTransactions, BuxferAccounts } from '../Buxfer';
+export type { BuxferTransactions, BuxferAccounts } from './Schemas';

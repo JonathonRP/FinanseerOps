@@ -1,6 +1,6 @@
+import type { BuxferTransactions } from '../utils';
 import { switchMap, expand, EMPTY, concatMap, toArray, defer, Observable, reduce, catchError, tap, of } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';  
-import { BuxferTransactions } from '../utils';
 
 const GetBuxferTransactions = (page: number): Observable<BuxferTransactions> => 
     fromFetch('/api/transactions', 
