@@ -4,7 +4,7 @@
     import Header from './Header.svelte';
     import { page } from '$app/stores';
 
-    const routes = ['overview']
+    const routes = ['basics', 'overview', 'categories']
 </script>
 
 <div class="app">
@@ -13,12 +13,12 @@
 	<aside aria-label="secondary navigation">
 		<nav>
 			<select>
-				{#each routes as route, i}
+				{#each routes.slice(0,1) as route, i}
 					<option selected={$page.url.pathname === '/' ? i === 0 : $page.url.pathname === '/'+route} value={route}>{route}</option>
 				{/each}
 			</select>
 			<ul>
-				{#each routes as route, i}
+				{#each routes.slice(0,1) as route, i}
 					{@const current = $page.url.pathname === '/' ? i === 0 : $page.url.pathname === '/'+route}
 					<li><a aria-current={current ? 'location' : undefined} href={i === 0 ? '/' : '/'+route}>{route}</a></li>
 				{/each}

@@ -1,4 +1,14 @@
-import { BUXFER_EMAIL as email, BUXFER_PASS as password } from '$env/static/private';
-import Buxfer from './Buxfer';
+import { createTRPCHandle } from 'trpc-sveltekit';
+import { appRouter } from '$lib/server/api/root';
+import { createContext } from '$lib/server/api/trpc';
+import { sequence } from '@sveltejs/kit/hooks';
 
-export const handleFetch = Buxfer(email, password);
+export const handle = sequence(
+	createTRPCHandle({
+		router: appRouter,
+		createContext,
+		onError: ({ type, path, error }) => {
+			return console.error(`Encountered error while trying to process ${type} @ ${path}:`, error);
+		}
+	})	
+);

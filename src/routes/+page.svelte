@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { PageData } from './$types';
-	import { transactions } from '$lib/stores/transactions';
-	import { balances } from '$lib/stores/balances';
+	import { getTransactions } from '$lib/stores/transactions';
+	import { getBalances } from '$lib/stores/balances';
 	import ScoreCard from './ScoreCard.svelte';
+
+	let currentBalance;
 </script>
 
 <svelte:head>
@@ -11,9 +12,10 @@
 </svelte:head>
 
 <section>
-	{@debug $balances}
-	<ScoreCard label="Balance" score={20000}></ScoreCard>	
-	<ScoreCard label="Forecast" score={20000 - 2000}></ScoreCard>	
+	<!-- 1334 -->
+	<!-- 6801 -->
+	<ScoreCard label="Balance" score={currentBalance = $getBalances.accounts.reduce((sum, account) => sum + (account.name.includes('1880') || account.name.includes('1334') ? account.balance : 0), 0)}></ScoreCard>	
+	<ScoreCard label="Forecast" score={currentBalance - (Math.abs($getTransactions.transactions.reduce((sum, transaction) => sum + transaction.amount, 0)))}></ScoreCard>	
 </section>
 
 <style>
