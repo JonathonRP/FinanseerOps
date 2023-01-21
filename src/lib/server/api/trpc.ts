@@ -1,7 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { BUXFER_EMAIL as email, BUXFER_PASS as password } from '$env/static/private';
 import { getToken } from '$lib/Buxfer';
-import cookie from 'cookie';
 
 type CreateContextOptions = {
 	buxfer_session: string | undefined

@@ -28,14 +28,14 @@ export const buxferToken = object({
 });
 
 export const buxferTransactions = object({
-    numTransactions: number(), 
+    numTransactions: string(), 
     transactions: array(object({
         id: number(),
         description: string(),
-        date: date(),
+        date: string(),
         type: string(),
         amount: number(),
-        accountId: string(),
+        accountId: number(),
         tags: string()
     }))
 });
@@ -71,7 +71,7 @@ export const buxferLogin = object({
 //     }) satisfies Handle;
 // }
 
-export async function getToken(event: Pick<RequestEvent, 'fetch' | 'url' | 'request'>, options: BuxferInitOptions): ReturnType<App.Locals['getToken']> {
+export async function getToken(event: Pick<RequestEvent, 'fetch' | 'url' | 'request'>, options: BuxferInitOptions): Promise<string> {
     console.log('getToken')
     return cookie.parse(event.request.headers.get('cookie') || '')[buxferSessionKey] || (await client<z.infer<typeof buxferToken>>('/api/login', {body: options})).token;
 }

@@ -6,12 +6,22 @@ export const buxfer_accountRouter = router({
 
 	transactions: procedure
 	.input(object({
-		startDate: date(),
-		endDate: date(),
+		start: date(),
+		end: date(),
 		page: number()
 	}))
 	.output(buxferTransactions).query(async ({ctx, input}) => {
-		return (await client('/api/transactions', {body: {token: ctx.buxfer_session, ...input}}));
+		const startDate = input.start.toDateString();
+		const endDate = input.end.toDateString();
+
+		return (await client('/api/transactions', {body: {
+			token: ctx.buxfer_session, 
+			...{
+				...input, 
+				startDate, 
+				endDate
+			}
+		}}));
 	}),
 
 	balances: procedure

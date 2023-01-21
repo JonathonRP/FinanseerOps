@@ -7,9 +7,9 @@ declare namespace App {
 	// 	cause?: any,
 	// 	devException?: Error
 	// }
-	interface Locals {
-		getToken: () => Promise<string>;
-	}
+	// interface Locals {
+	// 	getToken: () => Promise<string>;
+	// }
 	// interface PageData {}
 	// interface Platform {}
 }
