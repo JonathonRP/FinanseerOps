@@ -24,7 +24,7 @@ export const buxfer_accountRouter = router({
 		}}));
 	}),
 
-	balances: procedure
+	accounts: procedure
 	.output(buxferAccounts).query(async ({ctx}) => {
 		return (await client('/api/accounts', {body: {token: ctx.buxfer_session}}));
 	})

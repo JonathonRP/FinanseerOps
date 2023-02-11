@@ -25,4 +25,4 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export type Transactions = inferProcedureOutput<AppRouter['buxfer_account']['transactions']>;
-export type Balances = inferProcedureOutput<AppRouter['buxfer_account']['balances']>;
+export type Accounts = inferProcedureOutput<AppRouter['buxfer_account']['accounts']>;

@@ -1,115 +1,223 @@
-<script>
-	import "../app.scss";
-    import './styles.css';
-    import Header from './Header.svelte';
-    import { page } from '$app/stores';
+<script lang="ts">
+  import {page} from '$app/stores';
+  import classes from 'svelte-transition-classes';
+  import {slide} from 'svelte/transition';
+  import '../app.postcss';
+  import '../app.scss';
+  import './styles.css';
 
-    const routes = ['basics', 'overview', 'categories']
+  import logo from '$lib/images/svelte-logo.svg';
+  import chevronUp from '@iconify-icons/fa6-solid/chevron-up';
+  import about from '@iconify-icons/fa6-solid/feather';
+  import dashboard from '@iconify-icons/fa6-solid/magnifying-glass-chart';
+  import {addCollection} from 'iconify-icon';
+
+  const subroutes = ['overview', 'categories'];
+  const root = '/';
+  $: isHome = $page.url.pathname === root;
+
+  addCollection({
+    prefix: 'fa-solid',
+    icons: {
+      dashboard,
+      about,
+      chevronUp,
+    },
+  });
+
+  let menu_open: boolean = false;
+  function toggleMenu(event: MouseEvent) {
+    const prev = document.querySelector('[aria-current="location"]');
+    prev?.removeAttribute('aria-current');
+
+    menu_open = !menu_open;
+    (event.target as HTMLButtonElement).setAttribute('aria-current', 'location');
+  }
+
+  function handle_keydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      menu_open = false;
+      return;
+    }
+  }
 </script>
 
-<div class="app">
-	<Header/>
+<svelte:window on:keydown={handle_keydown} />
+<div class="app flex min-h-[100dvh] min-[1px]:min-h-screen">
+  <!-- side-bar -->
+  <aside class="flex flex-shrink-0 transition-all">
+    <div
+      on:click={() => (menu_open = false)}
+      on:keydown={handle_keydown}
+      class="fixed inset-0 z-10 bg-black bg-opacity-50 lg:hidden"
+      class:hidden={!menu_open}
+    />
+    <div class="fixed inset-y-0 z-10 hidden w-16 bg-white sm:flex" class:hidden={!menu_open} />
+    <!-- Mobile bottom bar -->
+    <nav
+      aria-label="Options"
+      class="shadow-t fixed inset-x-0 bottom-0 flex flex-row items-center justify-between rounded-t-3xl border-t border-primary-100 bg-white px-4 py-2 sm:hidden"
+    >
+      <!-- Menu button -->
+      <button
+        on:click={toggleMenu}
+        class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:outline-none focus:ring focus:ring-primary-400 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white"
+      >
+        <span class="sr-only">Toggle sidebar</span>
+        <svg
+          aria-hidden="true"
+          class="h-6 w-6"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+      </button>
+    </nav>
 
-	<aside aria-label="secondary navigation">
-		<nav>
-			<select>
-				{#each routes.slice(0,1) as route, i}
-					<option selected={$page.url.pathname === '/' ? i === 0 : $page.url.pathname === '/'+route} value={route}>{route}</option>
-				{/each}
-			</select>
-			<ul>
-				{#each routes.slice(0,1) as route, i}
-					{@const current = $page.url.pathname === '/' ? i === 0 : $page.url.pathname === '/'+route}
-					<li><a aria-current={current ? 'location' : undefined} href={i === 0 ? '/' : '/'+route}>{route}</a></li>
-				{/each}
-			</ul>
-		</nav>
-	</aside>
+    <!-- Left mini bar -->
+    <nav
+      aria-label="Options"
+      class="z-20 w-16 flex-shrink-0 flex-col items-center rounded-tr-3xl rounded-br-3xl border-r-2 border-primary-100 bg-white py-4 shadow-md sm:flex"
+      class:rounded-none={false}
+      class:border-r-0={false}
+      class:shadow-none={false}
+    >
+      <!-- Logo -->
+      <div class="hidden flex-shrink-0 py-4" />
+      <div class="flex flex-1 flex-col items-center space-y-4 p-2">
+        <!-- Menu button -->
+        <button
+          on:click={toggleMenu}
+          class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:outline-none focus:ring focus:ring-primary-400 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white"
+        >
+          <span class="sr-only">Toggle sidebar</span>
+          <svg
+            aria-hidden="true"
+            class="h-6 w-6"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+          </svg>
+        </button>
+      </div>
+    </nav>
 
-	<main>
-		<slot></slot>
-	</main>
+    <div
+      in:classes={{
+        duration: 300,
+        base: 'transform transition-transform duration-300',
+        from: 'sm:-translate-x-full',
+        to: 'sm:translate-x-0',
+      }}
+      out:classes={{
+        duration: 300,
+        base: 'transform transition-transform duration-300',
+        from: 'sm:translate-x-0',
+        to: 'sm:-translate-x-full',
+      }}
+      class="fixed inset-y-0 right-0 z-10 w-64 flex-shrink-0 border-primary-100 bg-white shadow-lg max-[640px]:rounded-tl-3xl max-[640px]:rounded-bl-3xl max-[640px]:border-l-2 sm:left-16 sm:w-72 sm:rounded-tr-3xl sm:rounded-br-3xl sm:border-r-2 lg:static lg:w-64"
+      class:hidden={!menu_open}
+    >
+      <nav aria-label="Main" class="flex h-full flex-col pt-7">
+        <!-- Logo -->
+        <div class="hidden flex-shrink-0 items-center justify-center py-10" />
 
-	<footer>
-		
-	</footer>
+        <!-- Links -->
+        <ul class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto">
+          <li>
+            <details
+              transition:slide={{duration: 300}}
+              class="group cursor-pointer"
+              aria-current={isHome ? 'page' : undefined}
+            >
+              <summary class="flex w-full items-center space-x-2 rounded-lg group-aria-[current=page]:bg-primary-400">
+                <a
+                  href={root}
+                  class="flex w-4/5 items-center space-x-2 rounded-lg text-primary-600 transition-colors group-hover:bg-primary-400 group-hover:text-white group-aria-[current=page]:bg-primary-400 group-aria-[current=page]:text-white"
+                >
+                  <span
+                    aria-hidden="true"
+                    class="rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600 group-aria-[current=page]:text-white"
+                  >
+                    <iconify-icon class="h-[.8rem] w-4" icon={dashboard} flip="horizontal" />
+                  </span>
+                  <span>{'dashboard'}</span>
+                </a>
+                <span aria-hidden="true" class="h-4 text-slate-400 transition-transform group-open:rotate-180">
+                  <iconify-icon icon={chevronUp} flip="vertical" />
+                </span>
+              </summary>
+              <ul class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto">
+                {#each subroutes.slice(0, 0) as route}
+                  {@const current = $page.url.pathname === root + route}
+                  <li>
+                    <a
+                      class="flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-400 hover:text-white aria-[current=page]:bg-primary-400 aria-[current=page]:text-white"
+                      aria-current={current ? 'page' : undefined}
+                      href={root + route}
+                    >
+                      <span>{route}</span>
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            </details>
+          </li>
+          <li>
+            <a
+              class="group flex w-full space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-400 hover:text-white aria-[current=page]:bg-primary-400 aria-[current=page]:text-white"
+              aria-current={$page.url.pathname === root + 'about'}
+              href={root + 'about'}
+            >
+              <span
+                aria-hidden="true"
+                class="rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600"
+              >
+                <iconify-icon class="h-[.8rem] w-4" icon={about} />
+              </span>
+              <span>{'about'}</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </aside>
+
+  <main class="flex flex-1 flex-col px-4 pt-8 md:px-12 md:pt-16">
+    <slot />
+  </main>
+
+  <footer class="fixed bottom-20 right-5 flex items-center space-x-4 sm:bottom-5">
+    <a href="https://kit.svelte.dev" class="transform transition-transform hover:scale-125">
+      <span class="sr-only">SvelteKit</span>
+      <img class="h-8 w-8 object-contain" aria-hidden="true" src={logo} alt="SvelteKit" />
+    </a>
+    <a
+      href="https://github.com/JonathonRP/PersonalFinanceDashboard"
+      rel="noreferrer"
+      target="_blank"
+      class="transform transition-transform hover:scale-125"
+    >
+      <span class="sr-only">Github</span>
+      <svg
+        aria-hidden="true"
+        class="h-8 w-8 text-black"
+        fill="currentColor"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+      >
+        <path
+          fill-rule="evenodd"
+          clip-rule="evenodd"
+          d="M12.026,2c-5.509,0-9.974,4.465-9.974,9.974c0,4.406,2.857,8.145,6.821,9.465 c0.499,0.09,0.679-0.217,0.679-0.481c0-0.237-0.008-0.865-0.011-1.696c-2.775,0.602-3.361-1.338-3.361-1.338 c-0.452-1.152-1.107-1.459-1.107-1.459c-0.905-0.619,0.069-0.605,0.069-0.605c1.002,0.07,1.527,1.028,1.527,1.028 c0.89,1.524,2.336,1.084,2.902,0.829c0.091-0.645,0.351-1.085,0.635-1.334c-2.214-0.251-4.542-1.107-4.542-4.93 c0-1.087,0.389-1.979,1.024-2.675c-0.101-0.253-0.446-1.268,0.099-2.64c0,0,0.837-0.269,2.742,1.021 c0.798-0.221,1.649-0.332,2.496-0.336c0.849,0.004,1.701,0.115,2.496,0.336c1.906-1.291,2.742-1.021,2.742-1.021 c0.545,1.372,0.203,2.387,0.099,2.64c0.64,0.696,1.024,1.587,1.024,2.675c0,3.833-2.33,4.675-4.552,4.922 c0.355,0.308,0.675,0.916,0.675,1.846c0,1.334-0.012,2.41-0.012,2.737c0,0.267,0.178,0.577,0.687,0.479 C19.146,20.115,22,16.379,22,11.974C22,6.465,17.535,2,12.026,2z"
+        />
+      </svg>
+    </a>
+  </footer>
 </div>
-
-<style>
-	.app {
-		display: flex;
-		flex-direction: column;
-		min-height: 100vh;
-	}
-
-	nav > ul {
-		display: none;
-	}
-
-	nav select option:is(:checked, :focus, :active) {
-		background-color: var(--primary-hover);
-	}
-
-	aside {
-		flex: 0 1;
-		display: flex;
-		flex-direction: column;
-		padding: 2rem 2rem 0 2rem;
-		width: 100%;
-		max-width: 64rem;
-		margin: 0 auto;
-		box-sizing: border-box;
-	}
-
-	main {
-		flex: 1;
-		padding: 1rem;
-		width: 100%;
-		max-width: 64rem;
-		margin: 0 auto;
-		box-sizing: border-box;
-	}
-
-	footer {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		padding: 12px;
-	}
-
-	/* footer a {
-		font-weight: bold;
-	} */
-
-	@media (min-width: 480px) {
-		footer {
-			padding: 12px 0;
-		}
-	}
-
-	@media (min-width: 750px) {
-		.app {
-			flex-direction: row;
-			flex-wrap: wrap;
-			align-content: flex-start;
-		}
-
-		nav > select {
-			display: none;
-		}
-
-		nav > ul {
-			display: block;
-		}
-
-		nav :where(a, [role=link]):is([aria-current], :hover) {
-			background-color: var(--primary-focus);
-			text-decoration: none;
-		}
-
-		aside {
-			padding: 3rem 0 0 3rem;
-		}
-	}
-</style>

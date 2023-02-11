@@ -1,53 +1,82 @@
 <script lang="ts">
-    import type { Color } from '$lib/utils';
-    import DashboardWidget from "./DashboardWidget.svelte";
-    import { addCollection } from 'iconify-icon';
-    import down from '@iconify-icons/fa6-solid/arrow-trend-down';
-    import up from '@iconify-icons/fa6-solid/arrow-trend-up';
+  import type { Color } from '$lib/utils';
+  import down from '@iconify-icons/fa6-solid/arrow-trend-down';
+  import up from '@iconify-icons/fa6-solid/arrow-trend-up';
+  import { addCollection } from 'iconify-icon';
+  import { onMount } from 'svelte';
+  import DashboardWidget from './DashboardWidget.svelte';
 
-    export let label:string;
-    export let score:number;
-    export let comparison: Partial<{ score: number, positiveColor?: Color, negativeColor?: Color, swap: boolean }> | undefined = undefined;
+  addCollection({
+    prefix: 'fa6-solid',
+    icons: {
+      up,
+      down,
+    },
+  });
 
-    const numberFormat: Intl.NumberFormatOptions = { style: 'currency', currency: 'USD', notation: 'compact' };
+  export let delay: number;
+  export let label: string;
+  export let score: number;
+  export let comparison:
+    | Partial<{score: number; positiveColor?: Color; negativeColor?: Color; swap: boolean}>
+    | undefined = undefined;
 
-    addCollection({
-        prefix: 'fa6-solid',
-        icons: {
-            'up': up,
-            'down': down
-        }
-    })
+  const numberFormat: Intl.NumberFormatOptions = {style: 'currency', currency: 'USD', notation: 'compact'};
+
+  let locale: string;
+  onMount(() => {
+    locale = navigator.languages[0] || navigator.language;
+  });
 </script>
 
 <DashboardWidget>
-    <header>
-        {label}
-    </header>
-    <h1>{score.toLocaleString('en-US', numberFormat)}</h1>
+  <div class="text-base text-gray-400 dark:text-gray-300">
+    {label}
+  </div>
+  {#if score > 0}
+    {@const hasScore = !!comparison?.score}
+    <div class="flex items-center pt-1 w-[164.57px]">
+      <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        {score.toLocaleString(locale, numberFormat)}
+      </div>
 
-    {#if comparison && comparison.score && comparison.score > 0}
+      {#if comparison && comparison.score && comparison.score > 0}
         {@const {compare, positiveColor, negativeColor} = {
-            compare: score < comparison.score,
-            positiveColor: comparison.swap || false ? comparison.negativeColor || 'red' : comparison.positiveColor || 'green',
-            negativeColor: comparison.swap || false ? comparison.positiveColor || 'green' : comparison.negativeColor || 'red'
+          compare: score < comparison.score,
+          positiveColor:
+            comparison.swap || false ? comparison.negativeColor || 'red' : comparison.positiveColor || 'green',
+          negativeColor:
+            comparison.swap || false ? comparison.positiveColor || 'green' : comparison.negativeColor || 'red',
         }}
-        <p>{comparison.score.toLocaleString('en-US', numberFormat)} 
-            <span>
-                <iconify-icon icon={compare ? down : up} style='color: { compare ? negativeColor : positiveColor }' />
-            </span>
-        </p>
-    {/if}
+        {@const {color} = {color: compare ? negativeColor : positiveColor}}
+        <span
+          class="mx-2 flex items-center rounded-full px-2 py-0.5 text-sm"
+          class:bg-green-100={color === 'green'}
+          class:text-green-600={color === 'green'}
+          class:dark:bg-green-900={color === 'green'}
+          class:dark:text-emerald-400={color === 'green'}
+          class:bg-red-100={color === 'red'}
+          class:text-red-600={color === 'red'}
+          class:dark:bg-red-900={color === 'red'}
+          class:dark:text-red-300={color === 'red'}
+        >
+          <span>
+            {comparison.score.toLocaleString(locale, numberFormat)}
+          </span>
+          <iconify-icon inline icon={compare ? down : up} />
+        </span>
+      {/if}
+    </div>
+  {:else}
+    <div
+      class="flex h-full animate-pulse flex-row items-center justify-center space-x-5 pr-11"
+      class:animation-delay-150={delay === 1}
+      class:animation-delay-300={delay === 2}
+    >
+      <div
+        style="animation-fill-mode: backward"
+        class="h-8 w-44 animate-gradient-x rounded-md bg-gradient-to-r from-gray-300 via-white to-gray-50"
+      />
+    </div>
+  {/if}
 </DashboardWidget>
-
-<style>
-    p {
-        display: flex;
-        margin: .3rem 1rem 0;
-        gap: .3rem;
-    }
-    span {
-        display: flex;
-        align-items: center;
-    }
-</style>
