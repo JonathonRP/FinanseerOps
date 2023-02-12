@@ -11,10 +11,13 @@
   import about from '@iconify-icons/fa6-solid/feather';
   import dashboard from '@iconify-icons/fa6-solid/magnifying-glass-chart';
   import {addCollection} from 'iconify-icon';
+  import {onMount} from 'svelte';
 
   const subroutes = ['overview', 'categories'];
   const root = '/';
   $: isHome = $page.url.pathname === root;
+  let menu_open: boolean = false;
+  let submenu_open: boolean = false;
 
   addCollection({
     prefix: 'fa-solid',
@@ -25,13 +28,17 @@
     },
   });
 
-  let menu_open: boolean = false;
+  onMount(() => {
+    let submenus = document.querySelectorAll('details');
+    submenus.forEach(submenu => submenu.addEventListener('toggle', () => (submenu_open = submenu.open)));
+  });
+
   function toggleMenu(event: MouseEvent) {
-    const prev = document.querySelector('[aria-current="location"]');
-    prev?.removeAttribute('aria-current');
+    const prevs = document.querySelectorAll('[aria-current="location"]');
+    prevs?.forEach(prev => (prev.ariaCurrent = null));
 
     menu_open = !menu_open;
-    (event.target as HTMLButtonElement).setAttribute('aria-current', 'location');
+    (event.target as HTMLButtonElement).ariaCurrent = 'location';
   }
 
   function handle_keydown(event: KeyboardEvent) {
@@ -52,7 +59,7 @@
       class="fixed inset-0 z-10 bg-black bg-opacity-50 lg:hidden"
       class:hidden={!menu_open}
     />
-    <div class="fixed inset-y-0 z-10 hidden w-16 bg-white sm:flex" class:hidden={!menu_open} />
+    <div class="fixed inset-y-0 z-10 hidden w-16 bg-white sm:flex" class:sm:hidden={!menu_open} />
     <!-- Mobile bottom bar -->
     <nav
       aria-label="Options"
@@ -80,7 +87,7 @@
     <!-- Left mini bar -->
     <nav
       aria-label="Options"
-      class="z-20 w-16 flex-shrink-0 flex-col items-center rounded-tr-3xl rounded-br-3xl border-r-2 border-primary-100 bg-white py-4 shadow-md sm:flex"
+      class="z-20 hidden w-16 flex-shrink-0 flex-col items-center rounded-tr-3xl rounded-br-3xl border-r-2 border-primary-100 bg-white py-4 shadow-md sm:flex"
       class:rounded-none={false}
       class:border-r-0={false}
       class:shadow-none={false}
@@ -108,88 +115,90 @@
       </div>
     </nav>
 
-    <div
-      in:classes={{
-        duration: 300,
-        base: 'transform transition-transform duration-300',
-        from: 'sm:-translate-x-full',
-        to: 'sm:translate-x-0',
-      }}
-      out:classes={{
-        duration: 300,
-        base: 'transform transition-transform duration-300',
-        from: 'sm:translate-x-0',
-        to: 'sm:-translate-x-full',
-      }}
-      class="fixed inset-y-0 right-0 z-10 w-64 flex-shrink-0 border-primary-100 bg-white shadow-lg max-[640px]:rounded-tl-3xl max-[640px]:rounded-bl-3xl max-[640px]:border-l-2 sm:left-16 sm:w-72 sm:rounded-tr-3xl sm:rounded-br-3xl sm:border-r-2 lg:static lg:w-64"
-      class:hidden={!menu_open}
-    >
-      <nav aria-label="Main" class="flex h-full flex-col pt-7">
-        <!-- Logo -->
-        <div class="hidden flex-shrink-0 items-center justify-center py-10" />
+    {#if menu_open}
+      <div
+        in:classes={{
+          duration: 300,
+          base: 'transform transition-transform duration-300',
+          from: 'sm:-translate-x-full',
+          to: 'sm:translate-x-0',
+        }}
+        out:classes={{
+          duration: 300,
+          base: 'transform transition-transform duration-300',
+          from: 'sm:translate-x-0',
+          to: 'sm:-translate-x-full',
+        }}
+        class="fixed inset-y-0 right-0 z-10 w-64 flex-shrink-0 border-primary-100 bg-white shadow-lg max-[640px]:rounded-tl-3xl max-[640px]:rounded-bl-3xl max-[640px]:border-l-2 sm:left-16 sm:w-72 sm:rounded-tr-3xl sm:rounded-br-3xl sm:border-r-2 lg:static lg:w-64"
+      >
+        <nav aria-label="Main" class="flex h-full flex-col pt-7">
+          <!-- Logo -->
+          <div class="hidden flex-shrink-0 items-center justify-center py-10" />
 
-        <!-- Links -->
-        <ul class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto">
-          <li>
-            <details
-              transition:slide={{duration: 300}}
-              class="group cursor-pointer"
-              aria-current={isHome ? 'page' : undefined}
-            >
-              <summary class="flex w-full items-center space-x-2 rounded-lg group-aria-[current=page]:bg-primary-400">
-                <a
-                  href={root}
-                  class="flex w-4/5 items-center space-x-2 rounded-lg text-primary-600 transition-colors group-hover:bg-primary-400 group-hover:text-white group-aria-[current=page]:bg-primary-400 group-aria-[current=page]:text-white"
-                >
-                  <span
-                    aria-hidden="true"
-                    class="rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600 group-aria-[current=page]:text-white"
+          <!-- Links -->
+          <ul class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto">
+            <li>
+              <details class="group cursor-pointer" aria-current={isHome ? 'page' : undefined}>
+                <summary class="flex w-full items-center space-x-2 rounded-lg group-aria-[current=page]:bg-primary-400">
+                  <a
+                    href={root}
+                    class="flex w-4/5 items-center space-x-2 rounded-lg text-primary-600 transition-colors group-hover:bg-primary-400 group-hover:text-white group-aria-[current=page]:bg-primary-400 group-aria-[current=page]:text-white"
                   >
-                    <iconify-icon class="h-[.8rem] w-4" icon={dashboard} flip="horizontal" />
-                  </span>
-                  <span>{'dashboard'}</span>
-                </a>
-                <span aria-hidden="true" class="h-4 text-slate-400 transition-transform group-open:rotate-180">
-                  <iconify-icon icon={chevronUp} flip="vertical" />
-                </span>
-              </summary>
-              <ul class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto">
-                {#each subroutes.slice(0, 0) as route}
-                  {@const current = $page.url.pathname === root + route}
-                  <li>
-                    <a
-                      class="flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-400 hover:text-white aria-[current=page]:bg-primary-400 aria-[current=page]:text-white"
-                      aria-current={current ? 'page' : undefined}
-                      href={root + route}
+                    <span
+                      aria-hidden="true"
+                      class="rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600 group-aria-[current=page]:text-white"
                     >
-                      <span>{route}</span>
-                    </a>
-                  </li>
-                {/each}
-              </ul>
-            </details>
-          </li>
-          <li>
-            <a
-              class="group flex w-full space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-400 hover:text-white aria-[current=page]:bg-primary-400 aria-[current=page]:text-white"
-              aria-current={$page.url.pathname === root + 'about'}
-              href={root + 'about'}
-            >
-              <span
-                aria-hidden="true"
-                class="rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600"
+                      <iconify-icon class="h-[.8rem] w-4" icon={dashboard} flip="horizontal" />
+                    </span>
+                    <span>{'dashboard'}</span>
+                  </a>
+                  <span aria-hidden="true" class="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180">
+                    <iconify-icon icon={chevronUp} flip="vertical" />
+                  </span>
+                </summary>
+                {#if submenu_open}
+                  <ul
+                    transition:slide={{duration: 300}}
+                    class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto"
+                  >
+                    {#each subroutes.slice(0, 0) as route}
+                      {@const current = $page.url.pathname === root + route}
+                      <li>
+                        <a
+                          class="flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-400 hover:text-white aria-[current=page]:bg-primary-400 aria-[current=page]:text-white"
+                          aria-current={current ? 'page' : undefined}
+                          href={root + route}
+                        >
+                          <span>{route}</span>
+                        </a>
+                      </li>
+                    {/each}
+                  </ul>
+                {/if}
+              </details>
+            </li>
+            <li>
+              <a
+                class="group flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-400 hover:text-white aria-[current=page]:bg-primary-400 aria-[current=page]:text-white"
+                aria-current={$page.url.pathname === root + 'about'}
+                href={root + 'about'}
               >
-                <iconify-icon class="h-[.8rem] w-4" icon={about} />
-              </span>
-              <span>{'about'}</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-    </div>
+                <span
+                  aria-hidden="true"
+                  class="rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600"
+                >
+                  <iconify-icon class="h-[.8rem] w-4" icon={about} />
+                </span>
+                <span>{'about'}</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    {/if}
   </aside>
 
-  <main class="flex flex-1 flex-col px-4 pt-8 md:px-12 md:pt-16">
+  <main class="flex flex-1 flex-col px-6 pt-8 md:px-12 md:pt-16">
     <slot />
   </main>
 

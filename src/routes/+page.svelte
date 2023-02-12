@@ -39,7 +39,7 @@
 </svelte:head>
 
 <DateSelect bind:selectedDay />
-<section class="flex flex-row flex-wrap items-start justify-center gap-4 pt-4 sm:justify-start">
+<section class="flex flex-row flex-wrap items-start justify-center gap-4 pt-4 min-[650px]:justify-start">
   <ScoreCard label="Balance" score={$balance$} delay={0} />
   <ScoreCard
     label="Spent"

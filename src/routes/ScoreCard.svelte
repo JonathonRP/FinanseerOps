@@ -1,9 +1,11 @@
 <script lang="ts">
-  import type { Color } from '$lib/utils';
+  import type {Color} from '$lib/utils';
   import down from '@iconify-icons/fa6-solid/arrow-trend-down';
   import up from '@iconify-icons/fa6-solid/arrow-trend-up';
-  import { addCollection } from 'iconify-icon';
-  import { onMount } from 'svelte';
+  import {addCollection} from 'iconify-icon';
+  import {onMount} from 'svelte';
+  import {spring, tweened} from 'svelte/motion';
+  import {fade} from 'svelte/transition';
   import DashboardWidget from './DashboardWidget.svelte';
 
   addCollection({
@@ -27,6 +29,12 @@
   onMount(() => {
     locale = navigator.languages[0] || navigator.language;
   });
+
+  const score$ = tweened(score, {duration: 300});
+  const comparisonScore$ = spring(comparison?.score, {damping: 0.12, stiffness: 0.12});
+
+  $: score$.set(score);
+  $: comparisonScore$.set(comparison?.score || 0);
 </script>
 
 <DashboardWidget>
@@ -34,10 +42,9 @@
     {label}
   </div>
   {#if score > 0}
-    {@const hasScore = !!comparison?.score}
-    <div class="flex items-center pt-1 w-[164.57px]">
-      <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-        {score.toLocaleString(locale, numberFormat)}
+    <div class="flex w-[164.57px] items-center pt-1">
+      <div transition:fade={{duration: 300}} class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        {$score$.toLocaleString(locale, numberFormat)}
       </div>
 
       {#if comparison && comparison.score && comparison.score > 0}
@@ -59,9 +66,10 @@
           class:text-red-600={color === 'red'}
           class:dark:bg-red-900={color === 'red'}
           class:dark:text-red-300={color === 'red'}
+          transition:fade={{duration: 300}}
         >
           <span>
-            {comparison.score.toLocaleString(locale, numberFormat)}
+            {$comparisonScore$.toLocaleString(locale, numberFormat)}
           </span>
           <iconify-icon inline icon={compare ? down : up} />
         </span>
