@@ -139,7 +139,7 @@
           <ul class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto">
             <li>
               <details class="group cursor-pointer" aria-current={isHome ? 'page' : undefined}>
-                <summary class="flex w-full items-center space-x-2 rounded-lg group-aria-[current=page]:bg-primary-400">
+                <summary class="flex w-full items-center space-x-2 rounded-lg group-hover:bg-primary-400 group-aria-[current=page]:bg-primary-400">
                   <a
                     href={root}
                     class="flex w-4/5 items-center space-x-2 rounded-lg text-primary-600 transition-colors group-hover:bg-primary-400 group-hover:text-white group-aria-[current=page]:bg-primary-400 group-aria-[current=page]:text-white"
