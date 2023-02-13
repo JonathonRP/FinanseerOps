@@ -4,6 +4,7 @@
   import right from '@iconify-icons/fa6-solid/chevron-right';
   import {add, eachDayOfInterval, endOfWeek, format, isEqual, isSameMonth, isToday, startOfWeek, sub} from 'date-fns';
   import {addCollection} from 'iconify-icon';
+  import {page} from '$app/stores';
 
   addCollection({
     prefix: 'fa6-solid',
@@ -15,7 +16,7 @@
 
   export let selectedDay = new Date();
 
-  const today: Date = selectedDay;
+  const today: Date = $page.data.today;
   const weekOptions: Partial<WeekOptions> = {weekStartsOn: WeekDays[1].Monday};
 
   let currentDay = today;
@@ -42,7 +43,7 @@
   <div class="md:grid md:grid-cols-1">
     <div class="md:pr-14">
       <div class="flex items-center">
-        <h2 class="flex-0 mr-2.5 font-semibold text-gray-900">{format(today, 'yyyy, MMM dd')}</h2>
+        <h2 class="flex-0 mr-4 font-semibold text-gray-900">{format(today, 'yyyy, MMM dd')}</h2>
         <button
           id="prev"
           type="button"

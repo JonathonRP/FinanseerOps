@@ -10,12 +10,13 @@
   import chevronUp from '@iconify-icons/fa6-solid/chevron-up';
   import about from '@iconify-icons/fa6-solid/feather';
   import dashboard from '@iconify-icons/fa6-solid/magnifying-glass-chart';
+  import file from '@iconify-icons/fa6-solid/file';
   import {addCollection} from 'iconify-icon';
   import {onMount} from 'svelte';
 
   const subroutes = ['overview', 'categories'];
   const root = '/';
-  $: isHome = $page.url.pathname === root;
+
   let menu_open: boolean = false;
   let submenu_open: boolean = false;
 
@@ -25,20 +26,18 @@
       dashboard,
       about,
       chevronUp,
+      file
     },
-  });
-
-  onMount(() => {
-    let submenus = document.querySelectorAll('details');
-    submenus.forEach(submenu => submenu.addEventListener('toggle', () => (submenu_open = submenu.open)));
   });
 
   function toggleMenu(event: MouseEvent) {
     const prevs = document.querySelectorAll('[aria-current="location"]');
     prevs?.forEach(prev => (prev.ariaCurrent = null));
-
     menu_open = !menu_open;
-    (event.target as HTMLButtonElement).ariaCurrent = 'location';
+
+    if (menu_open){
+      (event.currentTarget as HTMLButtonElement).ariaCurrent = 'location';
+    }
   }
 
   function handle_keydown(event: KeyboardEvent) {
@@ -98,7 +97,7 @@
         <!-- Menu button -->
         <button
           on:click={toggleMenu}
-          class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:outline-none focus:ring focus:ring-primary-400 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white"
+          class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:bg-primary-600 focus:text-white focus:outline-none focus:ring focus:ring-primary-400 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white"
         >
           <span class="sr-only">Toggle sidebar</span>
           <svg
@@ -120,14 +119,14 @@
         in:classes={{
           duration: 300,
           base: 'transform transition-transform duration-300',
-          from: 'sm:-translate-x-full',
-          to: 'sm:translate-x-0',
+          from: 'translate-x-full sm:-translate-x-full',
+          to: 'translate-x-0',
         }}
         out:classes={{
           duration: 300,
           base: 'transform transition-transform duration-300',
-          from: 'sm:translate-x-0',
-          to: 'sm:-translate-x-full',
+          from: 'translate-x-0',
+          to: 'translate-x-full sm:-translate-x-full',
         }}
         class="fixed inset-y-0 right-0 z-10 w-64 flex-shrink-0 border-primary-100 bg-white shadow-lg max-[640px]:rounded-tl-3xl max-[640px]:rounded-bl-3xl max-[640px]:border-l-2 sm:left-16 sm:w-72 sm:rounded-tr-3xl sm:rounded-br-3xl sm:border-r-2 lg:static lg:w-64"
       >
@@ -138,37 +137,47 @@
           <!-- Links -->
           <ul class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto">
             <li>
-              <details class="group cursor-pointer" aria-current={isHome ? 'page' : undefined}>
-                <summary class="flex w-full items-center space-x-2 rounded-lg group-hover:bg-primary-400 group-aria-[current=page]:bg-primary-400">
+              <details class="group/menu cursor-pointer" bind:open={submenu_open} aria-current={$page.url.pathname === root ? 'page' : undefined}>
+                <summary
+                  class="flex w-full items-center space-x-2 rounded-lg divide-x-2 divide-primary-300 group-hover/menu:bg-primary-400 group-aria-[current=page]/menu:bg-primary-400"
+                >
                   <a
                     href={root}
-                    class="flex w-4/5 items-center space-x-2 rounded-lg text-primary-600 transition-colors group-hover:bg-primary-400 group-hover:text-white group-aria-[current=page]:bg-primary-400 group-aria-[current=page]:text-white"
+                    class="flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors group-hover/menu:bg-primary-400 group-hover/menu:text-white group-aria-[current=page]/menu:bg-primary-400 group-aria-[current=page]/menu:text-white"
                   >
                     <span
                       aria-hidden="true"
-                      class="rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600 group-aria-[current=page]:text-white"
+                      class="rounded-lg p-3 transition-colors group-hover/menu:bg-primary-600 group-hover/menu:text-white group-aria-[current=page]/menu:bg-primary-600 group-aria-[current=page]/men:text-white"
                     >
                       <iconify-icon class="h-[.8rem] w-4" icon={dashboard} flip="horizontal" />
                     </span>
                     <span>{'dashboard'}</span>
                   </a>
-                  <span aria-hidden="true" class="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180">
-                    <iconify-icon icon={chevronUp} flip="vertical" />
+                  <span
+                    aria-hidden="true"
+                    class="h-4 w-10 px-2 text-stone-400 transition-transform group-open/menu:-scale-y-100"
+                  >
+                    <iconify-icon icon={chevronUp} flip="vertical" class="h-4 w-4" />
                   </span>
                 </summary>
                 {#if submenu_open}
                   <ul
                     transition:slide={{duration: 300}}
-                    class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto"
+                    class="flex-1 space-y-2 mt-2 overflow-hidden hover:overflow-auto"
                   >
-                    {#each subroutes.slice(0, 0) as route}
-                      {@const current = $page.url.pathname === root + route}
+                    {#each subroutes as route, i (i)}
                       <li>
                         <a
-                          class="flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-400 hover:text-white aria-[current=page]:bg-primary-400 aria-[current=page]:text-white"
-                          aria-current={current ? 'page' : undefined}
-                          href={root + route}
+                          class="group/submenu flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-400 hover:text-white aria-[current=page]:bg-primary-400 aria-[current=page]:text-white"
+                          aria-current={$page.url.pathname === root + route ? 'page' : undefined}
+                          href={root + '#'}
                         >
+                          <span
+                            aria-hidden="true"
+                            class="rounded-lg p-3 transition-colors group-hover/submenu:bg-primary-600 group-hovers/submenu:text-white group-aria-[current=page]/submenu:bg-primary-600 group-aria-[current=page]/submenu:text-white"
+                          >
+                            <iconify-icon class="h-3 w-3" icon={file} />
+                          </span>
                           <span>{route}</span>
                         </a>
                       </li>
@@ -180,7 +189,7 @@
             <li>
               <a
                 class="group flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-400 hover:text-white aria-[current=page]:bg-primary-400 aria-[current=page]:text-white"
-                aria-current={$page.url.pathname === root + 'about'}
+                aria-current={$page.url.pathname === root + 'about' ? 'page' : undefined}
                 href={root + 'about'}
               >
                 <span

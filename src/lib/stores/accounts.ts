@@ -1,19 +1,23 @@
-import {page} from '$app/stores';
-import {catchError, defer, map, Observable, shareReplay, switchMap} from 'rxjs';
-import {get} from 'svelte/store';
-import {api, SvelteSubject, type Accounts} from '../utils';
+import { appRouter } from '$lib/server/api/root';
+import { createContext } from '$lib/server/api/trpc';
+import type { RequestEvent } from '@sveltejs/kit';
+import {catchError, defer, map, Observable, reduce, shareReplay, switchMap} from 'rxjs';
+import {SvelteSubject, type Accounts} from '../utils';
 
 const accounts = new SvelteSubject<Accounts['accounts']>([]);
 
-export function getAccounts(): Observable<Accounts['accounts']> {
+export function getAccounts(event: RequestEvent<Partial<Record<string, string>>, string | null>): Observable<Accounts['accounts']> {
   return accounts.asObservable().pipe(
-    switchMap(() => GetBuxferBalances().pipe(map(accounts => accounts.accounts))),
+    switchMap(() => GetBuxferBalances(event).pipe(
+      map(accounts => accounts.accounts),
+      reduce((acc, curr) => acc.concat(curr))
+    )),
     shareReplay()
   );
 }
 
-function GetBuxferBalances(): Observable<Accounts> {
-  return defer(() => api(get(page)).buxfer_account.accounts.query()).pipe(
+function GetBuxferBalances(event: RequestEvent<Partial<Record<string, string>>, string | null>): Observable<Accounts> {
+  return defer(async () => appRouter.createCaller(await createContext(event)).buxfer_account.accounts()).pipe(
     catchError((error, caught) => {
       console.log(error);
       return caught;

@@ -1,10 +1,11 @@
 <script lang="ts">
-  import type {Accounts, Transactions} from '$lib/utils';
-  import {isSameMonth} from 'date-fns';
-  import {concatAll, filter, Observable, reduce, scan, startWith} from 'rxjs';
+  import {isThisMonth, sub} from 'date-fns';
+  import {filter, from, reduce, lastValueFrom} from 'rxjs';
   import type {PageData} from './$types';
   import DateSelect from './DateSelect.svelte';
   import ScoreCard from './ScoreCard.svelte';
+  import {navigating} from '$app/stores';
+  import {onMount} from 'svelte';
 
   export let data: PageData;
 
@@ -12,25 +13,31 @@
 
   let selectedDay: Date = today;
 
-  $: balance$ = (accounts as Observable<Accounts['accounts']>).pipe(
-    concatAll(),
+  $: balance$ = from(accounts).pipe(
     filter(({name}) => name.includes('1880') || name.includes('1334')),
-    scan((sum, {balance}) => sum + balance, 0),
-    startWith(0)
+    reduce((sum, {balance}) => sum + balance, 0)
   );
-  $: currentExpenses$ = (transactions as Observable<Transactions['transactions']>).pipe(
-    concatAll(),
+  $: expenses$ = from(transactions).pipe(
+    filter(({type}) => type === 'expense')
+  )
+  $: currentExpenses$ = expenses$.pipe(
     filter(
-      ({type, date}) => type === 'expense' && isSameMonth(new Date(date), selectedDay) && new Date(date) < selectedDay
+      ({date}) => isThisMonth(new Date(date)) && new Date(date) < selectedDay
     ),
-    reduce((sum, {amount}) => sum + amount, 0),
-    startWith(0)
-  );
-  $: lastMonthExpenses$ = (transactions as Observable<Transactions['transactions']>).pipe(
-    concatAll(),
-    filter(({type, date}) => type === 'expense' && !isSameMonth(new Date(date), selectedDay)),
     reduce((sum, {amount}) => sum + amount, 0)
   );
+  $: lastMonthExpenses$ = expenses$.pipe(
+    filter(({date}) => new Date(date) <= sub(selectedDay, {months: 1})),
+    reduce((sum, {amount}) => sum + amount, 0)
+  );
+
+  let loading: boolean = true;
+
+  onMount(() => {
+    loading = false;
+  })
+
+  const loading$ = new Promise((resolve, reject) => resolve(loading))
 </script>
 
 <svelte:head>
@@ -39,13 +46,25 @@
 </svelte:head>
 
 <DateSelect bind:selectedDay />
-<section class="flex flex-row flex-wrap items-start justify-center gap-4 pt-4 min-[474px]:justify-start">
-  <ScoreCard label="Balance" score={$balance$} delay={0} />
-  <ScoreCard
-    label="Spent"
-    score={$currentExpenses$}
-    comparison={{score: $lastMonthExpenses$ - $currentExpenses$, swap: true}}
-    delay={1}
-  />
-  <ScoreCard label="Forecast" score={$balance$ - $currentExpenses$} delay={2} />
-</section>
+{#await lastValueFrom(currentExpenses$) && loading$}
+  <section class="flex flex-row flex-wrap items-start justify-center gap-4 pt-4 min-[474px]:justify-start">
+    <ScoreCard label="Balance" score={undefined} delay={0} />
+    <ScoreCard
+      label="Spent"
+      score={undefined}
+      comparison={{score: undefined, swap: true}}
+      delay={1}
+    />
+    <ScoreCard label="Forecast" score={undefined} delay={2} />
+  </section>
+{:then}
+  <section class="flex flex-row flex-wrap items-start justify-center gap-4 pt-4 min-[474px]:justify-start">
+    <ScoreCard label="Balance" score={$balance$} />
+    <ScoreCard
+      label="Spent"
+      score={$currentExpenses$}
+      comparison={{score: $lastMonthExpenses$, swap: true}}
+    />
+    <ScoreCard label="Forecast" score={$balance$ - $currentExpenses$} />
+  </section>
+{/await}

@@ -16,9 +16,9 @@
     },
   });
 
-  export let delay: number;
+  export let delay: number | undefined = undefined;
   export let label: string;
-  export let score: number;
+  export let score: number | undefined;
   export let comparison:
     | Partial<{score: number; positiveColor?: Color; negativeColor?: Color; swap: boolean}>
     | undefined = undefined;
@@ -33,15 +33,26 @@
   const score$ = tweened(score, {duration: 300});
   const comparisonScore$ = spring(comparison?.score, {damping: 0.12, stiffness: 0.12});
 
-  $: score$.set(score);
-  $: comparisonScore$.set(comparison?.score || 0);
+  $: score && score$.set(score);
+  $: comparison?.score && comparisonScore$.set(comparison.score);
 </script>
 
 <DashboardWidget>
   <div class="text-base text-gray-400 dark:text-gray-300">
     {label}
   </div>
-  {#if score > 0}
+  {#if !score}
+    <div
+      class="flex w-[164.57px] pt-1 h-full animate-pulse flex-row items-center justify-center space-x-5 pr-11"
+      class:animation-delay-150={delay === 1}
+      class:animation-delay-300={delay === 2}
+    >
+      <div
+        style="animation-fill-mode: backward"
+        class="h-8 w-44 animate-gradient-x rounded-md bg-gradient-to-r from-gray-300 via-white to-gray-50"
+      />
+    </div>
+  {:else}
     <div class="flex w-[164.57px] items-center pt-1">
       <div transition:fade={{duration: 300}} class="text-2xl font-bold text-gray-900 dark:text-gray-100">
         {$score$.toLocaleString(locale, numberFormat)}
@@ -49,7 +60,7 @@
 
       {#if comparison && comparison.score && comparison.score > 0}
         {@const {compare, positiveColor, negativeColor} = {
-          compare: score < comparison.score,
+          compare: $score$ < comparison.score,
           positiveColor:
             comparison.swap || false ? comparison.negativeColor || 'red' : comparison.positiveColor || 'green',
           negativeColor:
@@ -74,17 +85,6 @@
           <iconify-icon inline icon={compare ? down : up} />
         </span>
       {/if}
-    </div>
-  {:else}
-    <div
-      class="flex h-full animate-pulse flex-row items-center justify-center space-x-5 pr-11"
-      class:animation-delay-150={delay === 1}
-      class:animation-delay-300={delay === 2}
-    >
-      <div
-        style="animation-fill-mode: backward"
-        class="h-8 w-44 animate-gradient-x rounded-md bg-gradient-to-r from-gray-300 via-white to-gray-50"
-      />
     </div>
   {/if}
 </DashboardWidget>
