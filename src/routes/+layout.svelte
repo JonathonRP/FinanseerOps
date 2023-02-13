@@ -12,13 +12,17 @@
   import dashboard from '@iconify-icons/fa6-solid/magnifying-glass-chart';
   import file from '@iconify-icons/fa6-solid/file';
   import {addCollection} from 'iconify-icon';
-  import {onMount} from 'svelte';
+
+  const state = {
+    closed: false,
+    open: true
+  }
 
   const subroutes = ['overview', 'categories'];
   const root = '/';
 
-  let menu_open: boolean = false;
-  let submenu_open: boolean = false;
+  let menu_open: boolean = state.closed;
+  let submenu_open: boolean = state.closed;
 
   addCollection({
     prefix: 'fa-solid',
@@ -30,31 +34,31 @@
     },
   });
 
-  function toggleMenu(event: MouseEvent) {
-    const prevs = document.querySelectorAll('[aria-current="location"]');
-    prevs?.forEach(prev => (prev.ariaCurrent = null));
-    menu_open = !menu_open;
+  function toggleMenu(state? : boolean | undefined) {
 
-    if (menu_open){
-      (event.currentTarget as HTMLButtonElement).ariaCurrent = 'location';
-    }
-  }
+    return (event: MouseEvent | KeyboardEvent) => {
+      const prevs = document.querySelectorAll('[aria-current="location"]');
+      prevs?.forEach(prev => (prev.ariaCurrent = null));
 
-  function handle_keydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      menu_open = false;
-      return;
+      switch(event.type) {
+        case 'keydown':
+          (event as KeyboardEvent).key === 'Escape' && (menu_open = state ?? !menu_open);
+          break;
+        case 'click':
+          menu_open = state ?? !menu_open;
+        default: menu_open && ((event.currentTarget as HTMLButtonElement).ariaCurrent = 'location');
+      }
     }
   }
 </script>
 
-<svelte:window on:keydown={handle_keydown} />
+<svelte:window on:keydown={toggleMenu(state.closed)} />
 <div class="app flex min-h-[100dvh] min-[1px]:min-h-screen">
   <!-- side-bar -->
   <aside class="flex flex-shrink-0 transition-all">
     <div
-      on:click={() => (menu_open = false)}
-      on:keydown={handle_keydown}
+      on:click={toggleMenu(state.closed)}
+      on:keydown={toggleMenu(state.closed)}
       class="fixed inset-0 z-10 bg-black bg-opacity-50 lg:hidden"
       class:hidden={!menu_open}
     />
@@ -66,7 +70,7 @@
     >
       <!-- Menu button -->
       <button
-        on:click={toggleMenu}
+        on:click={toggleMenu()}
         class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:outline-none focus:ring focus:ring-primary-400 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white"
       >
         <span class="sr-only">Toggle sidebar</span>
@@ -96,7 +100,7 @@
       <div class="flex flex-1 flex-col items-center space-y-4 p-2">
         <!-- Menu button -->
         <button
-          on:click={toggleMenu}
+          on:click={toggleMenu()}
           class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:bg-primary-600 focus:text-white focus:outline-none focus:ring focus:ring-primary-400 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white"
         >
           <span class="sr-only">Toggle sidebar</span>
