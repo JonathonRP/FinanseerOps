@@ -10,6 +10,8 @@
     "sdras.night-owl",
     "kahole.magit",
     "jacobdufault.fuzzy-search",
-    "bodil.file-browser"
+    "bodil.file-browser",
+    "naumovs.color-highlight",
+    "bierner.color-info"
   ]
 }

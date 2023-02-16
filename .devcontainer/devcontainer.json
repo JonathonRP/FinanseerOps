@@ -28,7 +28,6 @@
         "workbench.editor.labelFormat": "short",
 
         "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.codeActionsOnSave": {
           "source.fixAll": true,
           "source.organizeImports": true
@@ -47,7 +46,9 @@
 
         "eslint.validate": ["javascript", "typescript", "svelte"],
 
-        "dotfiles.repository": "JonathonRP/.dotfiles"
+        "dotfiles.repository": "JonathonRP/.dotfiles",
+        "dotfiles.targetPath": "~/.dotfiles",
+        "dotfiles.installCommand": "~/.dotfiles/install.sh"
       },
 
       // Add the IDs of extensions you want installed when the container is created.

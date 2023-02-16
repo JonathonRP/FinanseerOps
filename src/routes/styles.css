@@ -28,9 +28,13 @@ body {
 
 @media (prefers-color-scheme: dark) {
   body {
+    --color-bg-0: rgb(22, calc(20 + 16), calc(20 + 28));
+    --color-bg-1: hsl(209, 36%, 14%);
+    --color-bg-2:  hsl(224, 4%, 15%);
+
+    background-color: var(--color-bg-1);
     background-image: radial-gradient(50% 50% at 50% 50%, hsl(209deg 6% 47% / 52%) 0%, hsla(0, 0%, 100%, 0) 100%),
-      linear-gradient(180deg, hsl(210, 7%, 16%)0%, hsl(0deg 0% 0% / 48%) 15%, hsla(207, 22%, 13%, 0.62) 50%) 
-      /* linear-gradient(180deg, hsla(207,22%,13%,.62)100%, hsl(0deg 0% 0% / 48%) 25%, hsl(210,7%,16%) 0%); */
+      linear-gradient(180deg, var(--color-bg-0) 0%, var(--color-bg-1) 15%, var(--color-bg-2) 50%);
   }
 }
 

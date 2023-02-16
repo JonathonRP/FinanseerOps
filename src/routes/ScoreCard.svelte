@@ -44,12 +44,12 @@
   {#if !score}
     <div
       class="flex w-[164.57px] pt-1 h-full animate-pulse flex-row items-center justify-center space-x-5 pr-11"
-      class:animation-delay-150={delay === 1}
-      class:animation-delay-300={delay === 2}
+      class:animation-delay-350={delay === 1}
+      class:animation-delay-500={delay === 2}
     >
       <div
         style="animation-fill-mode: backward"
-        class="h-8 w-44 animate-gradient-x rounded-md bg-gradient-to-r from-gray-300 via-white to-gray-50"
+        class="h-8 w-44 animate-gradient-x rounded-md bg-gradient-to-r from-gray-300 via-white to-gray-50 dark:from-gray-600 via-gray to-gray-600"
       />
     </div>
   {:else}

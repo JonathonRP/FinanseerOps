@@ -81,7 +81,7 @@
             dayIsToday: isToday(day),
             isPartOfMonth: isSameMonth(day, currentDay),
           }}
-          <div class="{dayIdx < 7 && 'border-b border-stone-200 border-opacity-75 dark:border-stone-600'} pt-1.5 pb-3">
+          <div class="{dayIdx < 7 && 'border-b border-stone-200 border-opacity-75 dark:border-stone-600 dark:border-opacity-25'} pt-1.5 pb-3">
             <button
               type="button"
               on:click={() => (selectedDay = day)}

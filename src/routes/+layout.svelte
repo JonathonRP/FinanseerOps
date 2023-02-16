@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import {page} from '$app/stores';
   import classes from 'svelte-transition-classes';
-  import { slide } from 'svelte/transition';
+  import {slide} from 'svelte/transition';
   import '../app.postcss';
   import '../app.scss';
   import './styles.css';
@@ -11,12 +11,12 @@
   import about from '@iconify-icons/fa6-solid/feather';
   import file from '@iconify-icons/fa6-solid/file';
   import dashboard from '@iconify-icons/fa6-solid/magnifying-glass-chart';
-  import { addCollection } from 'iconify-icon';
+  import {addCollection} from 'iconify-icon';
 
   const state = {
     closed: false,
-    open: true
-  }
+    open: true,
+  };
 
   const subroutes = ['overview', 'categories'];
   const root = '/';
@@ -30,25 +30,25 @@
       dashboard,
       about,
       chevronUp,
-      file
+      file,
     },
   });
 
-  function toggleMenu(state? : boolean | undefined) {
-
+  function toggleMenu(state?: boolean | undefined) {
     return (event: MouseEvent | KeyboardEvent) => {
       const prevs = document.querySelectorAll('[aria-current="location"]');
       prevs?.forEach(prev => (prev.ariaCurrent = null));
 
-      switch(event.type) {
+      switch (event.type) {
         case 'keydown':
           (event as KeyboardEvent).key === 'Escape' && (menu_open = state ?? !menu_open);
           break;
         case 'click':
           menu_open = state ?? !menu_open;
-        default: menu_open && ((event.currentTarget as HTMLButtonElement).ariaCurrent = 'location');
+        default:
+          menu_open && ((event.currentTarget as HTMLButtonElement).ariaCurrent = 'location');
       }
-    }
+    };
   }
 </script>
 
@@ -59,19 +59,19 @@
     <div
       on:click={toggleMenu(state.closed)}
       on:keydown={toggleMenu(state.closed)}
-      class="fixed inset-0 z-10 bg-black bg-opacity-50 lg:hidden dark:bg-white dark:opacity-25"
+      class="fixed inset-0 z-10 bg-black bg-opacity-50 dark:bg-white dark:opacity-25 lg:hidden"
       class:hidden={!menu_open}
     />
-    <div class="fixed inset-y-0 z-10 hidden w-16 bg-white sm:flex dark:bg-neutral-808" class:sm:hidden={!menu_open} />
+    <div class="fixed inset-y-0 z-10 hidden w-16 bg-white dark:bg-gray-800 sm:flex" class:sm:hidden={!menu_open} />
     <!-- Mobile bottom bar -->
     <nav
       aria-label="Options"
-      class="shadow-t fixed inset-x-0 bottom-0 flex flex-row items-center justify-between rounded-t-3xl border-t border-primary-100 bg-white px-4 py-2 sm:hidden dark:bg-neutral-808 dark:shadow-neutral-309/20 dark:border-primary-400/20"
+      class="shadow-t fixed inset-x-0 bottom-0 flex flex-row items-center justify-between rounded-t-3xl border-t border-primary-100 bg-white px-4 py-2 dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 sm:hidden"
     >
       <!-- Menu button -->
       <button
         on:click={toggleMenu()}
-        class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 dark:focus:ring-offset-neutral-808 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white dark:bg-neutral-808 dark:shadow-neutral-309/20 dark:text-white"
+        class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white dark:bg-gray-800 dark:text-white dark:shadow-neutral-309/20 dark:focus:ring-offset-neutral-808"
       >
         <span class="sr-only">Toggle sidebar</span>
         <svg
@@ -90,7 +90,7 @@
     <!-- Left mini bar -->
     <nav
       aria-label="Options"
-      class="z-20 hidden w-16 flex-shrink-0 flex-col items-center rounded-tr-3xl rounded-br-3xl border-r-2 border-primary-100 bg-white py-4 shadow-md sm:flex dark:bg-neutral-808 dark:shadow-neutral-309/20 dark:border-primary-400/20"
+      class="z-20 hidden w-16 flex-shrink-0 flex-col items-center rounded-tr-3xl rounded-br-3xl border-r-2 border-primary-100 bg-white py-4 shadow-md dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 sm:flex"
       class:rounded-none={false}
       class:border-r-0={false}
       class:shadow-none={false}
@@ -101,7 +101,7 @@
         <!-- Menu button -->
         <button
           on:click={toggleMenu()}
-          class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:bg-primary-600 focus:text-white focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 dark:focus:ring-offset-neutral-808 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white dark:bg-neutral-808 dark:shadow-neutral-309/20 dark:text-white"
+          class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:bg-primary-600 focus:text-white focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white dark:bg-gray-800 dark:text-white dark:shadow-neutral-309/20 dark:focus:ring-offset-neutral-808"
         >
           <span class="sr-only">Toggle sidebar</span>
           <svg
@@ -132,7 +132,7 @@
           from: 'translate-x-0',
           to: 'translate-x-full sm:-translate-x-full',
         }}
-        class="fixed inset-y-0 right-0 z-10 w-64 flex-shrink-0 border-primary-100 bg-white shadow-lg max-[640px]:rounded-tl-3xl max-[640px]:rounded-bl-3xl max-[640px]:border-l-2 sm:left-16 sm:w-72 sm:rounded-tr-3xl sm:rounded-br-3xl sm:border-r-2 lg:static lg:w-64 dark:bg-neutral-808 dark:shadow-neutral-309/20 dark:border-primary-400/20"
+        class="fixed inset-y-0 right-0 z-10 w-64 flex-shrink-0 border-primary-100 bg-white shadow-lg dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 max-[640px]:rounded-tl-3xl max-[640px]:rounded-bl-3xl max-[640px]:border-l-2 sm:left-16 sm:w-72 sm:rounded-tr-3xl sm:rounded-br-3xl sm:border-r-2 lg:static lg:w-64"
       >
         <nav aria-label="Main" class="flex h-full flex-col pt-7">
           <!-- Logo -->
@@ -141,9 +141,13 @@
           <!-- Links -->
           <ul class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto">
             <li>
-              <details class="group/menu cursor-pointer" bind:open={submenu_open} aria-current={$page.url.pathname === root ? 'page' : undefined}>
+              <details
+                class="group/menu cursor-pointer"
+                bind:open={submenu_open}
+                aria-current={$page.url.pathname === root ? 'page' : undefined}
+              >
                 <summary
-                  class="flex w-full items-center space-x-2 rounded-lg divide-x-2 divide-primary-400 group-hover/menu:bg-primary-500 group-aria-[current=page]/menu:bg-primary-500"
+                  class="flex w-full items-center space-x-2 divide-x-2 divide-primary-400 rounded-lg group-hover/menu:bg-primary-500 group-aria-[current=page]/menu:bg-primary-500"
                 >
                   <a
                     href={root}
@@ -167,18 +171,18 @@
                 {#if submenu_open}
                   <ul
                     transition:slide={{duration: 300}}
-                    class="flex-1 space-y-2 mt-2 overflow-hidden hover:overflow-auto"
+                    class="mt-2 flex-1 space-y-2 overflow-hidden hover:overflow-auto"
                   >
                     {#each subroutes as route, i (i)}
                       <li>
                         <a
-                          class="group/submenu flex w-full items-center space-x-2 rounded-lg text-primary-600 dark:text-white transition-colors hover:bg-primary-500 hover:text-white aria-[current=page]:bg-primary-500 aria-[current=page]:text-white"
+                          class="group/submenu flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-500 hover:text-white aria-[current=page]:bg-primary-500 aria-[current=page]:text-white dark:text-white"
                           aria-current={$page.url.pathname === root + route ? 'page' : undefined}
                           href={root + '#'}
                         >
                           <span
                             aria-hidden="true"
-                            class="rounded-lg p-3 transition-colors group-hover/submenu:bg-primary-600 group-hovers/submenu:text-white group-aria-[current=page]/submenu:bg-primary-600 group-aria-[current=page]/submenu:text-white"
+                            class="group-hovers/submenu:text-white rounded-lg p-3 transition-colors group-hover/submenu:bg-primary-600 group-aria-[current=page]/submenu:bg-primary-600 group-aria-[current=page]/submenu:text-white"
                           >
                             <iconify-icon class="h-3 w-3" icon={file} />
                           </span>
@@ -192,7 +196,7 @@
             </li>
             <li>
               <a
-                class="group flex w-full items-center space-x-2 rounded-lg text-primary-600 dark:text-white transition-colors hover:bg-primary-500 hover:text-white aria-[current=page]:bg-primary-500 aria-[current=page]:text-white"
+                class="group flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-500 hover:text-white aria-[current=page]:bg-primary-500 aria-[current=page]:text-white dark:text-white"
                 aria-current={$page.url.pathname === root + 'about' ? 'page' : undefined}
                 href={root + 'about'}
               >

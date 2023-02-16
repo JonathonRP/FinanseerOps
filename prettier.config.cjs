@@ -1,24 +1,26 @@
 /** @type {import('prettier').Config} */
 const config = {
-  ...require('prettier-airbnb-config'),
   plugins: [
-    require('prettier-plugin-svelte'),
-    require('prettier-plugin-organize-imports'),
-    require('prettier-plugin-tailwindcss'),
-    require('prettier-plugin-prisma'),
+    require("prettier-plugin-svelte"),
+    require("prettier-plugin-organize-imports"),
+    require("prettier-plugin-tailwindcss"),
+    require("prettier-plugin-prisma"),
   ],
+  tailwindConfig: "./tailwind.config.cjs",
   overrides: [
     {
-      files: '**/*.svelte',
+      files: "**/*.svelte",
       options: {
-        parser: 'svelte',
-        svelteSortOrder: 'options-scripts-markup-styles',
+        parser: "svelte",
+        svelteSortOrder: "options-scripts-markup-styles",
+        bracketSameLine: true,
+        bracketSpacing: true,
       },
     },
     {
-      files: '**/*.prisma',
+      files: "**/*.prisma",
       options: {
-        parser: 'prisma-parse',
+        parser: "prisma-parse",
       },
     },
   ],
