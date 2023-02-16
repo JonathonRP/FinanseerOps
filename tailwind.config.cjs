@@ -18,6 +18,10 @@ const config = {
           800: '#661900',
           900: '#330c00',
         },
+        neutral: {
+          808: '#2e2e2e',
+          309: '#cccccc'
+        }
       },
       animation: {
         pulse: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',

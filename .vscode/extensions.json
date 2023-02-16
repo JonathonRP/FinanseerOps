@@ -1,3 +1,15 @@
 {
-  "recommendations": ["usernamehw.errorlens", "chakrounanas.turbo-console-log", "wallabyjs.console-ninja"]
+  "recommendations": [
+    "usernamehw.errorlens",
+    "chakrounanas.turbo-console-log",
+    "wallabyjs.console-ninja",
+    "vscode-icons-team.vscode-icons",
+    "vscodevim.vim",
+    "vspacecode.vspacecode",
+    "vspacecode.whichkey",
+    "sdras.night-owl",
+    "kahole.magit",
+    "jacobdufault.fuzzy-search",
+    "bodil.file-browser"
+  ]
 }

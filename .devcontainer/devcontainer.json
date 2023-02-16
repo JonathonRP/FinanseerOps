@@ -45,7 +45,9 @@
           "editor.defaultFormatter": "Prisma.prisma"
         },
 
-        "eslint.validate": ["javascript", "typescript", "svelte"]
+        "eslint.validate": ["javascript", "typescript", "svelte"],
+
+        "dotfiles.repository": "JonathonRP/.dotfiles"
       },
 
       // Add the IDs of extensions you want installed when the container is created.
@@ -56,7 +58,8 @@
         "Prisma.prisma",
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "csstools.postcss"
       ]
     }
   },

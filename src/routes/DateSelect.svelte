@@ -43,12 +43,12 @@
   <div class="md:grid md:grid-cols-1">
     <div class="md:pr-14">
       <div class="flex items-center">
-        <h2 class="flex-0 mr-4 font-semibold text-gray-900">{format(today, 'yyyy, MMM dd')}</h2>
+        <h2 class="flex-0 mr-4 font-semibold text-gray-900 dark:text-neutral-309">{format(today, 'yyyy, MMM dd')}</h2>
         <button
           id="prev"
           type="button"
           on:click={() => (currentDay = prevPeriod)}
-          class="-my-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500"
+          class="-my-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309"
           disabled={disablePrev}
           hidden={disablePrev}
           aria-hidden={disablePrev}
@@ -60,7 +60,7 @@
           id="next"
           type="button"
           on:click={() => (currentDay = nextPeriod)}
-          class="-my-1.5 -mr-1.5 -ml-1 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500"
+          class="-my-1.5 -mr-1.5 -ml-1 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309"
           disabled={disableNext}
           hidden={disableNext}
           aria-hidden={disableNext}
@@ -69,7 +69,7 @@
           <iconify-icon icon={right} class="h-5 w-5" hidden={disableNext} aria-hidden />
         </button>
       </div>
-      <div class="mt-5 grid grid-cols-7 text-center text-xs leading-6 text-gray-500">
+      <div class="mt-5 grid grid-cols-7 text-center text-xs leading-6 text-gray-500 dark:text-neutral-309">
         {#each daysOfPeriod as day, dayIdx (dayIdx)}
           <div>{format(day, 'eeeeee')}</div>
         {/each}
@@ -81,7 +81,7 @@
             dayIsToday: isToday(day),
             isPartOfMonth: isSameMonth(day, currentDay),
           }}
-          <div class="{dayIdx < 7 && 'border-b border-stone-200 border-opacity-75'} pt-1.5 pb-3">
+          <div class="{dayIdx < 7 && 'border-b border-stone-200 border-opacity-75 dark:border-stone-600'} pt-1.5 pb-3">
             <button
               type="button"
               on:click={() => (selectedDay = day)}
@@ -96,6 +96,8 @@
               class:hover:bg-gray-200={!isSelected}
               class:enabled:hover:bg-primary-100={!isSelected}
               class:enabled:text-gray-900={!isSelected && !dayIsToday && isPartOfMonth}
+              class:dark:enabled:text-neutral-309={!isSelected && !dayIsToday && isPartOfMonth}
+              class:dark:text-gray-600={!isSelected && !dayIsToday && isPartOfMonth}
               disabled={!isSameMonth(day, today) || day > today}
             >
               <time datetime={day.toLocaleString()}>
