@@ -6,18 +6,26 @@ const config = {
     "arrow-body-style": ["error", "as-needed"],
     "prefer-arrow-callback": ["error", { allowNamedFunctions: false, allowUnboundThis: true }],
     "import/no-extraneous-dependencies": ["error", { devDependencies: true }],
-    "import/prefer-default-export": "off",
     "import/no-mutable-exports": 0,
-    "no-labels": 0,
     "no-restricted-syntax": 0,
+    "import/prefer-default-export": 0,
+		"no-param-reassign": 0,
+		"import/extensions": 0,
+		"import/no-duplicates": 0,
+		"import-no-duplicates-prefix-resolved-path/no-duplicates": [
+			"error",
+			{
+				prefixResolvedPathWithImportName: true,
+			},
+		],
   },
   extends: [
     "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:svelte/recommended",
     "airbnb-base",
     "airbnb-typescript/base",
     "plugin:import/recommended",
-    "plugin:promise/recommended",
-    "plugin:eslint-comments/recommended",
     "plugin:prettier/recommended",
   ],
   parserOptions: {
@@ -39,23 +47,23 @@ const config = {
       parserOptions: {
         parser: "@typescript-eslint/parser",
       },
+      rules: {
+				'import/no-named-as-default': 0,
+				'import/no-named-as-default-member': 0,
+			},
     },
   ],
   settings: {
     "import/parsers": {
       "@typescript-eslint/parser": [".cjs", "js", ".ts", ".svelte"],
     },
-    "import/extensions": [".js", ".ts"],
     "import/resolver": {
-      node: {
-        extensions: [".js", ".ts"],
-      },
       typescript: {
         alwaysTryTypes: true,
       },
     },
   },
-  plugins: ["@typescript-eslint"],
+  plugins: ["@typescript-eslint","import-no-duplicates-prefix-resolved-path"],
   ignorePatterns: [
     "node_modules",
     "dist",

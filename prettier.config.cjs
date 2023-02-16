@@ -9,7 +9,7 @@ const config = {
   tailwindConfig: "./tailwind.config.cjs",
   overrides: [
     {
-      files: "**/*.svelte",
+      files: "*.svelte",
       options: {
         parser: "svelte",
         svelteSortOrder: "options-scripts-markup-styles",
@@ -18,7 +18,7 @@ const config = {
       },
     },
     {
-      files: "**/*.prisma",
+      files: "*.prisma",
       options: {
         parser: "prisma-parse",
       },
