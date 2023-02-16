@@ -13,7 +13,6 @@ const config = {
   },
   extends: [
     "eslint:recommended",
-    "prettier/@typescript-eslint",
     "airbnb-base",
     "airbnb-typescript/base",
     "plugin:import/recommended",

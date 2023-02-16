@@ -46,7 +46,7 @@
 
         "eslint.validate": ["javascript", "typescript", "svelte"],
 
-        "dotfiles.repository": "JonathonRP/.dotfiles",
+        "dotfiles.repository": "https://github.com/JonathonRP/.dotfiles",
         "dotfiles.targetPath": "~/.dotfiles",
         "dotfiles.installCommand": "~/.dotfiles/install.sh"
       },
