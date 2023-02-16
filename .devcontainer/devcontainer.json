@@ -44,7 +44,7 @@
           "editor.defaultFormatter": "Prisma.prisma"
         },
 
-        "eslint.validate": ["javascript", "typescript", "svelte"],
+        "eslint.validate": ["javascript", "typescript", "svelte"]
 
         // "dotfiles.repository": "https://github.com/JonathonRP/.dotfiles",
         // "dotfiles.targetPath": "~/.dotfiles",
