@@ -1,10 +1,12 @@
-import { router } from './trpc';
+import { buxferAccountRouter } from './routers/buxfer_account';
 import { exampleRouter } from './routers/example';
-import { buxfer_accountRouter } from './routers/buxfer_account';
+import { userRouter } from './routers/user';
+import { router } from './trpc';
 
 export const appRouter = router({
 	example: exampleRouter,
-	buxfer_account: buxfer_accountRouter
+	buxfer_account: buxferAccountRouter,
+	user: userRouter,
 });
 
 export type AppRouter = typeof appRouter;

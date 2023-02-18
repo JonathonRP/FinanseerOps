@@ -7,17 +7,19 @@ import { browser } from '$app/environment';
 let browserClient: ReturnType<typeof createTRPCClient<AppRouter>>;
 
 export function api(init?: TRPCClientInit) {
-  if (typeof window === 'undefined') return createTRPCClient<AppRouter>({ 
-    // init: init ? {url: init.url , fetch: (url, options) => init.fetch?.(url, {...options, credentials: 'include'}) || fetch(url, {...options, credentials: 'include'}) } : undefined,
-    init,
-    transformer: superjson
-  });
+	if (typeof window === 'undefined')
+		return createTRPCClient<AppRouter>({
+			// init: init ? {url: init.url , fetch: (url, options) => init.fetch?.(url, {...options, credentials: 'include'}) || fetch(url, {...options, credentials: 'include'}) } : undefined,
+			init,
+			transformer: superjson,
+		});
 
-  if (!browserClient) browserClient = createTRPCClient<AppRouter>({
-    transformer: superjson
-  });
+	if (!browserClient)
+		browserClient = createTRPCClient<AppRouter>({
+			transformer: superjson,
+		});
 
-  return browserClient;
+	return browserClient;
 }
 
 // 👇 type helpers 💡

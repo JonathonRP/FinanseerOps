@@ -1,22 +1,21 @@
-import { type Readable, derived } from 'svelte/store';
 import { page } from '$app/stores';
-import { Observable, shareReplay } from "rxjs";
+import type { Session } from '@auth/core/types';
+import { Observable, shareReplay } from 'rxjs';
+import { derived, type Readable } from 'svelte/store';
 
-const external = dedupe(derived(page, ($page) => $page.data?.session || ''));
+const external = dedupe(derived(page, ($page) => $page.data?.session || undefined));
 
-export const session: Observable<string> = new Observable<string>(obs => {
-        return external.subscribe(val => obs.next(val))
-    }).pipe(
-        shareReplay()
-    );
+export const session: Observable<Session> = new Observable<Session>((obs) =>
+	external.subscribe((val) => obs.next(val))
+).pipe(shareReplay());
 
 function dedupe<T>(store: Readable<T>): Readable<T> {
-    let previous: T;
+	let previous: T;
 
-    return derived(store, ($value, set) => {
-        if ($value !== previous) {
-            previous = $value;
-            set($value);
-        }
-    })
+	return derived(store, ($value, set) => {
+		if ($value !== previous) {
+			previous = $value;
+			set($value);
+		}
+	});
 }

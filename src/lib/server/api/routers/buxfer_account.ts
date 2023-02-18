@@ -1,33 +1,48 @@
-import { router, procedure } from '../trpc';
-import { client, buxferTransactions, buxferAccounts } from '$lib/Buxfer';
-import { object, number, date } from 'zod';
+import { buxferLogin, buxferToken, buxferAccounts, buxferTransactions, client } from '$lib/Buxfer';
+import { date, number, object } from 'zod';
+import { procedure, router } from '../trpc';
 
-export const buxfer_accountRouter = router({
+export const buxferAccountRouter = router({
+	login: procedure
+		.input(buxferLogin)
+		.output(buxferToken)
+		.query(
+			async ({ ctx, input }) => ctx.session?.user?.buxfer || client({ endpoint: 'api/login', init: { body: input } })
+		),
 
 	transactions: procedure
-	.input(object({
-		start: date(),
-		end: date(),
-		page: number()
-	}))
-	.output(buxferTransactions).query(async ({ctx, input}) => {
-		const startDate = input.start.toDateString();
-		const endDate = input.end.toDateString();
+		.input(
+			object({
+				start: date(),
+				end: date(),
+				page: number(),
+			})
+		)
+		.output(buxferTransactions)
+		.query(async ({ ctx, input }) => {
+			const startDate = input.start.toDateString();
+			const endDate = input.end.toDateString();
 
-		return (await client('/api/transactions', {body: {
-			token: ctx.buxfer_session, 
-			...{
-				...input, 
-				startDate, 
-				endDate
-			}
-		}}));
-	}),
+			return client({
+				endpoint: '/api/transactions',
+				init: {
+					body: {
+						token: ctx.session?.user?.buxfer.token,
+						...{
+							...input,
+							startDate,
+							endDate,
+						},
+					},
+				},
+			});
+		}),
 
 	accounts: procedure
-	.output(buxferAccounts).query(async ({ctx}) => {
-		return (await client('/api/accounts', {body: {token: ctx.buxfer_session}}));
-	})
+		.output(buxferAccounts)
+		.query(async ({ ctx }) =>
+			client({ endpoint: '/api/accounts', init: { body: { token: ctx.session?.user?.buxfer.token } } })
+		),
 });
 
-export type BuxferAccountRouter = typeof buxfer_accountRouter;
+export type BuxferAccountRouter = typeof buxferAccountRouter;

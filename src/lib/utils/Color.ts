@@ -9,6 +9,6 @@ type HSLA = `hsla(${number}, ${number}%, ${number}%, ${number})`;
 
 type HEX = `#${string}`;
 
-type COLOR = 'red' | 'green' | 'blue' | 'yellow'
+type COLOR = 'red' | 'green' | 'blue' | 'yellow';
 
 export type Color = RGB | RGBA | HSL | HSLA | HEX | COLOR;

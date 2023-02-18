@@ -1,72 +1,72 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
 {
-  "name": "Personal Buxfer Finance Dashboard",
-  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-  "image": "mcr.microsoft.com/devcontainers/typescript-node:0-18",
-  "features": {
-    "ghcr.io/devcontainers-contrib/features/typescript:1": {}
-  },
+	"name": "Personal Buxfer Finance Dashboard",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:0-18",
+	"features": {
+		"ghcr.io/devcontainers-contrib/features/typescript:1": {}
+	},
 
-  // Features to add to the dev container. More info: https://containers.dev/features.
-  // "features": {},
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
 
-  // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  // "forwardPorts": [],
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
 
-  // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "npm list -g | grep pnpm && pnpm install || npm install -g pnpm --no-shrinkwrap && pnpm install",
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "npm list -g | grep pnpm && pnpm install || npm install -g pnpm --no-shrinkwrap && pnpm install",
 
-  // Configure tool-specific properties.
-  "customizations": {
-    "vscode": {
-      "settings": {
-        "svelte.enable-ts-plugin": true,
-        "svelte.plugin.svelte.defaultScriptLanguage": "ts",
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"svelte.enable-ts-plugin": true,
+				"svelte.plugin.svelte.defaultScriptLanguage": "ts",
 
-        "explorer.sortOrder": "filesFirst",
-        "workbench.editor.labelFormat": "short",
+				"explorer.sortOrder": "filesFirst",
+				"workbench.editor.labelFormat": "short",
 
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-          "source.fixAll": true,
-          "source.organizeImports": true
-        },
+				"editor.formatOnSave": true,
+				"editor.codeActionsOnSave": {
+					"source.fixAll": true
+					// "source.organizeImports": true
+				},
 
-        "tailwindCSS.emmetCompletions": true,
-        "html.format.enable": false,
-        "json.format.enable": false,
+				"tailwindCSS.emmetCompletions": true,
+				"html.format.enable": false,
+				"json.format.enable": false,
 
-        "[svelte]": {
-          "editor.defaultFormatter": "svelte.svelte-vscode"
-        },
-        "[prisma]": {
-          "editor.defaultFormatter": "Prisma.prisma"
-        },
+				"[svelte]": {
+					"editor.defaultFormatter": "svelte.svelte-vscode"
+				},
+				"[prisma]": {
+					"editor.defaultFormatter": "Prisma.prisma"
+				},
 
-        "eslint.validate": ["javascript", "typescript", "svelte"]
+				"eslint.validate": ["javascript", "typescript", "svelte"]
 
-        // "dotfiles.repository": "https://github.com/JonathonRP/.dotfiles",
-        // "dotfiles.targetPath": "~/.dotfiles",
-        // "dotfiles.installCommand": "~/.dotfiles/install.sh"
-      },
+				// "dotfiles.repository": "https://github.com/JonathonRP/.dotfiles",
+				// "dotfiles.targetPath": "~/.dotfiles",
+				// "dotfiles.installCommand": "~/.dotfiles/install.sh"
+			},
 
-      // Add the IDs of extensions you want installed when the container is created.
-      "extensions": [
-        "svelte.svelte-vscode",
-        "bourhaouta.tailwindshades",
-        "bradlc.vscode-tailwindcss",
-        "Prisma.prisma",
-        "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint",
-        "eamodio.gitlens",
-        "csstools.postcss"
-      ]
-    }
-  },
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"svelte.svelte-vscode",
+				"bourhaouta.tailwindshades",
+				"bradlc.vscode-tailwindcss",
+				"Prisma.prisma",
+				"esbenp.prettier-vscode",
+				"dbaeumer.vscode-eslint",
+				"eamodio.gitlens",
+				"csstools.postcss"
+			]
+		}
+	},
 
-  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-  "remoteUser": "root",
-  // "forwardPorts": 5000,
-  "appPort": [5000, 9181]
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	"remoteUser": "root",
+	"forwardPorts": [5000, 9181]
+	// "appPort": [5000, 9181]
 }
