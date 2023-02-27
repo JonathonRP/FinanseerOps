@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { Toaster } from 'svelte-french-toast';
 	import classes from 'svelte-transition-classes';
-	import { slide } from 'svelte/transition';
 	import '../app.postcss';
 	import '../app.scss';
 	import './styles.css';
+	import 'sweetalert2/src/sweetalert2.scss';
 
 	import chevronUp from '@iconify-icons/fa6-solid/chevron-up';
 	import about from '@iconify-icons/fa6-solid/feather';
@@ -12,17 +13,13 @@
 	import dashboard from '@iconify-icons/fa6-solid/magnifying-glass-chart';
 	import { addCollection } from 'iconify-icon';
 	import logo from '$lib/images/svelte-logo.svg';
-
-	const state = {
-		closed: false,
-		open: true,
-	};
-
-	const subroutes = ['overview', 'categories'];
-	const root = '/';
-
-	let menu_open: boolean = state.closed;
-	let submenu_open: boolean = state.closed;
+	import { accordion } from '$lib/utils';
+	import { slide } from 'svelte/transition';
+	import { signOut } from '@auth/sveltekit/client';
+	import { enhance } from '$app/forms';
+	import useBauhaus from '$lib/stores/useBauhaus';
+	import { Role } from '@prisma/client';
+	import type { LayoutData } from './$types';
 
 	addCollection({
 		prefix: 'fa-solid',
@@ -34,35 +31,68 @@
 		},
 	});
 
-	function toggleMenu(state?: boolean | undefined) {
-		return (event: MouseEvent | KeyboardEvent) => {
-			const prevs = document.querySelectorAll('[aria-current="location"]');
-			prevs?.forEach((prev) => (prev.ariaCurrent = null));
+	const state = {
+		closed: false,
+		open: true,
+	};
 
-			switch (event.type) {
-				case 'keydown':
-					(event as KeyboardEvent).key === 'Escape' && (menu_open = state ?? !menu_open);
-					break;
-				case 'click':
-					menu_open = state ?? !menu_open;
-				default:
-					menu_open && ((event.currentTarget as HTMLButtonElement).ariaCurrent = 'location');
-					break;
-			}
-		};
-	}
+	const subroutes = ['overview', 'categories'];
+	const root = '/';
+
+	let menuOpen: boolean = state.closed;
+	let accountOpen: boolean = state.closed;
+
+	export let layoutData: LayoutData;
+	const {
+		session: { user },
+	} = layoutData;
+
+	const toggleMenu = (definedState?: boolean | undefined) => (event: MouseEvent | KeyboardEvent) => {
+		const prevs = document.querySelectorAll('[aria-current="location"]');
+		prevs?.forEach((prev) => {
+			prev.ariaCurrent = null;
+		});
+
+		switch (event.type) {
+			case 'keydown':
+				if ((event as KeyboardEvent).key === 'Escape') {
+					menuOpen = definedState ?? !menuOpen;
+				}
+				break;
+			case 'click':
+				menuOpen = definedState ?? !menuOpen;
+				break;
+			default:
+				break;
+		}
+		if (menuOpen) {
+			(event.currentTarget as HTMLButtonElement).ariaCurrent = 'location';
+		}
+	};
+
+	const randomColor = () =>
+		Math.floor(Math.random() * 0xffffff * 1000000)
+			.toString(16)
+			.slice(0, 6);
+
+	$: userImage =
+		user?.image ||
+		`https://source.boringavatars.com/${($useBauhaus && 'bauhaus') || 'beam'}/120/${encodeURIComponent(
+			user?.name ?? ''
+		)}?colors=000000,ff3e00,CDCDCD,4075a6,${randomColor()}`;
 </script>
 
 <svelte:window on:keydown={toggleMenu(state.closed)} />
-<div class="app flex min-h-[100dvh] min-[1px]:min-h-screen">
+<Toaster />
+<div class="app flex min-h-[100dvh] dark:text-neutral-309 min-[1px]:min-h-screen">
 	<!-- side-bar -->
 	<aside class="flex flex-shrink-0 transition-all">
 		<div
 			on:click={toggleMenu(state.closed)}
 			on:keydown={toggleMenu(state.closed)}
 			class="fixed inset-0 z-10 bg-black bg-opacity-50 dark:bg-white dark:opacity-25 lg:hidden"
-			class:hidden={!menu_open} />
-		<div class="fixed inset-y-0 z-10 hidden w-16 bg-white dark:bg-gray-800 sm:flex" class:sm:hidden={!menu_open} />
+			class:hidden={!menuOpen} />
+		<div class="fixed inset-y-0 z-10 hidden w-16 bg-white dark:bg-gray-800 sm:flex" class:sm:hidden={!menuOpen} />
 		<!-- Mobile bottom bar -->
 		<nav
 			aria-label="Options"
@@ -97,7 +127,7 @@
 				<!-- Menu button -->
 				<button
 					on:click={toggleMenu()}
-					class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:bg-primary-600 focus:text-white focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white dark:bg-gray-800 dark:text-white dark:shadow-neutral-309/20 dark:focus:ring-offset-neutral-808">
+					class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:bg-primary-600 focus:text-white focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white dark:bg-gray-800 dark:shadow-neutral-309/20 dark:focus:ring-offset-neutral-808">
 					<span class="sr-only">Toggle sidebar</span>
 					<svg
 						aria-hidden="true"
@@ -112,7 +142,7 @@
 			</div>
 		</nav>
 
-		{#if menu_open}
+		{#if menuOpen}
 			<div
 				in:classes={{
 					duration: 300,
@@ -127,72 +157,145 @@
 					to: 'translate-x-full sm:-translate-x-full',
 				}}
 				class="fixed inset-y-0 right-0 z-10 w-64 flex-shrink-0 border-primary-100 bg-white shadow-lg dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 max-[640px]:rounded-tl-3xl max-[640px]:rounded-bl-3xl max-[640px]:border-l-2 sm:left-16 sm:w-72 sm:rounded-tr-3xl sm:rounded-br-3xl sm:border-r-2 lg:static lg:w-64">
-				<nav aria-label="Main" class="flex h-full flex-col pt-7">
-					<!-- Logo -->
-					<div class="hidden flex-shrink-0 items-center justify-center py-10" />
+				<nav aria-label="Main" class="flex h-full flex-col">
+					<!-- Account -->
+					<div class="flex flex-shrink-0 items-center justify-center pt-10">
+						<button
+							type="button"
+							class="h-20 w-20 rounded-full"
+							on:click={() => {
+								accountOpen = !accountOpen;
+							}}>
+							<img src={userImage} alt="user profile" />
+						</button>
+					</div>
+
+					<!-- UserSetting -->
+					{#if accountOpen}
+						<div
+							transition:slide={{ duration: 300 }}
+							class="flex flex-shrink-0 flex-wrap space-y-6 overflow-hidden p-4 hover:overflow-hidden">
+							<form
+								action="?/updateUser"
+								method="post"
+								class="w-full space-y-4"
+								use:enhance={({ data }) => {
+									useBauhaus.set(Boolean(data.get('useBauhaus')));
+
+									return async ({ update }) => {
+										update({ reset: false });
+									};
+								}}>
+								<input
+									class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent text-center transition-all"
+									value={user?.name} />
+								<label class="mb-2 flex text-sm font-bold" for="bauhaus">
+									<input
+										type="checkbox"
+										id="bauhaus"
+										name="useBauhaus"
+										class="form-checkbox mr-2 rounded-full leading-tight text-primary-500 focus:ring-primary-500 focus:ring-offset-neutral-808" />
+									Use Buasuah
+								</label>
+								<button
+									type="submit"
+									class="w-full rounded-lg bg-primary-500 px-4 py-2 text-center text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 dark:focus:ring-offset-neutral-808"
+									>Save Settings</button>
+							</form>
+							<!-- admin - button 'invite user' open modal with form -->
+							{#if user?.role === Role.admin}
+								<form action="?/inviteUser" method="post" class="w-full">
+									<div class="flex items-center border-b border-primary-500 py-2">
+										<input
+											class="mr-3 w-full appearance-none border-none bg-transparent py-1 px-2 leading-tight text-gray-600 focus:outline-none dark:text-neutral-309"
+											type="text"
+											placeholder="address@example.com"
+											aria-label="email" />
+										<button
+											class="flex-shrink-0 rounded-lg bg-primary-500 py-1 px-2 text-sm text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 dark:focus:ring-offset-neutral-808"
+											type="button">
+											Invite
+										</button>
+									</div>
+								</form>
+							{/if}
+						</div>
+					{/if}
 
 					<!-- Links -->
-					<ul class="flex-1 space-y-2 overflow-hidden px-4 hover:overflow-auto">
+					<ul class="flex-1 space-y-2 overflow-hidden px-4 py-10 hover:overflow-auto">
 						<li>
 							<details
-								class="group/menu cursor-pointer"
-								bind:open={submenu_open}
+								class="group/menu h-[var(--collapsed)] cursor-pointer overflow-hidden transition-[height] duration-300 open:h-[var(--expanded)]"
+								use:accordion
 								aria-current={$page.url.pathname === root ? 'page' : undefined}>
 								<summary
 									class="flex w-full items-center space-x-2 divide-x-2 divide-primary-400 rounded-lg group-hover/menu:bg-primary-500 group-aria-[current=page]/menu:bg-primary-500">
 									<a
 										href={root}
-										class="flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors group-hover/menu:bg-primary-500 group-hover/menu:text-white group-aria-[current=page]/menu:bg-primary-500 group-aria-[current=page]/menu:text-white">
+										class="flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors group-hover/menu:bg-primary-500 group-hover/menu:text-white group-aria-[current=page]/menu:bg-primary-500 group-aria-[current=page]/menu:text-white dark:text-neutral-309">
 										<span
 											aria-hidden="true"
 											class="rounded-lg p-3 transition-colors group-hover/menu:bg-primary-600 group-hover/menu:text-white group-aria-[current=page]/menu:bg-primary-600 group-aria-[current=page]/men:text-white">
-											<iconify-icon class="h-[.8rem] w-4" icon={dashboard} flip="horizontal" />
+											<iconify-icon
+												class="flex h-6 w-6 items-center justify-center"
+												icon={dashboard}
+												flip="horizontal" />
 										</span>
 										<span>{'dashboard'}</span>
 									</a>
 									<span
 										aria-hidden="true"
-										class="h-4 w-10 px-2 text-stone-400 transition-transform group-open/menu:-scale-y-100 dark:text-stone-800">
+										class="h-4 w-10 px-2 text-stone-50 transition-transform group-open/menu:-scale-y-100 dark:text-stone-800">
 										<iconify-icon icon={chevronUp} flip="vertical" class="h-4 w-4" />
 									</span>
 								</summary>
-								{#if submenu_open}
-									<ul
-										transition:slide={{ duration: 300 }}
-										class="mt-2 flex-1 space-y-2 overflow-hidden hover:overflow-auto">
-										{#each subroutes as route, i (i)}
-											<li>
-												<a
-													class="group/submenu flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-500 hover:text-white aria-[current=page]:bg-primary-500 aria-[current=page]:text-white dark:text-white"
-													aria-current={$page.url.pathname === root + route ? 'page' : undefined}
-													href={`${root}#`}>
-													<span
-														aria-hidden="true"
-														class="group-hovers/submenu:text-white rounded-lg p-3 transition-colors group-hover/submenu:bg-primary-600 group-aria-[current=page]/submenu:bg-primary-600 group-aria-[current=page]/submenu:text-white">
-														<iconify-icon class="h-3 w-3" icon={file} />
-													</span>
-													<span>{route}</span>
-												</a>
-											</li>
-										{/each}
-									</ul>
-								{/if}
+								<ul class="mt-2 flex-1 space-y-2 overflow-hidden hover:overflow-auto">
+									{#each subroutes as route, i (i)}
+										<li>
+											<a
+												class="group/submenu flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-500 hover:text-white aria-[current=page]:bg-primary-500 aria-[current=page]:text-white dark:text-neutral-309"
+												aria-current={$page.url.pathname === root + route ? 'page' : undefined}
+												href={root}>
+												<span
+													aria-hidden="true"
+													class="group-hovers/submenu:text-white rounded-lg p-3 transition-colors group-hover/submenu:bg-primary-600 group-aria-[current=page]/submenu:bg-primary-600 group-aria-[current=page]/submenu:text-white">
+													<iconify-icon class="flex h-6 w-6 items-center justify-center" icon={file} />
+												</span>
+												<span>{route}</span>
+											</a>
+										</li>
+									{/each}
+								</ul>
 							</details>
 						</li>
 						<li>
 							<a
-								class="group flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-500 hover:text-white aria-[current=page]:bg-primary-500 aria-[current=page]:text-white dark:text-white"
+								class="group flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-500 hover:text-white aria-[current=page]:bg-primary-500 aria-[current=page]:text-white dark:text-neutral-309"
 								aria-current={$page.url.pathname === `${root}about` ? 'page' : undefined}
 								href={`${root}about`}>
 								<span
 									aria-hidden="true"
 									class="rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600">
-									<iconify-icon class="h-[.8rem] w-4" icon={about} />
+									<iconify-icon class="flex h-6 w-6 items-center justify-center" icon={about} />
 								</span>
 								<span>{'about'}</span>
 							</a>
 						</li>
 					</ul>
+
+					<div class="mt-10 flex-shrink-0 p-4">
+						<button
+							type="button"
+							class="w-full rounded-lg bg-primary-500 px-4 py-2 text-center text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 dark:focus:ring-offset-neutral-808"
+							on:click={() => {
+								if (user) {
+									signOut();
+								}
+							}}>
+							{user && 'Sign Out'}
+						</button>
+					</div>
 				</nav>
 			</div>
 		{/if}

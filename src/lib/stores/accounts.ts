@@ -6,9 +6,7 @@ import { SvelteSubject, type Accounts } from '../utils';
 
 const accounts = new SvelteSubject<Accounts['accounts']>([]);
 
-export function getAccounts(
-	event: RequestEvent<Partial<Record<string, string>>, string | null>
-): Observable<Accounts['accounts']> {
+export function getAccounts(event: RequestEvent): Observable<Accounts['accounts']> {
 	return accounts.asObservable().pipe(
 		switchMap(() =>
 			GetBuxferBalances(event).pipe(
@@ -20,8 +18,8 @@ export function getAccounts(
 	);
 }
 
-function GetBuxferBalances(event: RequestEvent<Partial<Record<string, string>>, string | null>): Observable<Accounts> {
-	return defer(async () => appRouter.createCaller(await createContext(event)).buxfer_account.accounts()).pipe(
+function GetBuxferBalances(event: RequestEvent): Observable<Accounts> {
+	return defer(async () => appRouter.createCaller(await createContext(event)).buxferAccount.accounts()).pipe(
 		catchError((error, caught) => {
 			console.log(error);
 			return caught;

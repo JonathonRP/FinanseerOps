@@ -5,8 +5,10 @@
 			"$lib": ["./src/lib"],
 			"$lib/*": ["./src/lib/*"],
 			"$app": ["./node_modules/@sveltejs/kit/types"],
-			"$app/*": ["./node_modules/@sveltejs/kit/types/ambient.d.ts"]
+			"$app/*": ["./node_modules/@sveltejs/kit/types/ambient.d.ts"],
+			"@dependencies/types": ["./node_modules/.pnpm/@auth+core@0.3.0_nodemailer@6.9.1/node_modules/@auth/core/types"]
 		},
+		"outDir": ".svelte-kit/output",
 		"allowJs": true,
 		"checkJs": true,
 		"esModuleInterop": true,
@@ -27,19 +29,20 @@
 		"./src/**/*.ts",
 		"./src/**/*.svelte",
 		"./prisma/**/*.ts",
-		// "*.cjs",
-		// ".*.cjs",
+		"./types/**/*.ts",
+		"*.cjs",
+		".*.cjs",
 		"*.js",
 		"*.ts",
 		"**/*.tsx"
-	],
-	"exclude": [
-		"./svelte.config.js",
-		"./vite.config.js",
-		"../node_modules/**",
-		"./[!ambient.d.ts]**",
-		"../src/service-worker.js",
-		"../src/service-worker.ts",
-		"../src/service-worker.d.ts"
 	]
+	// "exclude": [
+	// 	"./svelte.config.js",
+	// 	"./vite.config.js",
+	// 	"../node_modules/**",
+	// 	"./[!ambient.d.ts]**",
+	// 	"../src/service-worker.js",
+	// 	"../src/service-worker.ts",
+	// 	"../src/service-worker.d.ts"
+	// ]
 }

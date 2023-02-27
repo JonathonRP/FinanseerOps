@@ -48,7 +48,7 @@
 
 				// "dotfiles.repository": "https://github.com/JonathonRP/.dotfiles",
 				// "dotfiles.targetPath": "~/.dotfiles",
-				// "dotfiles.installCommand": "~/.dotfiles/install.sh"
+				// "dotfiles.installCommand": "install.sh"
 			},
 
 			// Add the IDs of extensions you want installed when the container is created.

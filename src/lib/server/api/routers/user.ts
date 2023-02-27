@@ -1,16 +1,46 @@
 import { signIn } from '@auth/sveltekit/client';
-import { literal, object } from 'zod';
-import { adminProcedure, router } from '../trpc';
+import { Role } from '@prisma/client';
+import {
+	UserUpdateInputObjectSchema,
+	UserUncheckedUpdateInputObjectSchema,
+	UserWhereUniqueInputObjectSchema,
+} from '$lib/prisma/generated/zod/schemas';
+import { union } from 'zod';
+import { adminProcedure, procedure, router } from '../trpc';
 
 export const userRouter = router({
-	inviteUser: adminProcedure.input(object({ email: literal('^@$') })).mutation(async ({ ctx, input }) => {
+	update: procedure
+		.input(union([UserUpdateInputObjectSchema, UserUncheckedUpdateInputObjectSchema]))
+		.mutation(async ({ ctx, input }) => {
+			await ctx.db?.user.update({
+				where: {
+					id: ctx.session?.user?.id,
+				},
+				data: input,
+			});
+		}),
+	invite: adminProcedure.input(UserWhereUniqueInputObjectSchema).mutation(async ({ ctx, input }) => {
+		if (await ctx.db?.user.findUnique({ where: { email: input.email } })) {
+			throw new Error('Email is already invited');
+		}
+
 		await ctx.db?.user.create({
 			data: {
 				...input,
 				isInvited: true,
-				role: 'user',
+				role: Role.user,
+				accounts: {
+					create: [
+						{
+							type: 'email',
+							provider: 'invitation',
+							providerAccountId: input.email?.normalize() ?? '',
+						},
+					],
+				},
 			},
 		});
+
 		signIn('email', input);
 	}),
 });

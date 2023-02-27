@@ -20,7 +20,7 @@ const transactions = new SvelteSubject<Transactions['transactions']>([]);
 
 export function getTransactions(
 	dates: [start: Date, end: Date],
-	event: RequestEvent<Partial<Record<string, string>>, string | null>
+	event: RequestEvent
 ): Observable<Transactions['transactions']> {
 	return transactions.asObservable().pipe(
 		switchMap(() =>
@@ -48,12 +48,12 @@ export function getTransactions(
 function GetBuxferTransactions(
 	dates: [start: Date, end: Date],
 	page: number,
-	event: RequestEvent<Partial<Record<string, string>>, string | null>
+	event: RequestEvent
 ): Observable<Transactions> {
 	const [start, end] = dates;
 
 	return defer(async () =>
-		appRouter.createCaller(await createContext(event)).buxfer_account.transactions({
+		appRouter.createCaller(await createContext(event)).buxferAccount.transactions({
 			start,
 			end,
 			page,

@@ -2,22 +2,52 @@ import { dev } from '$app/environment';
 import { PrismaClient } from '@prisma/client';
 import { DATABASE_URL } from '$env/static/private';
 
-declare global {
-	// eslint-disable-next-line vars-on-top, no-var
-	var prisma: PrismaClient | undefined;
-}
+const logging = dev
+	? [
+			{
+				emit: 'event',
+				level: 'query',
+			} as const,
+			{
+				emit: 'event',
+				level: 'error',
+			} as const,
+			{
+				emit: 'event',
+				level: 'warn',
+			} as const,
+	  ]
+	: [
+			{
+				emit: 'event',
+				level: 'error',
+			} as const,
+	  ];
 
-export const prisma =
-	global.prisma ||
-	new PrismaClient({
-		datasources: {
-			db: {
-				url: DATABASE_URL,
-			},
+const prisma = new PrismaClient({
+	datasources: {
+		db: {
+			url: DATABASE_URL,
 		},
-		log: dev ? ['query', 'error', 'warn'] : ['error'],
-	});
+	},
+	log: logging,
+	errorFormat: 'minimal',
+});
 
-if (!dev) {
-	global.prisma = prisma;
-}
+prisma.$on('query', (e) => {
+	console.log(`Query: ${e.query}`);
+	console.log(`Params: ${e.params}`);
+	console.log(`Duration: ${e.duration}ms`);
+});
+
+prisma.$on('warn', (e) => {
+	console.log(e.message);
+	console.log(e.target);
+});
+
+prisma.$on('error', (e) => {
+	console.log(e.message);
+	console.log(e.target);
+});
+
+export default prisma;

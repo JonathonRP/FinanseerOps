@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { isThisMonth, sub } from 'date-fns';
-	import { BehaviorSubject, filter, from, lastValueFrom, reduce } from 'rxjs';
-	import { onMount } from 'svelte';
+	import { filter, reduce, lastValueFrom, from } from 'rxjs';
 	import type { PageData } from './$types';
 	import DateSelect from './DateSelect.svelte';
 	import ScoreCard from './ScoreCard.svelte';
@@ -25,12 +24,6 @@
 		filter(({ date }) => new Date(date) <= sub(selectedDay, { months: 1 })),
 		reduce((sum, { amount }) => sum + amount, 0)
 	);
-
-	const loading$ = new BehaviorSubject(true);
-
-	onMount(() => {
-		loading$.next(false);
-	});
 </script>
 
 <svelte:head>
@@ -39,7 +32,7 @@
 </svelte:head>
 
 <DateSelect bind:selectedDay />
-{#await Promise.all([lastValueFrom(loading$), lastValueFrom(currentExpenses$)])}
+{#await lastValueFrom(lastMonthExpenses$)}
 	<section class="flex flex-row flex-wrap items-start justify-center gap-4 pt-4 min-[474px]:justify-start">
 		<ScoreCard label="Balance" score={undefined} delay={0} />
 		<ScoreCard label="Spent" score={undefined} comparison={{ score: undefined, swap: true }} delay={1} />

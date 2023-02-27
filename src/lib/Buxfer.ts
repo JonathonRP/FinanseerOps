@@ -52,10 +52,6 @@ export const buxferLogin = object({
 	password: string(),
 });
 
-// export async function getToken(): Promise<z.infer<typeof buxferToken>> {
-// 	;
-// }
-
 export async function client<T extends BuxferData>({
 	endpoint,
 	init,
@@ -64,8 +60,6 @@ export async function client<T extends BuxferData>({
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	init?: undefined | (Omit<RequestInit, 'body'> & { body: any });
 }): Promise<T> {
-	endpoint === '/api/login' && console.log('token requested');
-
 	const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
 	const buxferConfig = {
 		method: 'POST',
@@ -83,15 +77,18 @@ export async function client<T extends BuxferData>({
 	try {
 		const resp = await fetch(request);
 
-		// eslint-disable-next-line
-		if (!resp.ok) throw error(resp.status, ((await resp.json()) as BuxferResponse).error?.message);
+		if (!resp.ok)
+			// eslint-disable-next-line @typescript-eslint/no-throw-literal
+			throw error(resp.status, {
+				code: crypto.randomUUID(),
+				message: ((await resp.json()) as BuxferResponse).error?.message || '',
+			});
 
 		return <T>(<BuxferResponse>await resp.json()).response;
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	} catch (err: any) {
-		// eslint-disable-next-line
 		console.error('fetchError: ', err);
-		// eslint-disable-next-line
+		// eslint-disable-next-line @typescript-eslint/no-throw-literal
 		throw error(err?.status || 500, err?.body?.message || err);
 	}
 }

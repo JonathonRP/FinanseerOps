@@ -99,11 +99,11 @@
 							class:text-primary-500={!isSelected && dayIsToday}
 							class:text-gray-500={!isSelected && !dayIsToday && isPartOfMonth}
 							class:text-gray-400={!isSelected && !dayIsToday && !isPartOfMonth}
-							class:hover:bg-gray-200={!isSelected}
-							class:enabled:hover:bg-primary-100={!isSelected}
+							class:hover:bg-gray-400={!isSelected}
+							class:enabled:hover:bg-gray-500={!isSelected}
 							class:enabled:text-gray-900={!isSelected && !dayIsToday && isPartOfMonth}
 							class:dark:enabled:text-neutral-309={!isSelected && !dayIsToday && isPartOfMonth}
-							class:dark:text-gray-600={!isSelected && !dayIsToday && isPartOfMonth}
+							class:dark:text-gray-600={!isSelected && !dayIsToday && !isPartOfMonth}
 							disabled={!isSameMonth(day, today) || day > today}>
 							<time datetime={day.toLocaleString()}>
 								{format(day, 'd')}

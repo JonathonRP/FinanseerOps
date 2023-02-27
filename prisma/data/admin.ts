@@ -1,5 +1,7 @@
+import { Role } from '@prisma/client';
+
 export const admin = {
 	emailVerified: new Date(),
 	isInvited: false,
-	role: 'admin' as const,
+	role: Role.admin,
 };

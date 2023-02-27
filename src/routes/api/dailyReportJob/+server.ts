@@ -1,6 +1,6 @@
-import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
 import nodemailer from 'nodemailer';
 import { CronJob } from 'quirrel/sveltekit';
+import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
 
 const cronJob = CronJob(
 	'api/dailyReportJob', // the route that it's reachable on
