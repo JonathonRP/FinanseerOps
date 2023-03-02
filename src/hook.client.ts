@@ -12,7 +12,7 @@ export const handleError = (async ({ error, event }) => {
 	console.log(error, { event, errorId });
 
 	return {
-		message: 'Whoops!',
+		message: (error as Error).message ?? 'Whoops!',
 		code: errorId ?? 'UNKNOWN',
 	};
 }) satisfies HandleClientError;

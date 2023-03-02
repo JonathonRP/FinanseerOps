@@ -20,7 +20,7 @@ export const userRouter = router({
 			});
 		}),
 	invite: adminProcedure.input(UserWhereUniqueInputObjectSchema).mutation(async ({ ctx, input }) => {
-		if (await ctx.db?.user.findUnique({ where: { email: input.email } })) {
+		if (await ctx.db?.user.findUnique({ where: input })) {
 			throw new Error('Email is already invited');
 		}
 

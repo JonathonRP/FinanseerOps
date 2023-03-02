@@ -1,20 +1,11 @@
 <script lang="ts">
 	import type { Color } from '$lib/utils';
-	import down from '@iconify-icons/fa6-solid/arrow-trend-down';
-	import up from '@iconify-icons/fa6-solid/arrow-trend-up';
-	import { addCollection } from 'iconify-icon';
 	import { onMount } from 'svelte';
-	import { spring, tweened } from 'svelte/motion';
 	import { fade } from 'svelte/transition';
+	import { spring, tweened } from 'svelte/motion';
+	import up from '@iconify-icons/tabler/trending-up';
+	import down from '@iconify-icons/tabler/trending-down';
 	import DashboardWidget from './DashboardWidget.svelte';
-
-	addCollection({
-		prefix: 'fa6-solid',
-		icons: {
-			up,
-			down,
-		},
-	});
 
 	export let delay: number | undefined | null = null;
 	export let label: string;
@@ -71,15 +62,9 @@
 				}}
 				{@const { color } = { color: compare ? negativeColor : positiveColor }}
 				<span
-					class="mx-2 flex items-center rounded-full px-2 py-0.5 text-sm"
-					class:bg-green-100={color === 'green'}
-					class:text-green-600={color === 'green'}
-					class:dark:bg-green-900={color === 'green'}
-					class:dark:text-emerald-400={color === 'green'}
-					class:bg-red-100={color === 'red'}
-					class:text-red-600={color === 'red'}
-					class:dark:bg-red-900={color === 'red'}
-					class:dark:text-red-300={color === 'red'}
+					class="mx-2 flex items-center rounded-full px-2 py-0.5 text-sm
+					{color === 'green' ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
+					{color === 'red' ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}"
 					transition:fade={{ duration: 300 }}>
 					<span>
 						{$comparisonScore$.toLocaleString(locale, numberFormat)}

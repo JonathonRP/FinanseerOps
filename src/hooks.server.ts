@@ -13,7 +13,7 @@ const authorization = () =>
 	(async ({ event, resolve }) => {
 		await event.locals.getSession();
 
-		if (!event.locals.session) {
+		if (!event.locals.session && !event.route.id?.includes('anonymous')) {
 			throw redirect(302, '/auth/signin');
 		}
 
@@ -86,7 +86,6 @@ export const handle = sequence(
 		router: appRouter,
 		createContext,
 		onError: ({ type, path, error }) =>
-			// eslint-disable-next-line no-console
 			console.error(`Encountered error while trying to process ${type} @ ${path}:`, error),
 	})
 );
@@ -104,7 +103,7 @@ export const handleError = (async ({ error, event }) => {
 	console.log(error, { event, errorId });
 
 	return {
-		message: 'Whoops!',
+		message: (error as Error).message ?? 'Whoops!',
 		code: errorId ?? 'UNKNOWN',
 	};
 }) satisfies HandleServerError;

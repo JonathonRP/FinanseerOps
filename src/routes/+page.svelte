@@ -32,16 +32,14 @@
 </svelte:head>
 
 <DateSelect bind:selectedDay />
-{#await lastValueFrom(lastMonthExpenses$)}
-	<section class="flex flex-row flex-wrap items-start justify-center gap-4 pt-4 min-[474px]:justify-start">
+<section class="flex flex-row flex-wrap items-start justify-center gap-4 pt-4 min-[474px]:justify-start">
+	{#await lastValueFrom(lastMonthExpenses$)}
 		<ScoreCard label="Balance" score={undefined} delay={0} />
 		<ScoreCard label="Spent" score={undefined} comparison={{ score: undefined, swap: true }} delay={1} />
 		<ScoreCard label="Forecast" score={undefined} delay={2} />
-	</section>
-{:then}
-	<section class="flex flex-row flex-wrap items-start justify-center gap-4 pt-4 min-[474px]:justify-start">
+	{:then}
 		<ScoreCard label="Balance" score={$balance$} />
 		<ScoreCard label="Spent" score={$currentExpenses$} comparison={{ score: $lastMonthExpenses$, swap: true }} />
 		<ScoreCard label="Forecast" score={$balance$ - $currentExpenses$} />
-	</section>
-{/await}
+	{/await}
+</section>

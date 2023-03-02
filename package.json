@@ -37,7 +37,8 @@
 	},
 	"devDependencies": {
 		"@fontsource/fira-mono": "^4.5.10",
-		"@iconify-icons/fa6-solid": "^1.2.11",
+		"@iconify-icons/line-md": "^1.2.21",
+		"@iconify-icons/tabler": "^1.2.63",
 		"@neoconfetti/svelte": "^1.0.0",
 		"@sveltejs/adapter-auto": "^1.0.3",
 		"@sveltejs/kit": "^1.8.2",

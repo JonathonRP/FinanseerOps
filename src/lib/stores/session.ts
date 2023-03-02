@@ -1,5 +1,5 @@
 import { page } from '$app/stores';
-import type { Session } from '@auth/core/types';
+import type { Session } from '@dependencies/types';
 import { Observable, shareReplay } from 'rxjs';
 import { derived, type Readable } from 'svelte/store';
 

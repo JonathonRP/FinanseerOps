@@ -1,18 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { PeriodBoundaries, WeekDays, type PeriodBoundary, type WeekOptions } from '$lib/utils';
-	import left from '@iconify-icons/fa6-solid/chevron-left';
-	import right from '@iconify-icons/fa6-solid/chevron-right';
+	import left from '@iconify-icons/tabler/chevron-left';
+	import right from '@iconify-icons/tabler/chevron-right';
 	import { add, eachDayOfInterval, endOfWeek, format, isEqual, isSameMonth, isToday, startOfWeek, sub } from 'date-fns';
-	import { addCollection } from 'iconify-icon';
-
-	addCollection({
-		prefix: 'fa6-solid',
-		icons: {
-			left,
-			right,
-		},
-	});
 
 	export let selectedDay = new Date();
 
@@ -84,26 +75,25 @@
 						isPartOfMonth: isSameMonth(day, currentDay),
 					}}
 					<div
-						class="{dayIdx < 7 &&
-							'border-b border-stone-200 border-opacity-75 dark:border-stone-600 dark:border-opacity-25'} pt-1.5 pb-3">
+						class="pt-1.5 pb-3 {dayIdx < 7
+							? 'border-b border-stone-200 border-opacity-75 dark:border-stone-600 dark:border-opacity-25'
+							: undefined}">
 						<button
 							type="button"
 							on:click={function selectDay() {
 								selectedDay = day;
 							}}
-							class="mx-auto flex h-8 w-8 items-center justify-center rounded-full"
-							class:text-white={isSelected}
-							class:bg-primary-500={isSelected && dayIsToday}
-							class:font-semibold={isSelected || dayIsToday}
-							class:bg-gray-900={isSelected && !dayIsToday}
-							class:text-primary-500={!isSelected && dayIsToday}
-							class:text-gray-500={!isSelected && !dayIsToday && isPartOfMonth}
-							class:text-gray-400={!isSelected && !dayIsToday && !isPartOfMonth}
-							class:hover:bg-gray-400={!isSelected}
-							class:enabled:hover:bg-gray-500={!isSelected}
-							class:enabled:text-gray-900={!isSelected && !dayIsToday && isPartOfMonth}
-							class:dark:enabled:text-neutral-309={!isSelected && !dayIsToday && isPartOfMonth}
-							class:dark:text-gray-600={!isSelected && !dayIsToday && !isPartOfMonth}
+							class="mx-auto flex h-8 w-8 items-center justify-center rounded-full
+							{isSelected ? 'text-white' : undefined}
+							{isSelected && dayIsToday ? 'bg-primary-500' : undefined}
+							{isSelected || dayIsToday ? 'font-semibold' : undefined}
+							{isSelected && !dayIsToday ? 'bg-gray-900' : undefined}
+							{!isSelected && dayIsToday ? 'text-primary-500' : undefined}
+							{!isSelected ? 'hover:bg-gray-400 enabled:hover:bg-gray-500' : undefined}
+							{!isSelected && !dayIsToday && !isPartOfMonth ? 'text-gray-400 dark:text-gray-600' : undefined}
+							{!isSelected && !dayIsToday && isPartOfMonth
+								? 'text-gray-500 enabled:text-gray-900 dark:enabled:text-neutral-309'
+								: undefined}"
 							disabled={!isSameMonth(day, today) || day > today}>
 							<time datetime={day.toLocaleString()}>
 								{format(day, 'd')}
