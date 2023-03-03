@@ -4,7 +4,7 @@
 	import { session } from '$lib/stores/session';
 	import useBauhaus from '$lib/stores/useBauhaus';
 	import toast from 'svelte-french-toast';
-	import Button from '$lib/components/button.svelte';
+	import Button from '$lib/Components/Button.svelte';
 
 	export let action: string;
 

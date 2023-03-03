@@ -1,7 +1,5 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 
-// TODO: should use env variables for buxfer account login and create/seed user in a database
-
 /** @type {import('vite').UserConfig} */
 const config = {
 	plugins: [sveltekit()],

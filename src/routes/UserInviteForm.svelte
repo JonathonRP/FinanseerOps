@@ -2,7 +2,7 @@
 	import { BehaviorSubject } from 'rxjs';
 	import { enhance, type SubmitFunction } from '$app/forms';
 	import toast from 'svelte-french-toast';
-	import Button from '$lib/components/button.svelte';
+	import Button from '$lib/Components/Button.svelte';
 	import newUser from '@iconify-icons/tabler/user-plus';
 
 	export let action: string;

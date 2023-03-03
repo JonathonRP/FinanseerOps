@@ -19,7 +19,7 @@
 	import dashboard from '@iconify-icons/tabler/chart-infographic';
 	import logo from '$lib/images/svelte-logo.svg';
 
-	import Button from '$lib/components/button.svelte';
+	import Button from '$lib/Components/Button.svelte';
 	import NavLink from './NavLink.svelte';
 	import UserInviteForm from './UserInviteForm.svelte';
 	import UserForm from './UserForm.svelte';
