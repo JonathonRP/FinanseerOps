@@ -1,8 +1,10 @@
 import nodemailer from 'nodemailer';
 import { CronJob } from 'quirrel/sveltekit';
+import { logger } from '$lib/utils/logger';
 import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
 
-// TODO: rename to 'daily expense summary report'.
+// TODO - evaluate Upstash and Vercel cronjobs alternatives.
+// TODO - rename to 'daily expense summary report'.
 const cronJob = CronJob(
 	'api/dailyReportJob', // the route that it's reachable on
 	'0 8 * * *', // every day at 8AM. you can also write @weekly or @daily!
@@ -22,10 +24,11 @@ const cronJob = CronJob(
 		};
 
 		transporter.sendMail(mailOptions, (error, info) => {
+			// TODO - replace with logging collection data service (ex. Sentry).
 			if (error) {
-				console.log(error);
+				logger.error(error);
 			} else {
-				console.log(`Email sent: ${info.response}`);
+				logger.info(`Email sent: ${info.response}`);
 			}
 		});
 	}

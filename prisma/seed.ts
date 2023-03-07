@@ -54,7 +54,9 @@ export default main()
 		await db.$disconnect();
 	})
 	.catch(async (err) => {
+		// eslint-disable-next-line no-console
 		console.log('error:', err);
+		// NOTE - this file is run outside/isolated from application, this console log is to surface error.
 		await db.$disconnect();
 		process.exit(1);
 	});

@@ -1,17 +1,19 @@
 {
-  "recommendations": [
-    "usernamehw.errorlens",
-    "chakrounanas.turbo-console-log",
-    "wallabyjs.console-ninja",
-    "vscode-icons-team.vscode-icons",
-    "vscodevim.vim",
-    "vspacecode.vspacecode",
-    "vspacecode.whichkey",
-    "sdras.night-owl",
-    "kahole.magit",
-    "jacobdufault.fuzzy-search",
-    "bodil.file-browser",
-    "naumovs.color-highlight",
-    "bierner.color-info"
-  ]
+	"recommendations": [
+		"usernamehw.errorlens",
+		"chakrounanas.turbo-console-log",
+		"wallabyjs.console-ninja",
+		"vscode-icons-team.vscode-icons",
+		"vscodevim.vim",
+		"vspacecode.vspacecode",
+		"vspacecode.whichkey",
+		"sdras.night-owl",
+		"kahole.magit",
+		"jacobdufault.fuzzy-search",
+		"bodil.file-browser",
+		"naumovs.color-highlight",
+		"bierner.color-info",
+		"gruntfuggly.todo-tree",
+		"exodiusstudios.comment-anchors"
+	]
 }

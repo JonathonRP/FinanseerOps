@@ -1,5 +1,6 @@
-import { error } from '@sveltejs/kit';
+import { error, type HttpError } from '@sveltejs/kit';
 import { array, number, object, string, union, z } from 'zod';
+import { logger } from './utils/logger';
 
 type BuxferData = z.infer<typeof buxferData>;
 
@@ -71,6 +72,10 @@ export async function client<T extends BuxferData>({
 		body: new URLSearchParams(init?.body),
 	} satisfies RequestInit;
 
+	if (endpoint === '/api/login') {
+		logger.debug('Token Requested');
+	}
+
 	const rerouteURL = new URL(endpoint, BuxferDomain);
 	const request = new Request(rerouteURL, buxferConfig);
 
@@ -85,10 +90,11 @@ export async function client<T extends BuxferData>({
 			});
 
 		return <T>(<BuxferResponse>await resp.json()).response;
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	} catch (err: any) {
-		console.error('fetchError: ', err);
+	} catch (e) {
+		const err = e as HttpError;
+		// TODO - replace with logging collection data service (ex. Sentry).
+		logger.error('fetchError: ', e);
 		// eslint-disable-next-line @typescript-eslint/no-throw-literal
-		throw error(err?.status || 500, err?.body?.message || err);
+		throw error(err.status || 500, err.body);
 	}
 }

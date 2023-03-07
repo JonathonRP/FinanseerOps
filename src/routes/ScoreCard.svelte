@@ -5,7 +5,16 @@
 	import { spring, tweened } from 'svelte/motion';
 	import up from '@iconify-icons/tabler/trending-up';
 	import down from '@iconify-icons/tabler/trending-down';
+	import { addCollection } from 'iconify-icon';
 	import DashboardWidget from './DashboardWidget.svelte';
+
+	addCollection({
+		prefix: 'tabler',
+		icons: {
+			up,
+			down,
+		},
+	});
 
 	export let delay: number | undefined | null = null;
 	export let label: string;

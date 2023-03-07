@@ -1,6 +1,10 @@
 import { dev } from '$app/environment';
 import { PrismaClient } from '@prisma/client';
+import { logger } from '$lib/utils/logger';
 import { DATABASE_URL } from '$env/static/private';
+
+// NOTE - dominantly used in trpc create inner context
+// LINK - ./api/trpc.ts
 
 const logging = dev
 	? [
@@ -35,19 +39,20 @@ const prisma = new PrismaClient({
 });
 
 prisma.$on('query', (e) => {
-	console.log(`Query: ${e.query}`);
-	console.log(`Params: ${e.params}`);
-	console.log(`Duration: ${e.duration}ms`);
+	logger.debug(`Query: ${e.query}`);
+	logger.debug(`Params: ${e.params}`);
+	logger.debug(`Duration: ${e.duration}ms`);
 });
 
 prisma.$on('warn', (e) => {
-	console.log(e.message);
-	console.log(e.target);
+	logger.warn(e.message);
+	logger.warn(e.target);
 });
 
 prisma.$on('error', (e) => {
-	console.log(e.message);
-	console.log(e.target);
+	// TODO - replace with logging collection data service (ex. Sentry) for prod.
+	logger.error(e.message);
+	logger.error(e.target);
 });
 
 export default prisma;

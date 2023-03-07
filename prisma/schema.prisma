@@ -1,6 +1,9 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+// ANCHOR - prisma data models
+// TODO - evaluate upstash vs [planetscale/database-js, koskimas/kysely, depot/kysely-planetscale, lawrenceecchen/prisma-generator-kysely, (custom authjs adapter)]
+
 generator client {
   provider = "prisma-client-js"
 }

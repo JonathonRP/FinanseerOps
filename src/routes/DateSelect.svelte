@@ -1,9 +1,18 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import { PeriodBoundaries, WeekDays, type PeriodBoundary, type WeekOptions } from '$lib/utils';
+	import { page } from '$app/stores';
 	import left from '@iconify-icons/tabler/chevron-left';
 	import right from '@iconify-icons/tabler/chevron-right';
+	import { addCollection } from 'iconify-icon';
 	import { add, eachDayOfInterval, endOfWeek, format, isEqual, isSameMonth, isToday, startOfWeek, sub } from 'date-fns';
+
+	addCollection({
+		prefix: 'tabler',
+		icons: {
+			left,
+			right,
+		},
+	});
 
 	export let selectedDay = new Date();
 

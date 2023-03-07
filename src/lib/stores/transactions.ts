@@ -1,5 +1,6 @@
 import { appRouter } from '$lib/server/api/root';
 import { createContext } from '$lib/server/api/trpc';
+import { logger } from '$lib/utils/logger';
 import type { RequestEvent } from '@sveltejs/kit';
 import {
 	catchError,
@@ -60,7 +61,8 @@ function GetBuxferTransactions(
 		})
 	).pipe(
 		catchError((error, caught) => {
-			console.log(error);
+			// TODO - replace with logging collection data service (ex. Sentry).
+			logger.error(error);
 			return caught;
 		})
 	);

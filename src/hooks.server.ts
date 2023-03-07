@@ -7,6 +7,7 @@ import { redirect, type Handle, type HandleServerError, type RequestEvent } from
 import { sequence } from '@sveltejs/kit/hooks';
 import { createTRPCHandle } from 'trpc-sveltekit';
 import PrismaAdapter from '$lib/prisma/adapter';
+import { logger } from '$lib/utils/logger';
 import { BUXFER_EMAIL as SERVER_USER, BUXFER_PASS, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
 
 const authorization = () =>
@@ -29,7 +30,6 @@ const getBuxferToken = async (event: RequestEvent) =>
 const authentication = () =>
 	(async (...args) => {
 		const [{ event }] = args;
-		/* eslint @typescript-eslint/ban-ts-comment: 0 */
 		const authOptions: SvelteKitAuthConfig = {
 			adapter: PrismaAdapter(db),
 			// the session override fixes a weird bug in the adapter
@@ -39,6 +39,7 @@ const authentication = () =>
 				generateSessionToken: () => crypto.randomUUID(),
 			},
 			providers: [
+				// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 				// @ts-ignore
 				Email({
 					server: {
@@ -86,7 +87,8 @@ export const handle = sequence(
 		router: appRouter,
 		createContext,
 		onError: ({ type, path, error }) =>
-			console.error(`Encountered error while trying to process ${type} @ ${path}:`, error),
+			// TODO - replace with logging collection data service (ex. Sentry).
+			logger.error(`Encountered error while trying to process ${type} @ ${path}:`, error),
 	})
 );
 
@@ -100,7 +102,9 @@ export const handleError = (async ({ error, event }) => {
 	const errorId = crypto.randomUUID();
 	// example integration with https://sentry.io/
 	// Sentry.captureException(error, { event });
-	console.log(error, { event, errorId });
+
+	// TODO - replace with logging collection data service (ex. Sentry).
+	logger.error((error as Error).message, error, { event, errorId });
 
 	return {
 		message: (error as Error).message ?? 'Whoops!',

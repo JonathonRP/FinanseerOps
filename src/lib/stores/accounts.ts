@@ -1,5 +1,6 @@
 import { appRouter } from '$lib/server/api/root';
 import { createContext } from '$lib/server/api/trpc';
+import { logger } from '$lib/utils/logger';
 import type { RequestEvent } from '@sveltejs/kit';
 import { catchError, defer, map, Observable, reduce, shareReplay, switchMap } from 'rxjs';
 import { SvelteSubject, type Accounts } from '../utils';
@@ -21,7 +22,8 @@ export function getAccounts(event: RequestEvent): Observable<Accounts['accounts'
 function GetBuxferBalances(event: RequestEvent): Observable<Accounts> {
 	return defer(async () => appRouter.createCaller(await createContext(event)).buxferAccount.accounts()).pipe(
 		catchError((error, caught) => {
-			console.log(error);
+			// TODO - replace with logging collection data service (ex. Sentry).
+			logger.error(error);
 			return caught;
 		})
 	);

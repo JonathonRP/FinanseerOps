@@ -8,6 +8,8 @@ export const buxferAccountRouter = router({
 		.output(string())
 		.mutation(async ({ ctx, input }) => {
 			type BuxferToken = z.infer<typeof buxferToken>;
+
+			// FIXME - why is token returning as undefined?
 			const token = await Promise.resolve(
 				ctx.buxferToken || (await client<BuxferToken>({ endpoint: '/api/login', init: { body: input } })).token
 			);

@@ -7,22 +7,34 @@
 	import classes from 'svelte-transition-classes';
 	import { slide } from 'svelte/transition';
 	import { accordion } from '$lib/utils';
-	import { Toaster } from 'svelte-french-toast';
+	import toast, { Toaster } from 'svelte-french-toast';
 	import { page } from '$app/stores';
 	import { session } from '$lib/stores/session';
 	import useBauhaus from '$lib/stores/useBauhaus';
 	import { Role } from '@prisma/client';
 	import { signOut } from '@auth/sveltekit/client';
 
-	import chevronUp from '@iconify-icons/tabler/chevron-up';
 	import about from '@iconify-icons/tabler/file-description';
 	import dashboard from '@iconify-icons/tabler/chart-infographic';
+	import chevronUp from '@iconify-icons/tabler/chevron-up';
+	import newUser from '@iconify-icons/tabler/user-plus';
 	import logo from '$lib/images/svelte-logo.svg';
 
+	import { addCollection } from 'iconify-icon';
 	import Button from '$lib/Components/Button.svelte';
+	import Form from '$lib/Components/Form.svelte';
+	import Fields from '$lib/Components/Fields.svelte';
 	import NavLink from './NavLink.svelte';
-	import UserInviteForm from './UserInviteForm.svelte';
-	import UserForm from './UserForm.svelte';
+
+	addCollection({
+		prefix: 'tabler',
+		icons: {
+			about,
+			dashboard,
+			chevronUp,
+			newUser,
+		},
+	});
 
 	const state = {
 		closed: false,
@@ -163,7 +175,53 @@
 					<!-- UserSetting -->
 					{#if accountOpen}
 						<div transition:slide={{ duration: 300 }} class="flex-shrink-0 py-2 px-4">
-							<UserForm action="/user?/update" />
+							<Form
+								method="post"
+								action="/user?/update"
+								let:submitting
+								on:success={(e) => {
+									toast.success(`Successful updated ${e.detail.data.get('name')}'s info.`);
+								}}
+								class="w-full space-y-4">
+								<Fields
+									let:handleInput
+									let:handleBlur
+									validate={(values) => {
+										const errors = { name: '', useBauhaus: '' };
+
+										if (values.name === user?.name) {
+											errors.name = 'No changes to submit.';
+										}
+										if (values.useBauhaus === $useBauhaus) {
+											errors.useBauhaus = 'No changes to submit.';
+										}
+
+										return errors;
+									}}>
+									<input
+										id="name"
+										name="name"
+										class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none  focus:ring-2 focus:ring-gray-300"
+										type="text"
+										value={user?.name}
+										on:input={handleInput}
+										on:blur={handleBlur}
+										disabled={submitting} />
+									<label class="mb-2 flex text-sm font-bold" for="bauhaus">
+										<input
+											id="bauhaus"
+											name="useBauhaus"
+											class="form-checkbox mr-2 rounded-full leading-tight text-primary-500 focus:ring-primary-500 focus:ring-offset-neutral-808"
+											type="checkbox"
+											checked={$useBauhaus}
+											on:blur={handleBlur}
+											on:input={handleInput}
+											disabled={submitting} />
+										Use Buasuah
+									</label>
+								</Fields>
+								<Button type="submit">Save Settings</Button>
+							</Form>
 						</div>
 					{/if}
 
@@ -206,20 +264,45 @@
 
 					{#if user?.role === Role.admin}
 						<div class="flex-shrink-0 py-2 px-4">
-							<UserInviteForm action="/user?/invite" />
+							<Form
+								method="post"
+								action="/user?/invite"
+								reset={true}
+								let:submitting
+								on:success={(e) => {
+									toast.success(`Successfully sent invitation to ${e?.detail?.data.get('email')}.`);
+								}}
+								class="flex w-full items-center border-b py-2 transition-colors focus-within:border-primary-500 hover:border-primary-400">
+								<iconify-icon icon={newUser} inline class="mr-2 flex h-6 w-12 items-center" />
+								<Fields let:handleInput let:handleBlur>
+									<input
+										id="email"
+										name="email"
+										class="mr-3 w-full appearance-none border-none bg-transparent py-1 px-2 leading-tight text-gray-600 focus:outline-none focus:ring-0 dark:text-neutral-309"
+										type="email"
+										inputmode="email"
+										on:input={handleInput}
+										on:blur={handleBlur}
+										placeholder="email address"
+										required
+										aria-label="email"
+										disabled={submitting} />
+								</Fields>
+								<Button type="submit" inline>Invite</Button>
+							</Form>
 						</div>
 					{/if}
-					<div class="flex-shrink-0 p-4">
-						<Button
-							type="button"
-							on:click={() => {
-								if (user) {
+					{#if user}
+						<div class="flex-shrink-0 p-4">
+							<Button
+								type="button"
+								on:click={() => {
 									signOut();
-								}
-							}}>
-							{user && 'Sign Out'}
-						</Button>
-					</div>
+								}}>
+								Sign Out
+							</Button>
+						</div>
+					{/if}
 				</nav>
 			</div>
 		{/if}
