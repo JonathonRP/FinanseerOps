@@ -1,26 +1,77 @@
 import { error, type HttpError } from '@sveltejs/kit';
-import { array, number, object, string, union, z } from 'zod';
-import { logger } from './utils/logger';
-
-type BuxferData = z.infer<typeof buxferData>;
-
-type BuxferError = {
-	type: string;
-	message: string;
-};
+import { format } from 'date-fns';
+import path from 'path';
+import { array, number, object, string, union, z, never, coerce, date } from 'zod';
 
 type BuxferResponse = {
 	response: BuxferData;
 	error?: BuxferError;
 };
 
-const BuxferDomain = 'https://www.buxfer.com';
+type BuxferData = z.infer<typeof buxferResponse>;
 
-export const buxferToken = object({
-	token: string(),
-});
+type BuxferError = {
+	type: string;
+	message: string;
+};
+
+export const buxferToken = string();
+
+export const buxferAccounts = array(
+	object({
+		id: number(),
+		name: string(),
+		bank: string(),
+		balance: number(),
+	})
+);
 
 export const buxferTransactions = object({
+	totalTransactionsCount: coerce
+		.number()
+		.default(0)
+		.optional()
+		.transform((count) => count ?? 0),
+	transactions: array(
+		object({
+			id: number(),
+			description: string(),
+			date: string(),
+			type: string(),
+			amount: number(),
+			accountId: number(),
+			tags: string(),
+		})
+	),
+});
+
+const tokenResponse = object({
+	token: string(),
+	accounts: never().optional(),
+	numTransactions: never().optional(),
+	transactions: never().optional(),
+});
+
+const accountsResponse = object({
+	token: never().optional(),
+	accounts: array(
+		object({
+			id: number(),
+			description: string(),
+			date: string(),
+			type: string(),
+			amount: number(),
+			accountId: number(),
+			tags: string(),
+		})
+	),
+	numTransactions: never().optional(),
+	transactions: never().optional(),
+});
+
+const transactionsResponse = object({
+	token: never().optional(),
+	accounts: never().optional(),
 	numTransactions: string(),
 	transactions: array(
 		object({
@@ -35,48 +86,62 @@ export const buxferTransactions = object({
 	),
 });
 
-export const buxferAccounts = object({
-	accounts: array(
-		object({
-			id: number(),
-			name: string(),
-			bank: string(),
-			balance: number(),
-		})
-	),
-});
+const buxferResponse = union([tokenResponse, accountsResponse, transactionsResponse]);
 
-export const buxferData = union([buxferToken, buxferTransactions, buxferAccounts]);
-
-export const buxferLogin = object({
+export const buxferLoginAccount = object({
 	email: string(),
 	password: string(),
 });
 
-export async function client<T extends BuxferData>({
-	endpoint,
-	init,
-}: {
-	endpoint: string;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	init?: undefined | (Omit<RequestInit, 'body'> & { body: any });
-}): Promise<T> {
-	const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+export const buxferTransactionsQuery = object({
+	window: object({
+		start: date(),
+		end: date(),
+	}),
+	page: number(),
+});
+
+const buxferTransactionsQueryInternal = object({
+	token: string(),
+	startDate: coerce.string(),
+	endDate: coerce.string(),
+	page: coerce.string(),
+});
+
+const prefix = 'api';
+
+const api = {
+	login: 'login',
+	accounts: 'accounts',
+	transactions: 'transactions',
+} as const;
+
+const routes = new Map<string, string>([
+	[api.login, path.join(prefix, api.login)],
+	[api.accounts, path.join(prefix, api.accounts)],
+	[api.transactions, path.join(prefix, api.transactions)],
+]);
+
+const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+
+const BuxferDomain = 'https://www.buxfer.com';
+
+const buxferProxy = async (
+	endpoint: keyof typeof api,
+	body:
+		| z.infer<typeof buxferLoginAccount>
+		| (z.infer<typeof buxferTransactionsQueryInternal> & { token: z.infer<typeof buxferToken> })
+		| { token: z.infer<typeof buxferToken> }
+) => {
 	const buxferConfig = {
 		method: 'POST',
-		...init,
 		headers: {
 			...headers,
-			...init?.headers,
 		},
-		body: new URLSearchParams(init?.body),
+		body: new URLSearchParams(body),
 	} satisfies RequestInit;
 
-	if (endpoint === '/api/login') {
-		logger.debug('Token Requested');
-	}
-
-	const rerouteURL = new URL(endpoint, BuxferDomain);
+	const rerouteURL = new URL(routes.get(endpoint) ?? <never>null, BuxferDomain);
 	const request = new Request(rerouteURL, buxferConfig);
 
 	try {
@@ -89,12 +154,45 @@ export async function client<T extends BuxferData>({
 				message: ((await resp.json()) as BuxferResponse).error?.message || '',
 			});
 
-		return <T>(<BuxferResponse>await resp.json()).response;
+		const { response } = <BuxferResponse>await resp.json();
+		return response;
 	} catch (e) {
 		const err = e as HttpError;
 		// TODO - replace with logging collection data service (ex. Sentry).
-		logger.error('fetchError: ', e);
+		// eslint-disable-next-line no-console
+		console.error('fetchError: ', err);
 		// eslint-disable-next-line @typescript-eslint/no-throw-literal
 		throw error(err.status || 500, err.body);
+	}
+};
+
+export class BuxferClient {
+	static async login(input: z.infer<typeof buxferLoginAccount>) {
+		const { token } = await buxferProxy('login', input);
+		return buxferToken.parse(token);
+	}
+
+	static async accounts(token: z.infer<typeof buxferToken>) {
+		const { accounts } = await buxferProxy('accounts', { token });
+		return buxferAccounts.parse(accounts);
+	}
+
+	static async transactions(input: z.infer<typeof buxferTransactionsQuery> & { token: string }) {
+		const {
+			token,
+			window: { start, end },
+			page,
+		} = input;
+		const dateFormat = 'yyyy-MM-dd';
+		const { numTransactions: totalTransactionsCount, transactions } = await buxferProxy('transactions', {
+			...buxferTransactionsQueryInternal.parse({
+				token,
+				startDate: format(start, dateFormat),
+				endDate: format(end, dateFormat),
+				page,
+			}),
+		});
+
+		return buxferTransactions.parse({ transactions, totalTransactionsCount });
 	}
 }

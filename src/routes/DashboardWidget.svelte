@@ -1,5 +1,6 @@
 <script lang="ts">
 	// import classes from 'svelte-transition-classes';
+	import { Motion } from 'svelte-motion';
 
 	// TODO - figure out pop-in animation, delay is needed but where!?
 	// in:classes={{
@@ -16,6 +17,8 @@
 	// }}
 </script>
 
-<div class="rounded bg-white p-5 shadow-sm dark:bg-gray-800 dark:shadow-neutral-309/20">
-	<slot />
-</div>
+<Motion {...$$restProps} let:motion let:props>
+	<div {...props} use:motion class="rounded bg-white p-5 shadow-sm dark:bg-gray-800 dark:shadow-neutral-309/20">
+		<slot />
+	</div>
+</Motion>

@@ -5,7 +5,10 @@ import type { Prisma } from '@prisma/client';
 
 const Schema: z.ZodType<Prisma.SessionCreateManyUserInputEnvelope> = z
 	.object({
-		data: z.lazy(() => SessionCreateManyUserInputObjectSchema).array(),
+		data: z.union([
+			z.lazy(() => SessionCreateManyUserInputObjectSchema),
+			z.lazy(() => SessionCreateManyUserInputObjectSchema).array(),
+		]),
 		skipDuplicates: z.boolean().optional(),
 	})
 	.strict();

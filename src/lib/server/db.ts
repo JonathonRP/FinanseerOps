@@ -1,6 +1,6 @@
 import { dev } from '$app/environment';
 import { PrismaClient } from '@prisma/client';
-import { logger } from '$lib/utils/logger';
+import { logger } from '$lib/server/logger';
 import { DATABASE_URL } from '$env/static/private';
 
 // NOTE - dominantly used in trpc create inner context

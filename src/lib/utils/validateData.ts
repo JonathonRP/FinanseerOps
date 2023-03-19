@@ -1,6 +1,5 @@
 import { error } from '@sveltejs/kit';
 import { ZodError, type ZodSchema } from 'zod';
-import { logger } from './logger';
 
 export const validateData = async (formData: FormData, schema: ZodSchema) => {
 	const body = Object.fromEntries(formData);
@@ -12,7 +11,8 @@ export const validateData = async (formData: FormData, schema: ZodSchema) => {
 			errors: null,
 		};
 	} catch (err) {
-		logger.error('Error: ', err);
+		// eslint-disable-next-line no-console
+		console.error('Error: ', err);
 
 		if (err instanceof ZodError) {
 			const { fieldErrors: errors } = err.flatten();

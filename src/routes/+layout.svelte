@@ -4,9 +4,9 @@
 	import './styles.css';
 	import 'sweetalert2/src/sweetalert2.scss';
 
+	import { base } from '$app/paths';
 	import classes from 'svelte-transition-classes';
 	import { slide } from 'svelte/transition';
-	import { accordion } from '$lib/utils';
 	import toast, { Toaster } from 'svelte-french-toast';
 	import { page } from '$app/stores';
 	import { session } from '$lib/stores/session';
@@ -16,7 +16,6 @@
 
 	import about from '@iconify-icons/tabler/file-description';
 	import dashboard from '@iconify-icons/tabler/chart-infographic';
-	import chevronUp from '@iconify-icons/tabler/chevron-up';
 	import newUser from '@iconify-icons/tabler/user-plus';
 	import logo from '$lib/images/svelte-logo.svg';
 
@@ -31,7 +30,6 @@
 		icons: {
 			about,
 			dashboard,
-			chevronUp,
 			newUser,
 		},
 	});
@@ -41,8 +39,11 @@
 		open: true,
 	};
 
-	const subroutes = ['overview', 'categories'];
-	const root = '/';
+	const routes = [
+		{ icon: dashboard, route: '/', label: 'dashboard' },
+		{ route: 'transactions' },
+		{ route: 'analytics' },
+	];
 
 	let menuOpen: boolean = state.closed;
 	let accountOpen: boolean = state.closed;
@@ -177,27 +178,26 @@
 						<div transition:slide={{ duration: 300 }} class="flex-shrink-0 py-2 px-4">
 							<Form
 								method="post"
-								action="/user?/update"
+								action="?/updateUser"
 								let:submitting
+								validate={(values) => {
+									const errors = { name: '', useBauhaus: '' };
+									console.log(values);
+
+									if (values?.name === user?.name) {
+										errors.name = 'No changes to submit.';
+									}
+									if (Boolean(values?.useBauhaus) === $useBauhaus) {
+										errors.useBauhaus = 'No changes to submit.';
+									}
+
+									return errors;
+								}}
 								on:success={(e) => {
 									toast.success(`Successful updated ${e.detail.data.get('name')}'s info.`);
 								}}
 								class="w-full space-y-4">
-								<Fields
-									let:handleInput
-									let:handleBlur
-									validate={(values) => {
-										const errors = { name: '', useBauhaus: '' };
-
-										if (values.name === user?.name) {
-											errors.name = 'No changes to submit.';
-										}
-										if (values.useBauhaus === $useBauhaus) {
-											errors.useBauhaus = 'No changes to submit.';
-										}
-
-										return errors;
-									}}>
+								<Fields let:handleInput let:handleBlur>
 									<input
 										id="name"
 										name="name"
@@ -207,7 +207,7 @@
 										on:input={handleInput}
 										on:blur={handleBlur}
 										disabled={submitting} />
-									<label class="mb-2 flex text-sm font-bold" for="bauhaus">
+									<label class="mb-2 flex items-center font-bold" for="bauhaus">
 										<input
 											id="bauhaus"
 											name="useBauhaus"
@@ -217,7 +217,7 @@
 											on:blur={handleBlur}
 											on:input={handleInput}
 											disabled={submitting} />
-										Use Buasuah
+										<span class="text-sm">Use Buasuah</span>
 									</label>
 								</Fields>
 								<Button type="submit">Save Settings</Button>
@@ -227,53 +227,28 @@
 
 					<!-- Links -->
 					<ul class="flex-1 space-y-2 overflow-hidden px-4 py-10 hover:overflow-auto">
-						<li>
-							<details
-								class="group/menu h-[var(--collapsed)] cursor-pointer overflow-hidden transition-[height] duration-300 open:h-[var(--expanded)]"
-								use:accordion>
-								<summary
-									class="group flex items-center justify-between divide-x-2 divide-primary-400 rounded-lg text-primary-600 transition-colors hover:bg-primary-500 hover:text-white aria-[current=page]:bg-primary-500 aria-[current=page]:text-white dark:text-neutral-309"
-									aria-current={$page.url.pathname === root ? 'page' : undefined}>
-									<a href={root} class="flex w-full items-center space-x-2">
-										<span
-											aria-hidden="true"
-											class="rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600 group-aria-[current=page]:text-white">
-											<iconify-icon class="h-6 w-6" icon={dashboard} flip="horizontal" />
-										</span>
-										<span>dashboard</span>
-									</a>
-									<span
-										aria-hidden="true"
-										class="flex items-baseline px-2 text-stone-50 transition-transform group-open/menu:-scale-y-100 dark:text-stone-800">
-										<iconify-icon icon={chevronUp} flip="vertical" class="h-7 w-7" />
-									</span>
-								</summary>
-								<ul class="mt-2 flex-1 space-y-2 overflow-hidden hover:overflow-auto">
-									{#each subroutes as route, i (i)}
-										<li>
-											<NavLink active={$page.url.pathname === `/${route}`} {route} />
-										</li>
-									{/each}
-								</ul>
-							</details>
-						</li>
-						<li>
-							<NavLink active={$page.url.pathname === '/about'} icon={about} route={'/about'} />
-						</li>
+						{#each routes as { icon, route, label }, id (id)}
+							<li>
+								<NavLink
+									active={$page.url.pathname === `${base}${route}`}
+									{icon}
+									route={label ?? null ? `${base}${label ?? route}` : route} />
+							</li>
+						{/each}
 					</ul>
 
 					{#if user?.role === Role.admin}
 						<div class="flex-shrink-0 py-2 px-4">
 							<Form
 								method="post"
-								action="/user?/invite"
+								action="?/inviteNewUser"
 								reset={true}
 								let:submitting
 								on:success={(e) => {
 									toast.success(`Successfully sent invitation to ${e?.detail?.data.get('email')}.`);
 								}}
 								class="flex w-full items-center border-b py-2 transition-colors focus-within:border-primary-500 hover:border-primary-400">
-								<iconify-icon icon={newUser} inline class="mr-2 flex h-6 w-12 items-center" />
+								<iconify-icon icon={newUser} inline class="mr-2 flex h-6 w-12 items-center" height="auto" />
 								<Fields let:handleInput let:handleBlur>
 									<input
 										id="email"

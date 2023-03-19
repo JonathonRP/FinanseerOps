@@ -2,7 +2,7 @@
 // for information about these interfaces
 // and what to do when importing types
 
-import type { Session } from '@dependencies/types';
+import type { Session } from '@auth/core/types';
 
 declare global {
 	namespace App {

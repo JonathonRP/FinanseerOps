@@ -1,7 +1,7 @@
-import type { Session } from '@dependencies/types';
+import type { Session } from '@auth/core/types';
 import { Role } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
-import { logger } from '$lib/utils/logger';
+import { logger } from '$lib/server/logger';
 
 import { initTRPC, TRPCError } from '@trpc/server';
 import superjson from 'superjson';

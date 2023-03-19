@@ -1,11 +1,11 @@
-import { buxferAccountRouter } from './routers/buxferAccount';
+import { buxferRouter } from './routers/buxfer';
 import { exampleRouter } from './routers/example';
 import { userRouter } from './routers/user';
 import { router } from './trpc';
 
 export const appRouter = router({
 	example: exampleRouter,
-	buxferAccount: buxferAccountRouter,
+	buxfer: buxferRouter,
 	user: userRouter,
 });
 

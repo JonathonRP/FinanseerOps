@@ -3,11 +3,7 @@ import type { User as PrismaUser, Account as PrismaAccount } from '@prisma/clien
 import { SvelteKitAuthConfig as OGSvelteKitAuthConfig } from '@auth/sveltekit';
 import type { CustomAdapter } from '$lib/prisma/client';
 
-// TODO - update when they fix this:
-// LINK - https://github.com/nextauthjs/next-auth/issues/6640#issuecomment-1426801813
-// NOTE - @dependencies/types -> ../node_modules/.pnpm/@auth+core@0.3.0_nodemailer@6.9.1/node_modules/@auth/core/types
-// LINK - ../tsconfig.json
-declare module '../node_modules/.pnpm/@auth+core@0.3.0_nodemailer@6.9.1/node_modules/@auth/core/types' {
+declare module '@auth/core/types' {
 	interface Session extends DefaultSession {
 		user?: {
 			buxferToken: string | null;

@@ -1,7 +1,7 @@
 import { createLogger, transports, format } from 'winston';
 import winston from 'winston/lib/winston/config';
-import dev from '$app/environment';
-import PUBLIC_LOG_LEVEL from '$env/static/public';
+import { dev } from '$app/environment';
+import { LOG_LEVEL } from '$env/static/private';
 
 const colorizer = format.colorize();
 
@@ -31,7 +31,7 @@ const devFormat = format.combine(
 
 const logger = createLogger({
 	levels: customLevels.levels,
-	level: PUBLIC_LOG_LEVEL ?? dev ? 'debug' : 'warn',
+	level: LOG_LEVEL ?? dev ? 'debug' : 'warn',
 	format: devFormat,
 	transports: [new transports.Console()],
 });

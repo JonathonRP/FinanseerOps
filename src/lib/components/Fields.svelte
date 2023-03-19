@@ -1,21 +1,16 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
+	import { getContext, setContext } from 'svelte';
 
-	const {
-		handleInput,
-		handleBlur,
-		validate: validation,
-	} = getContext<{
+	const { handleInput, handleBlur } = getContext<{
 		handleInput: ({ currentTarget }: Event & { currentTarget: EventTarget & HTMLInputElement }) => void;
 		handleBlur: (
 			e: FocusEvent & {
 				currentTarget: EventTarget & HTMLInputElement;
 			}
 		) => void;
-		validate: (_values: Record<string, any>) => Record<string, string>;
 	}>('fields');
 
-	export const validate = validation;
+	setContext('fields', { handleInput, handleBlur });
 </script>
 
 <slot {handleInput} {handleBlur} />

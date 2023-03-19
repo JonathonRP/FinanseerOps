@@ -26,5 +26,5 @@ export function api(init?: TRPCClientInit) {
 export type RouterInputs = inferRouterInputs<AppRouter>;
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export type Transactions = inferProcedureOutput<AppRouter['buxferAccount']['transactions']>;
-export type Accounts = inferProcedureOutput<AppRouter['buxferAccount']['accounts']>;
+export type Accounts = inferProcedureOutput<AppRouter['buxfer']['accounts']>;
+export type Transactions = inferProcedureOutput<AppRouter['buxfer']['transactions']>['transactions'];

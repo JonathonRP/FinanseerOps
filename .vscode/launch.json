@@ -1,0 +1,28 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "debug server-side",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "pnpm debug"
+		},
+		{
+			"name": "debug client-side",
+			"type": "chrome",
+			"request": "launch",
+			"url": "http://localhost:5000"
+		},
+		{
+			"name": "debug full stack",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "pnpm debug",
+			"serverReadyAction": {
+				"pattern": "Local: .+(http://.+:.+)",
+				"uriFormat": "%s",
+				"action": "debugWithChrome"
+			}
+		}
+	]
+}

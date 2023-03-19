@@ -5,12 +5,25 @@
 	import toast from 'svelte-french-toast';
 	import { writable } from 'svelte/store';
 
-	const values = writable({} as Record<string, any>);
+	let form: HTMLFormElement;
+
+	const values = writable({} as Record<string, string | number>);
 	export let reset = false;
 
 	export let action: string;
 
-	let form: HTMLFormElement;
+	// FIXME - $values not supplying values
+	export let validate = (
+		_values = Array.from(form.elements)
+			.map((field) => field as HTMLInputElement)
+			.reduce(
+				(res, input) => ({
+					...res,
+					[input.name]: input.valueAsNumber || input.value,
+				}),
+				{} as Record<string, string | number>
+			)
+	) => Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), {}) as Record<string, string>;
 
 	const formSubmitting = new BehaviorSubject(false);
 	const formValid = new BehaviorSubject(false);
@@ -39,21 +52,18 @@
 		};
 	};
 
-	const validate = (_values = $values) => ({} as Record<string, string>);
-
 	const handleValidation = (field: (EventTarget & HTMLInputElement) | undefined = undefined) => {
 		const errors = validate();
 
 		if (field) {
 			field.setCustomValidity(errors[field.name] ?? '');
-			field.reportValidity();
 		}
 
-		Array.from(form.elements).forEach((e) => {
-			const input = e as HTMLInputElement;
-			input.setCustomValidity(errors[input.name] ?? '');
-			input.reportValidity();
-		});
+		const fields = Array.from(form.elements).map((element) => element as HTMLInputElement);
+
+		// TODO - determine how to express using Array.map()
+		fields.forEach((input) => input.setCustomValidity(errors[input.name]));
+
 		formValid.next(form.checkValidity());
 	};
 
@@ -80,7 +90,7 @@
 	};
 
 	setContext('form', { valid: formValid, submitting: formSubmitting });
-	setContext('fields', { handleInput, handleBlur, validate });
+	setContext('fields', { handleInput, handleBlur });
 </script>
 
 <form {action} {...$$restProps} novalidate bind:this={form} use:enhance={submit}>

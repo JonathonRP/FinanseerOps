@@ -6,13 +6,23 @@ type OGAdapter = Omit<Adapter, 'getUser' | 'getUserByEmail' | 'getUserByAccount'
 
 export interface CustomAdapter extends OGAdapter {
 	getUser(id: string): Promise<(User & { account: { access_token?: Account['access_token'] } | null }) | null>;
-	getUserByEmail(email: string): Promise<(User & { account: { access_token: Account['access_token'] } | null }) | null>;
-	getUserByAccount(
-		providerAccountId: Pick<AdapterAccount, 'provider' | 'providerAccountId'>
-	): Promise<(User & { account: { access_token: Account['access_token'] } | null }) | null>;
+	getUserByEmail(email: string): Promise<
+		| (User & {
+				account: { access_token: Account['access_token'] } | null;
+		  })
+		| null
+	>;
+	getUserByAccount(providerAccountId: Pick<AdapterAccount, 'provider' | 'providerAccountId'>): Promise<
+		| (User & {
+				account: { access_token: Account['access_token'] } | null;
+		  })
+		| null
+	>;
 	getSessionAndUser(sessionToken: string): Promise<{
 		session: AdapterSession;
-		user: User & { account: { access_token: Account['access_token'] } | null };
+		user: User & {
+			account: { access_token: Account['access_token'] } | null;
+		};
 	} | null>;
 }
 
