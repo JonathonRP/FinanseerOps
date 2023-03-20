@@ -1,12 +1,15 @@
 <script lang="ts">
-	import { isThisMonth, sub } from 'date-fns';
-	import { filter, reduce, lastValueFrom, concatAll, combineLatest } from 'rxjs';
+	import { page } from '$app/stores';
+	import { isThisMonth, sub, startOfMonth } from 'date-fns';
+	import { Buxfer } from '$lib/stores/buxfer';
+	import { filter, reduce, lastValueFrom, concatAll, combineLatest, Observable } from 'rxjs';
+	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 	import DateSelect from './DateSelect.svelte';
 	import ScoreCard from './ScoreCard.svelte';
 
 	export let data: PageData;
-	const { accounts, transactions } = data;
+	const { accounts } = data;
 
 	let selectedDay: Date = new Date();
 
@@ -15,27 +18,42 @@
 		filter(({ name }) => name.includes('1880') || name.includes('1334')),
 		reduce((sum, { balance }) => sum + balance, 0)
 	);
-	const expenses$ = transactions.pipe(
-		concatAll(),
-		filter(({ type }) => type === 'expense')
-	);
-	const currentExpenses$ = expenses$.pipe(
-		filter(({ date }) => isThisMonth(new Date(date)) && new Date(date) < selectedDay),
-		reduce((sum, { amount }) => sum + amount, 0)
-	);
-	const lastMonthExpenses$ = expenses$.pipe(
-		filter(({ date }) => new Date(date) <= sub(selectedDay, { months: 1 })),
-		reduce((sum, { amount }) => sum + amount, 0)
-	);
 
-	balance$.subscribe({ next: (value) => console.log(value), complete: () => console.log('balances completed') });
-	currentExpenses$.subscribe({ next: (value) => console.log(value), complete: () => console.log('current completed') });
-	lastMonthExpenses$.subscribe({
-		next: (value) => console.log(value),
-		complete: () => console.log('last month completed'),
+	let currentExpenses$: Observable<number>;
+	let lastMonthExpenses$: Observable<number>;
+
+	onMount(() => {
+		const transactions = new Buxfer($page).getTransactions([
+			startOfMonth(sub(selectedDay, { months: 1 })),
+			selectedDay,
+		]);
+
+		const expenses$ = transactions.pipe(
+			concatAll(),
+			filter(({ type }) => type === 'expense')
+		);
+		currentExpenses$ = expenses$.pipe(
+			filter(({ date }) => isThisMonth(new Date(date)) && new Date(date) < selectedDay),
+			reduce((sum, { amount }) => sum + amount, 0)
+		);
+		lastMonthExpenses$ = expenses$.pipe(
+			filter(({ date }) => new Date(date) <= sub(selectedDay, { months: 1 })),
+			reduce((sum, { amount }) => sum + amount, 0)
+		);
+
+		balance$.subscribe({ next: (value) => console.log(value), complete: () => console.log('balances completed') });
+		currentExpenses$.subscribe({
+			next: (value) => console.log(value),
+			complete: () => console.log('current completed'),
+		});
+		lastMonthExpenses$.subscribe({
+			next: (value) => console.log(value),
+			complete: () => console.log('last month completed'),
+		});
 	});
 
-	const financeData$ = combineLatest([balance$, currentExpenses$, lastMonthExpenses$]);
+	// FIXME - one is undefined.
+	$: financeData$ = combineLatest([balance$, currentExpenses$, lastMonthExpenses$]);
 </script>
 
 <svelte:head>
