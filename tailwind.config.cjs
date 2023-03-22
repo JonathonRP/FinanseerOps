@@ -24,8 +24,8 @@ const config = {
 				},
 			},
 			animation: {
-				pulse: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-				'gradient-x': 'gradient-x 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				pulse: 'pulse 1.3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'gradient-x': 'gradient-x 1.3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
 			},
 			keyframes: {
 				pulse: {

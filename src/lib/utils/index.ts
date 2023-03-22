@@ -1,6 +1,6 @@
 import accordion from './accordion';
 
-export { api, type Accounts, type Transactions } from './api';
+export { api, type RouterInputs, type RouterOutputs, type Accounts, type Transactions } from './api';
 export { validateData } from './validateData';
 export type { Color } from './Color';
 export { PeriodBoundaries, type PeriodBoundary } from './PeriodBoundary';

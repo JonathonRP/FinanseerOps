@@ -1,7 +1,7 @@
-import type { inferProcedureOutput, inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { type TRPCClientInit, createTRPCClient } from 'trpc-sveltekit';
-import type { AppRouter } from '$lib/server/api/root';
 import superjson from 'superjson';
+import type { AppRouter } from '../server/api/root';
+// import { devalue } from './devalueTransformer';
 // import { browser } from '$app/environment';
 
 let browserClient: ReturnType<typeof createTRPCClient<AppRouter>>;
@@ -22,9 +22,4 @@ export function api(init?: TRPCClientInit) {
 	return browserClient;
 }
 
-// 👇 type helpers 💡
-export type RouterInputs = inferRouterInputs<AppRouter>;
-export type RouterOutputs = inferRouterOutputs<AppRouter>;
-
-export type Accounts = inferProcedureOutput<AppRouter['buxfer']['accounts']>;
-export type Transactions = inferProcedureOutput<AppRouter['buxfer']['transactions']>['transactions'];
+export type { RouterInputs, RouterOutputs, Accounts, Transactions } from '../server/api/root';

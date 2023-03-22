@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { isThisMonth, sub, startOfMonth } from 'date-fns';
+	import { isThisMonth, sub } from 'date-fns';
+	import { switchMap, filter, reduce, lastValueFrom, concatAll, combineLatest, debounceTime } from 'rxjs';
+	import { SvelteSubject } from '$lib/utils';
 	import { Buxfer } from '$lib/stores/buxfer';
-	import { filter, reduce, lastValueFrom, concatAll, combineLatest, Observable } from 'rxjs';
-	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import type { PageData } from './$types';
 	import DateSelect from './DateSelect.svelte';
 	import ScoreCard from './ScoreCard.svelte';
@@ -11,7 +11,9 @@
 	export let data: PageData;
 	const { accounts } = data;
 
-	let selectedDay: Date = new Date();
+	const daySelected = new SvelteSubject(undefined);
+
+	const today = new Date();
 
 	const balance$ = accounts.pipe(
 		concatAll(),
@@ -19,41 +21,20 @@
 		reduce((sum, { balance }) => sum + balance, 0)
 	);
 
-	let currentExpenses$: Observable<number>;
-	let lastMonthExpenses$: Observable<number>;
+	const expenses$ = daySelected.pipe(
+		debounceTime(150),
+		switchMap((selectedDay) => Buxfer($page).getTransactions([selectedDay]).pipe(concatAll())),
+		filter(({ type }) => type === 'expense')
+	);
 
-	onMount(() => {
-		const transactions = new Buxfer($page).getTransactions([
-			startOfMonth(sub(selectedDay, { months: 1 })),
-			selectedDay,
-		]);
-
-		const expenses$ = transactions.pipe(
-			concatAll(),
-			filter(({ type }) => type === 'expense')
-		);
-		currentExpenses$ = expenses$.pipe(
-			filter(({ date }) => isThisMonth(new Date(date)) && new Date(date) < selectedDay),
-			reduce((sum, { amount }) => sum + amount, 0)
-		);
-		lastMonthExpenses$ = expenses$.pipe(
-			filter(({ date }) => new Date(date) <= sub(selectedDay, { months: 1 })),
-			reduce((sum, { amount }) => sum + amount, 0)
-		);
-
-		balance$.subscribe({ next: (value) => console.log(value), complete: () => console.log('balances completed') });
-		currentExpenses$.subscribe({
-			next: (value) => console.log(value),
-			complete: () => console.log('current completed'),
-		});
-		lastMonthExpenses$.subscribe({
-			next: (value) => console.log(value),
-			complete: () => console.log('last month completed'),
-		});
-	});
-
-	// FIXME - one is undefined.
-	$: financeData$ = combineLatest([balance$, currentExpenses$, lastMonthExpenses$]);
+	const spent$ = combineLatest([daySelected, expenses$]).pipe(
+		filter(([selectedDay, { date }]) => isThisMonth(new Date(date)) && new Date(date) < (selectedDay || today)),
+		reduce((sum, [, { amount }]) => sum + amount, 0)
+	);
+	const prevMonthSpent$ = combineLatest([daySelected, expenses$]).pipe(
+		filter(([selectedDay, { date }]) => new Date(date) <= sub(selectedDay || today, { months: 1 })),
+		reduce((sum, [, { amount }]) => sum + amount, 0)
+	);
 </script>
 
 <svelte:head>
@@ -63,16 +44,16 @@
 
 <div class="mx-auto max-w-md px-4 sm:mx-0 sm:px-7 md:max-w-4xl md:px-6">
 	<div class="md:grid md:grid-cols-2 md:divide-x md:divide-neutral-200 md:dark:divide-neutral-600">
-		<DateSelect bind:selectedDay />
+		<DateSelect bind:selectedDay={$daySelected} />
 		<section class="mt-12 flex flex-row flex-wrap items-center justify-center gap-4 md:mt-0 md:justify-start md:pl-14">
-			{#await lastValueFrom(financeData$)}
+			{#await lastValueFrom(combineLatest([balance$, spent$, prevMonthSpent$]))}
 				<ScoreCard label="Balance" score={undefined} delay={0} />
 				<ScoreCard label="Spent" score={undefined} delay={1} />
 				<ScoreCard label="Forecast" score={undefined} delay={2} />
-			{:then [balance, currentExpenses, lastMonthExpenses]}
+			{:then [balance, spent, prevMonthSpent]}
 				<ScoreCard label="Balance" score={balance} />
-				<ScoreCard label="Spent" score={currentExpenses} comparison={{ score: lastMonthExpenses, swap: true }} />
-				<ScoreCard label="Forecast" score={balance - currentExpenses} />
+				<ScoreCard label="Spent" score={spent} comparison={{ score: prevMonthSpent, swap: true }} />
+				<ScoreCard label="Forecast" score={balance - spent} />
 			{/await}
 		</section>
 	</div>

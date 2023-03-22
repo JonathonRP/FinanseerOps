@@ -1,4 +1,4 @@
-import { appRouter } from '$lib/server/api/root';
+import { appRouter } from '$lib/utils';
 import { createContext } from '$lib/server/api/trpc';
 import { createTransport } from 'nodemailer';
 import db from '$lib/server/db';
@@ -147,9 +147,10 @@ export const handle = sequence(
 	createTRPCHandle({
 		router: appRouter,
 		createContext,
-		onError: ({ type, path, error }) =>
+		onError: ({ type, path, error }) => {
 			// TODO - replace with logging collection data service (ex. Sentry).
-			logger.error(`Encountered error while trying to process ${type} @ ${path}:`, error),
+			logger.error(`Encountered error while trying to process ${type} @ ${path}:`, error);
+		},
 	})
 );
 

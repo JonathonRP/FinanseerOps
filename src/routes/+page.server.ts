@@ -19,14 +19,18 @@ export const actions = {
 	updateUser: async (event) => {
 		const { formData } = event.request;
 		const { user } = event.locals.session;
+		logger.debug('updating user');
 		const expectedUser = object({ useBauhaus: boolean(), name: string() }).superRefine(({ useBauhaus, name }, ctx) => {
 			if (name === user?.name && useBauhaus === get(useBauhausStore)) {
 				ctx.addIssue({ code: 'custom', message: 'No changes to save.', path: ['name', 'useBauhaus'] });
 			}
 		});
+		logger.debug('validating user');
 		const { data, errors } = await validateData(await formData(), expectedUser);
 
+		logger.debug('validated user', data, errors);
 		if (errors) {
+			logger.debug('errors');
 			return fail(400, { formData: data, errors });
 		}
 
@@ -34,6 +38,7 @@ export const actions = {
 			if (user && user.name !== data.name) {
 				appRouter.createCaller(await createContext(event)).user.update({ ...user, ...data });
 			}
+			logger.debug('updated use');
 
 			useBauhausStore.set(Boolean(data.useBauhaus));
 

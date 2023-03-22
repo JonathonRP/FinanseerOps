@@ -13,7 +13,7 @@
 		},
 	});
 
-	export let selectedDay = new Date();
+	export let selectedDay: Date | undefined;
 
 	const today = new Date();
 	const weekOptions: Partial<WeekOptions> = { weekStartsOn: WeekDays[1].Monday };
@@ -76,7 +76,7 @@
 	<div class="mt-2 grid grid-cols-7 text-sm">
 		{#each daysOfPeriod as day, dayIdx (day.toLocaleString())}
 			{@const { isSelected, dayIsToday, isPartOfMonth } = {
-				isSelected: isEqual(day, selectedDay),
+				isSelected: isEqual(day, selectedDay || today),
 				dayIsToday: isToday(day),
 				isPartOfMonth: isSameMonth(day, currentDay),
 			}}

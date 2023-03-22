@@ -1,10 +1,11 @@
 import type { Session } from '@auth/core/types';
 import { Role } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
-import { logger } from '$lib/server/logger';
 
 import { initTRPC, TRPCError } from '@trpc/server';
+// import { devalue } from '../../utils/devalueTransformer';
 import superjson from 'superjson';
+import { logger } from '../logger';
 
 // LINK - ../db.ts
 import db from '../db';
@@ -37,6 +38,7 @@ const loggerMw = api.middleware(async ({ path, type, next }) => {
 
 	// TODO - replace with logging collection data service (ex. Sentry).
 	logger.info(`${result.ok ? 'OK' : 'ERR'} ${type} ${path} - ${ms}ms`);
+	logger.info(result);
 
 	return result;
 });

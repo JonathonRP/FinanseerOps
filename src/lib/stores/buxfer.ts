@@ -1,9 +1,12 @@
+import { startOfMonth, sub } from 'date-fns';
 import {
+	of,
 	catchError,
 	concatAll,
 	defer,
 	EMPTY,
 	expand,
+	finalize,
 	map,
 	Observable,
 	reduce,
@@ -17,49 +20,28 @@ import { api, SvelteSubject, type Accounts, type Transactions } from '../utils';
 const accounts = new SvelteSubject<Accounts>([]);
 const transactions = new SvelteSubject<Transactions>([]);
 
-export class Buxfer {
-	private init: TRPCClientInit;
-
-	constructor(init: TRPCClientInit) {
-		this.init = init;
-	}
-
-	getAccounts(): Observable<Accounts> {
-		return accounts.asObservable().pipe(
-			switchMap(() => this.GetBuxferAccounts()),
-			shareReplay()
-		);
-	}
-
-	private GetBuxferAccounts(): Observable<Accounts> {
-		return defer(async () => api(this.init).buxfer.accounts.query()).pipe(
+export function Buxfer(init?: TRPCClientInit | undefined) {
+	const GetBuxferAccounts = (): Observable<Accounts> =>
+		defer(async () => api(init).buxfer.accounts.query()).pipe(
 			reduce((acc, curr) => acc.concat(curr)),
 			catchError((error) => {
 				// TODO - replace with logging collection data service (ex. Sentry).
 				// eslint-disable-next-line no-console
-				console.error(error);
-				// return caught;
-				return EMPTY;
-			})
+				console.error('accounts', error);
+				return of([]);
+			}),
+			finalize(console.log)
 		);
-	}
 
-	getTransactions(dates: [start: Date, end: Date]): Observable<Transactions> {
-		return transactions.asObservable().pipe(
-			switchMap(() => this.GetBuxferTransactions(dates)),
-			shareReplay()
-		);
-	}
-
-	private GetBuxferTransactions(dates: [start: Date, end: Date]): Observable<Transactions> {
-		const [start, end] = dates;
+	const GetBuxferTransactions = (dates: [start?: Date, end?: Date]): Observable<Transactions> => {
+		const [start, end = new Date()] = dates;
 		const window = {
-			start,
-			end,
+			start: startOfMonth(sub(start || end, { months: 1 })),
+			end: end || start,
 		};
 
 		return defer(async () =>
-			api(this.init).buxfer.transactions.query({
+			api(init).buxfer.transactions.query({
 				window,
 				page: 1,
 			})
@@ -71,7 +53,7 @@ export class Buxfer {
 					return EMPTY;
 				}
 
-				return api().buxfer.transactions.query({ window, page: last - index });
+				return api(init).buxfer.transactions.query({ window, page: last - index });
 			}),
 			toArray(),
 			map((pages) => [...pages.slice(0, 1), ...pages.slice(1).reverse()]),
@@ -81,10 +63,25 @@ export class Buxfer {
 			catchError((error) => {
 				// TODO - replace with logging collection data service (ex. Sentry).
 				// eslint-disable-next-line no-console
-				console.error(error);
-				// return caught;
-				return EMPTY;
-			})
+				console.error('transactions', error);
+				return of([]);
+			}),
+			finalize(console.log)
 		);
-	}
+	};
+
+	return {
+		getAccounts(): Observable<Accounts> {
+			return accounts.asObservable().pipe(
+				switchMap(() => GetBuxferAccounts()),
+				shareReplay()
+			);
+		},
+		getTransactions(dates: [start?: Date, end?: Date]): Observable<Transactions> {
+			return transactions.asObservable().pipe(
+				switchMap(() => GetBuxferTransactions(dates)),
+				shareReplay()
+			);
+		},
+	};
 }

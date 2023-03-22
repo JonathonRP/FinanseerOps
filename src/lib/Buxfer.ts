@@ -1,7 +1,7 @@
 import { error, type HttpError } from '@sveltejs/kit';
 import { format } from 'date-fns';
 import path from 'path';
-import { array, number, object, string, union, z, never, coerce, date } from 'zod';
+import { array, number, object, string, union, z, never, coerce, date, intersection } from 'zod';
 
 type BuxferResponse = {
 	response: BuxferData;
@@ -101,12 +101,18 @@ export const buxferTransactionsQuery = object({
 	page: number(),
 });
 
-const buxferTransactionsQueryInternal = object({
-	token: string(),
-	startDate: coerce.string(),
-	endDate: coerce.string(),
-	page: coerce.string(),
+const buxferTokenInternal = object({
+	token: coerce.string(),
 });
+
+const buxferTransactionsQueryInternal = intersection(
+	buxferTokenInternal,
+	object({
+		startDate: coerce.string(),
+		endDate: coerce.string(),
+		page: coerce.string(),
+	})
+);
 
 const prefix = 'api';
 
@@ -166,33 +172,38 @@ const buxferProxy = async (
 	}
 };
 
-export class BuxferClient {
-	static async login(input: z.infer<typeof buxferLoginAccount>) {
-		const { token } = await buxferProxy('login', input);
-		return buxferToken.parse(token);
-	}
+export function BuxferClient(token: z.infer<typeof buxferToken> | null | undefined) {
+	return {
+		async login(input: z.infer<typeof buxferLoginAccount>) {
+			if (token) {
+				return token;
+			}
+			const { token: refreshedToken } = await buxferProxy('login', buxferLoginAccount.parse(input));
+			return buxferToken.parse(refreshedToken);
+		},
 
-	static async accounts(token: z.infer<typeof buxferToken>) {
-		const { accounts } = await buxferProxy('accounts', { token });
-		return buxferAccounts.parse(accounts);
-	}
+		async accounts() {
+			const { accounts } = await buxferProxy('accounts', buxferTokenInternal.parse({ token }));
+			return buxferAccounts.parse(accounts);
+		},
 
-	static async transactions(input: z.infer<typeof buxferTransactionsQuery> & { token: string }) {
-		const {
-			token,
-			window: { start, end },
-			page,
-		} = input;
-		const dateFormat = 'yyyy-MM-dd';
-		const { numTransactions: totalTransactionsCount, transactions } = await buxferProxy('transactions', {
-			...buxferTransactionsQueryInternal.parse({
-				token,
-				startDate: format(start, dateFormat),
-				endDate: format(end, dateFormat),
+		async transactions(input: z.infer<typeof buxferTransactionsQuery>) {
+			const {
+				window: { start, end },
 				page,
-			}),
-		});
+			} = input;
+			const dateFormat = 'yyyy-MM-dd';
+			const { numTransactions: totalTransactionsCount, transactions } = await buxferProxy(
+				'transactions',
+				buxferTransactionsQueryInternal.parse({
+					token,
+					startDate: format(start, dateFormat),
+					endDate: format(end, dateFormat),
+					page,
+				})
+			);
 
-		return buxferTransactions.parse({ transactions, totalTransactionsCount });
-	}
+			return buxferTransactions.parse({ transactions, totalTransactionsCount });
+		},
+	};
 }

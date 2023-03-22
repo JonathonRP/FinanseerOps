@@ -50,10 +50,13 @@
 		<div
 			class="flex h-full w-[164.57px] animate-pulse flex-row items-center justify-center space-x-5 pt-1 pr-11"
 			class:animation-delay-150={delay === 1}
-			class:animation-delay-250={delay === 2}>
+			class:animation-delay-300={delay === 2}
+			style="animation-fill-mode: backwards">
 			<div
-				style="animation-fill-mode: backward"
-				class="via-gray h-8 w-44 animate-gradient-x rounded-md bg-gradient-to-r from-gray-300 via-white to-gray-50 dark:from-gray-800 dark:via-gray-500 dark:to-gray-600" />
+				class="via-gray h-8 w-44 animate-gradient-x rounded-md bg-gradient-to-r from-gray-300 via-white to-gray-50 dark:from-gray-800 dark:via-gray-500 dark:to-gray-600"
+				class:animation-delay-150={delay === 1}
+				class:animation-delay-300={delay === 2}
+				style="animation-fill-mode: backwards" />
 		</div>
 	{:else}
 		<div class="flex w-[164.57px] items-center pt-1">
