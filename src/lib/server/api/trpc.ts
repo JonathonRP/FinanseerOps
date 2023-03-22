@@ -3,8 +3,7 @@ import { Role } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
 
 import { initTRPC, TRPCError } from '@trpc/server';
-// import { devalue } from '../../utils/devalueTransformer';
-import superjson from 'superjson';
+import { devalue } from '../../utils/devalueTransformer';
 import { logger } from '../logger';
 
 // LINK - ../db.ts
@@ -23,7 +22,7 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => ({
 export const createContext = async (event: RequestEvent) => createInnerTRPCContext({ session: event.locals.session });
 
 const api = initTRPC.context<typeof createContext>().create({
-	transformer: superjson,
+	transformer: devalue,
 	errorFormatter({ shape }) {
 		return shape;
 	},
