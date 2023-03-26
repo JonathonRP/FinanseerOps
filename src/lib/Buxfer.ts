@@ -187,6 +187,7 @@ export function BuxferClient(token: z.infer<typeof buxferToken> | null | undefin
 			return buxferAccounts.parse(accounts);
 		},
 
+		// FIXME - still returning in error?
 		async transactions(input: z.infer<typeof buxferTransactionsQuery>) {
 			const {
 				window: { start, end },

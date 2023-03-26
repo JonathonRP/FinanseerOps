@@ -1,36 +1,27 @@
-import { appRouter } from '$lib/server/api/root';
+import { appRouter } from '$lib/server/api';
 import { createContext } from '$lib/server/api/trpc';
-import useBauhausStore from '$lib/stores/useBauhaus';
 import { validateData } from '$lib/utils';
 import { logger } from '$lib/server/logger';
 import { error, fail } from '@sveltejs/kit';
-import { get } from 'svelte/store';
-import { boolean, object, string } from 'zod';
+import { object, string, coerce } from 'zod';
 import type { Actions } from './user/$types';
 
-const expectedInvintation = object({
-	email: string({ required_error: 'Email is required.' }).email({
-		message: 'Email must be a valid email address.',
-	}),
-});
-
-// FIXME - why error when submitting to these form actions from +layout.svelte?
 export const actions = {
 	updateUser: async (event) => {
-		const { formData } = event.request;
+		const formData = await event.request.formData();
 		const { user } = event.locals.session;
-		logger.debug('updating user');
-		const expectedUser = object({ useBauhaus: boolean(), name: string() }).superRefine(({ useBauhaus, name }, ctx) => {
-			if (name === user?.name && useBauhaus === get(useBauhausStore)) {
-				ctx.addIssue({ code: 'custom', message: 'No changes to save.', path: ['name', 'useBauhaus'] });
-			}
-		});
-		logger.debug('validating user');
-		const { data, errors } = await validateData(await formData(), expectedUser);
 
-		logger.debug('validated user', data, errors);
+		// NOTE - handle formdata checkbox boolean existance and inexistance states for boolean.
+		const expectedUser = object({ useBauhaus: coerce.boolean().default(false), name: string() }).superRefine(
+			({ name }, ctx) => {
+				if (name === user?.name) {
+					ctx.addIssue({ code: 'custom', message: 'No changes to save.', path: ['name', 'useBauhaus'] });
+				}
+			}
+		);
+		const { data, errors } = await validateData(formData, expectedUser);
+
 		if (errors) {
-			logger.debug('errors');
 			return fail(400, { formData: data, errors });
 		}
 
@@ -38,9 +29,6 @@ export const actions = {
 			if (user && user.name !== data.name) {
 				appRouter.createCaller(await createContext(event)).user.update({ ...user, ...data });
 			}
-			logger.debug('updated use');
-
-			useBauhausStore.set(Boolean(data.useBauhaus));
 
 			return { success: true };
 		} catch (err) {
@@ -50,8 +38,13 @@ export const actions = {
 		}
 	},
 	inviteNewUser: async (event) => {
-		const { formData } = event.request;
-		const { data, errors } = await validateData(await formData(), expectedInvintation);
+		const formData = await event.request.formData();
+		const expectedInvintation = object({
+			email: string({ required_error: 'Email is required.' }).nonempty('Email is required.').email({
+				message: 'Email must be a valid email address.',
+			}),
+		});
+		const { data, errors } = await validateData(formData, expectedInvintation);
 
 		if (errors) {
 			return fail(400, { formData: data, errors });

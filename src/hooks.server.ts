@@ -1,12 +1,11 @@
-import { appRouter } from '$lib/utils';
 import { createContext } from '$lib/server/api/trpc';
+import { appRouter } from '$lib/server/api';
 import { createTransport } from 'nodemailer';
 import db from '$lib/server/db';
 import Email from '@auth/core/providers/email';
 import { SvelteKitAuth, type SvelteKitAuthConfig } from '@auth/sveltekit';
 import { redirect, type Handle, type HandleServerError, type RequestEvent } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { createTRPCHandle } from 'trpc-sveltekit';
 import PrismaAdapter from '$lib/prisma/adapter';
 import { logger } from '$lib/server/logger';
 import { BUXFER_EMAIL as SERVER_USER, BUXFER_PASS, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
@@ -141,18 +140,7 @@ const authentication = () =>
 		return SvelteKitAuth(authOptions)(...args);
 	}) satisfies Handle;
 
-export const handle = sequence(
-	authentication(),
-	authorization(),
-	createTRPCHandle({
-		router: appRouter,
-		createContext,
-		onError: ({ type, path, error }) => {
-			// TODO - replace with logging collection data service (ex. Sentry).
-			logger.error(`Encountered error while trying to process ${type} @ ${path}:`, error);
-		},
-	})
-);
+export const handle = sequence(authentication(), authorization());
 
 // import * as Sentry from '@sentry/node';
 

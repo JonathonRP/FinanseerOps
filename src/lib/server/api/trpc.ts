@@ -1,9 +1,9 @@
+import { initTRPC, TRPCError } from '@trpc/server';
+import type { RequestEvent } from '@sveltejs/kit';
 import type { Session } from '@auth/core/types';
 import { Role } from '@prisma/client';
-import type { RequestEvent } from '@sveltejs/kit';
 
-import { initTRPC, TRPCError } from '@trpc/server';
-import { devalue } from '../../utils/devalueTransformer';
+import { transformer } from '../../api/transformer';
 import { logger } from '../logger';
 
 // LINK - ../db.ts
@@ -19,13 +19,13 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => ({
 	session: opts.session,
 });
 
-export const createContext = async (event: RequestEvent) => createInnerTRPCContext({ session: event.locals.session });
+export const createContext = async (event: RequestEvent) => {
+	const { session } = event.locals;
+	return createInnerTRPCContext({ session });
+};
 
 const api = initTRPC.context<typeof createContext>().create({
-	transformer: devalue,
-	errorFormatter({ shape }) {
-		return shape;
-	},
+	transformer,
 });
 
 export const { router } = api;
@@ -37,7 +37,6 @@ const loggerMw = api.middleware(async ({ path, type, next }) => {
 
 	// TODO - replace with logging collection data service (ex. Sentry).
 	logger.info(`${result.ok ? 'OK' : 'ERR'} ${type} ${path} - ${ms}ms`);
-	logger.info(result);
 
 	return result;
 });

@@ -26,7 +26,7 @@
 	) => Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), {}) as Record<string, string>;
 
 	const formSubmitting = new BehaviorSubject(false);
-	const formValid = new BehaviorSubject(false);
+	const formValidity = new BehaviorSubject(false);
 
 	const dispatch = createEventDispatcher();
 
@@ -39,9 +39,11 @@
 					await update({ reset });
 					dispatch('success', { data });
 					break;
-				case 'failure':
-					toast.error(result.data?.errors);
+				case 'failure': {
+					const [firstError] = Object.keys(result.data?.errors);
+					toast.error(result.data?.errors[firstError][0]);
 					break;
+				}
 				case 'error':
 					toast.error(result.error.message);
 					break;
@@ -64,7 +66,7 @@
 		// TODO - determine how to express using Array.map()
 		fields.forEach((input) => input.setCustomValidity(errors[input.name]));
 
-		formValid.next(form.checkValidity());
+		formValidity.next(form.checkValidity());
 	};
 
 	const handleInput = ({ currentTarget }: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
@@ -78,21 +80,31 @@
 			nextValue = checked;
 		}
 		values.update((_v) => ({ ..._v, [name]: nextValue }));
+		handleValidation(currentTarget);
 	};
 
-	const handleBlur = (
-		e: FocusEvent & {
-			currentTarget: EventTarget & HTMLInputElement;
+	const handleBlur = ({
+		currentTarget,
+	}: FocusEvent & {
+		currentTarget: EventTarget & HTMLInputElement;
+	}) => {
+		const { name, type, checked, value } = currentTarget;
+		let nextValue = value as any;
+		if (type === 'range' || type === 'number') {
+			nextValue = nextValue === '' ? undefined : +nextValue;
+		} else if (type === 'select-multiple') {
+			nextValue = new Array<any>().map.call(currentTarget.querySelectorAll(':checked'), (option) => option.value);
+		} else if (type === 'checkbox') {
+			nextValue = checked;
 		}
-	) => {
-		const $this = e.currentTarget;
-		handleValidation($this);
+		values.update((_v) => ({ ..._v, [name]: nextValue }));
+		handleValidation(currentTarget);
 	};
 
-	setContext('form', { valid: formValid, submitting: formSubmitting });
+	setContext('form', { valid: formValidity, submitting: formSubmitting });
 	setContext('fields', { handleInput, handleBlur });
 </script>
 
-<form {action} {...$$restProps} novalidate bind:this={form} use:enhance={submit}>
+<form {action} {...$$restProps} novalidate bind:this={form} on:submit use:enhance={submit}>
 	<slot submitting={$formSubmitting} />
 </form>

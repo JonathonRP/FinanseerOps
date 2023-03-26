@@ -1,10 +1,7 @@
-import accordion from './accordion';
+export { default as accordion } from './accordion';
 
-export { api, type RouterInputs, type RouterOutputs, type Accounts, type Transactions } from './api';
-export { validateData } from './validateData';
 export type { Color } from './Color';
+export { validateData } from './validateData';
 export { PeriodBoundaries, type PeriodBoundary } from './PeriodBoundary';
 export { SvelteSubject } from './svelteSubject';
 export { WeekDays, type WeekOptions } from './WeekOptions';
-
-export { accordion };

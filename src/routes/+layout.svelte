@@ -1,6 +1,5 @@
 <script lang="ts">
-	import '../app.postcss';
-	import '../app.scss';
+	import '../app.css';
 	import './styles.css';
 	import 'sweetalert2/src/sweetalert2.scss';
 
@@ -163,6 +162,7 @@
 				<nav aria-label="Main" class="flex h-full flex-col">
 					<!-- Account -->
 					<div class="flex flex-shrink-0 items-center justify-center pt-10">
+						<h2>Finanseer Ops</h2>
 						<button
 							type="button"
 							class="h-20 w-20 rounded-full"
@@ -176,6 +176,8 @@
 					<!-- UserSetting -->
 					{#if accountOpen}
 						<div transition:slide={{ duration: 300 }} class="flex-shrink-0 py-2 px-4">
+							<!-- FIXME - submitting still occures with error on name, useBauhaus is client only. -->
+							<!-- FIXME - loading state is not working, why? -->
 							<Form
 								method="post"
 								action="?/updateUser"
@@ -184,27 +186,35 @@
 									const errors = { name: '', useBauhaus: '' };
 									console.log(values);
 
-									if (values?.name === user?.name) {
+									if (values?.name === user?.name && values?.useBauhaus === $useBauhaus) {
 										errors.name = 'No changes to submit.';
-									}
-									if (Boolean(values?.useBauhaus) === $useBauhaus) {
-										errors.useBauhaus = 'No changes to submit.';
 									}
 
 									return errors;
 								}}
+								on:submit={(e) => {
+									const data = new FormData(e.currentTarget);
+									useBauhaus.set(Boolean(data.get('useBauhaus')));
+
+									toast.success(`Now using ${$useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
+
+									if (data.get('name') === user?.name) {
+										e.preventDefault();
+										return false;
+									}
+									return true;
+								}}
 								on:success={(e) => {
-									toast.success(`Successful updated ${e.detail.data.get('name')}'s info.`);
+									toast.success(`Updated ${e.detail.data.get('name')}.`);
 								}}
 								class="w-full space-y-4">
-								<Fields let:handleInput let:handleBlur>
+								<Fields let:handleBlur>
 									<input
 										id="name"
 										name="name"
-										class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none  focus:ring-2 focus:ring-gray-300"
+										class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
 										type="text"
 										value={user?.name}
-										on:input={handleInput}
 										on:blur={handleBlur}
 										disabled={submitting} />
 									<label class="mb-2 flex items-center font-bold" for="bauhaus">
@@ -215,7 +225,6 @@
 											type="checkbox"
 											checked={$useBauhaus}
 											on:blur={handleBlur}
-											on:input={handleInput}
 											disabled={submitting} />
 										<span class="text-sm">Use Buasuah</span>
 									</label>
@@ -245,18 +254,17 @@
 								reset={true}
 								let:submitting
 								on:success={(e) => {
-									toast.success(`Successfully sent invitation to ${e?.detail?.data.get('email')}.`);
+									toast.success(`Sent invitation to ${e?.detail?.data.get('email')}.`);
 								}}
 								class="flex w-full items-center border-b py-2 transition-colors focus-within:border-primary-500 hover:border-primary-400">
 								<iconify-icon icon={newUser} inline class="mr-2 flex h-6 w-12 items-center" height="auto" />
-								<Fields let:handleInput let:handleBlur>
+								<Fields let:handleBlur>
 									<input
 										id="email"
 										name="email"
 										class="mr-3 w-full appearance-none border-none bg-transparent py-1 px-2 leading-tight text-gray-600 focus:outline-none focus:ring-0 dark:text-neutral-309"
 										type="email"
 										inputmode="email"
-										on:input={handleInput}
 										on:blur={handleBlur}
 										placeholder="email address"
 										required
