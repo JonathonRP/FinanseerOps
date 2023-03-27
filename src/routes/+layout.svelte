@@ -186,14 +186,14 @@
 									const errors = { name: '', useBauhaus: '' };
 									console.log(values);
 
-									if (values?.name === user?.name && values?.useBauhaus === $useBauhaus) {
+									if (values?.name === user?.name && Boolean(values?.useBauhaus) === $useBauhaus) {
 										errors.name = 'No changes to submit.';
 									}
 
 									return errors;
 								}}
 								on:submit={(e) => {
-									const data = new FormData(e.currentTarget);
+									const data = new FormData(this);
 									useBauhaus.set(Boolean(data.get('useBauhaus')));
 
 									toast.success(`Now using ${$useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
