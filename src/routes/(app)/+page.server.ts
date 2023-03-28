@@ -4,7 +4,6 @@ import { validateData } from '$lib/utils';
 import { logger } from '$lib/server/logger';
 import { error, fail } from '@sveltejs/kit';
 import { object, string, coerce } from 'zod';
-import type { Actions } from './user/$types';
 
 export const actions = {
 	updateUser: async (event) => {
@@ -60,4 +59,4 @@ export const actions = {
 			throw error(500, { code: crypto.randomUUID(), message: 'Wow! you REALLY broke this!?' });
 		}
 	},
-} satisfies Actions;
+};

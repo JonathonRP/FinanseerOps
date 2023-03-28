@@ -4,14 +4,14 @@ import { createTransport } from 'nodemailer';
 import db from '$lib/server/db';
 import Email from '@auth/core/providers/email';
 import { SvelteKitAuth, type SvelteKitAuthConfig } from '@auth/sveltekit';
-import { redirect, type Handle, type HandleServerError, type RequestEvent } from '@sveltejs/kit';
+import { redirect, type Handle, type RequestEvent } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import PrismaAdapter from '$lib/prisma/adapter';
 import { logger } from '$lib/server/logger';
 import { BUXFER_EMAIL as SERVER_USER, BUXFER_PASS, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
 
-const authorization = () =>
-	(async ({ event, resolve }) => {
+function authorization() {
+	return (async ({ event, resolve }) => {
 		await event.locals.getSession();
 
 		if (!event.locals.session && !event.route.id?.includes('anonymous')) {
@@ -20,15 +20,45 @@ const authorization = () =>
 
 		return resolve(event);
 	}) satisfies Handle;
+}
 
-const getBuxferToken = async (event: RequestEvent) =>
-	appRouter.createCaller(await createContext(event)).buxfer.login({
-		email: SERVER_USER,
-		password: BUXFER_PASS,
-	});
+async function getBuxferToken(event: RequestEvent) {
+	const provider = 'buxfer';
+	const token = await db.account
+	.findUnique({ where: { provider_providerAccountId: { provider, providerAccountId: SERVER_USER} } })
+	.then(account => {
+		if (account?.expires_at ?? Date.now() < Date.now()) { 
+			return account?.access_token;
+		}
+	})
 
-const authentication = () =>
-	(async (...args) => {
+	if (!token) {
+		const refreshedToken = await appRouter.createCaller(await createContext(event)).buxfer.login({
+			email: SERVER_USER,
+			password: BUXFER_PASS,
+		});
+
+		db.account.update({
+			where: {
+				provider_providerAccountId: {
+					provider,
+					providerAccountId: SERVER_USER,
+				},
+			},
+			data: {
+				access_token: token,
+				expires_at: new Date(event.locals.session.expires).getDate(),
+			}
+		});
+
+		return refreshedToken;
+	}
+
+	return token;
+}
+
+function authentication() {
+	return (async (...args) => {
 		const [{ event }] = args;
 		const authOptions: SvelteKitAuthConfig = {
 			adapter: PrismaAdapter(db),
@@ -76,7 +106,7 @@ const authentication = () =>
 						session.user = {
 							...session.user,
 							...user,
-							buxferToken: user.account.access_token,
+							buxferToken: await getBuxferToken(event),
 						};
 					}
 					event.locals.session = session;
@@ -91,47 +121,15 @@ const authentication = () =>
 					const user = {
 						...message.user,
 					};
-					const account = {
-						...user.account,
-						...message.account,
-					};
-					if (!account.access_token) {
-						const token = await getBuxferToken(event);
-
-						if (user.isInvited) {
-							await db.user.update({
-								where: {
-									id: user.id,
-								},
-								data: {
-									isInvited: user.isInvited,
-								},
-							});
-						}
-						if (account.providerAccountId) {
-							db.account.upsert({
-								where: {
-									provider_providerAccountId: {
-										provider: 'buxfer',
-										providerAccountId: account.providerAccountId,
-									},
-								},
-								update: {
-									access_token: token,
-								},
-								create: {
-									type: 'email',
-									provider: 'buxfer',
-									providerAccountId: account.providerAccountId,
-									access_token: token,
-									user: {
-										connect: {
-											id: user.id,
-										},
-									},
-								},
-							});
-						}
+					if (user.isInvited) {
+						await db.user.update({
+							where: {
+								id: user.id,
+							},
+							data: {
+								isInvited: user.isInvited,
+							},
+						});
 					}
 				},
 			},
@@ -139,6 +137,7 @@ const authentication = () =>
 
 		return SvelteKitAuth(authOptions)(...args);
 	}) satisfies Handle;
+}
 
 export const handle = sequence(authentication(), authorization());
 
@@ -148,7 +147,7 @@ export const handle = sequence(authentication(), authorization());
 /* ... */
 // });
 
-export const handleError = (async ({ error, event }) => {
+export async function handleError({ error, event }) {
 	const errorId = crypto.randomUUID();
 	// example integration with https://sentry.io/
 	// Sentry.captureException(error, { event });
@@ -160,7 +159,7 @@ export const handleError = (async ({ error, event }) => {
 		message: (error as Error).message ?? 'Whoops!',
 		code: errorId ?? 'UNKNOWN',
 	};
-}) satisfies HandleServerError;
+}
 
 /**
  * Email HTML body

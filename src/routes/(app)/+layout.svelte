@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '../app.css';
+	import '../../app.css';
 	import './styles.css';
 	import 'sweetalert2/src/sweetalert2.scss';
 
@@ -23,6 +23,9 @@
 	import Form from '$lib/Components/Form.svelte';
 	import Fields from '$lib/Components/Fields.svelte';
 	import NavLink from './NavLink.svelte';
+	import DateSelect from './DateSelect.svelte';
+	import { SvelteSubject } from '$lib/utils';
+	import { goto } from '$app/navigation';
 
 	addCollection({
 		prefix: 'tabler',
@@ -39,7 +42,7 @@
 	};
 
 	const routes = [
-		{ icon: dashboard, route: '/', label: 'dashboard' },
+		{ icon: dashboard, route: base, label: 'dashboard' },
 		{ route: 'transactions' },
 		{ route: 'analytics' },
 	];
@@ -72,6 +75,19 @@
 		}
 	};
 
+	const submitUserProfileStyle = (e: SubmitEvent) => {
+		const data = new FormData(e.currentTarget as HTMLFormElement);
+		useBauhaus.set(Boolean(data.get('useBauhaus')));
+
+		toast.success(`Now using ${$useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
+
+		if (data.get('name') === user?.name) {
+			e.preventDefault();
+			return false;
+		}
+		return true;
+	};
+
 	const randomColor = () =>
 		Math.floor(Math.random() * 0xffffff * 1000000)
 			.toString(16)
@@ -82,6 +98,11 @@
 		`https://source.boringavatars.com/${($useBauhaus && 'bauhaus') || 'beam'}/120/${encodeURIComponent(
 			user?.name ?? ''
 		)}?colors=000000,ff3e00,CDCDCD,4075a6,${randomColor()}`;
+
+	const daySelected = new SvelteSubject<Date | undefined>(undefined);
+	$: if ($daySelected) {
+		goto(`?selectedDay=${$daySelected}`);
+	}
 </script>
 
 <svelte:window on:keydown={toggleMenu(state.closed)} />
@@ -160,9 +181,11 @@
 				}}
 				class="fixed inset-y-0 right-0 z-10 w-64 flex-shrink-0 border-primary-100 bg-white shadow-lg dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 max-[640px]:rounded-tl-3xl max-[640px]:rounded-bl-3xl max-[640px]:border-l-2 sm:left-16 sm:w-72 sm:rounded-tr-3xl sm:rounded-br-3xl sm:border-r-2 lg:static lg:w-64">
 				<nav aria-label="Main" class="flex h-full flex-col">
+					<div class="flex flex-shrink-0 items-center justify-center py-10">
+						<h1 class="text-center text-xl font-bold">Finanseer Ops</h1>
+					</div>
 					<!-- Account -->
-					<div class="flex flex-shrink-0 items-center justify-center pt-10">
-						<h2>Finanseer Ops</h2>
+					<div class="flex flex-shrink-0 items-center justify-center">
 						<button
 							type="button"
 							class="h-20 w-20 rounded-full"
@@ -192,18 +215,7 @@
 
 									return errors;
 								}}
-								on:submit={(e) => {
-									const data = new FormData(this);
-									useBauhaus.set(Boolean(data.get('useBauhaus')));
-
-									toast.success(`Now using ${$useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
-
-									if (data.get('name') === user?.name) {
-										e.preventDefault();
-										return false;
-									}
-									return true;
-								}}
+								on:submit={submitUserProfileStyle}
 								on:success={(e) => {
 									toast.success(`Updated ${e.detail.data.get('name')}.`);
 								}}
@@ -238,10 +250,9 @@
 					<ul class="flex-1 space-y-2 overflow-hidden px-4 py-10 hover:overflow-auto">
 						{#each routes as { icon, route, label }, id (id)}
 							<li>
-								<NavLink
-									active={$page.url.pathname === `${base}${route}`}
-									{icon}
-									route={label ?? null ? `${base}${label ?? route}` : route} />
+								<NavLink active={$page.url.pathname === route} {icon} {route}>
+									{label || route}
+								</NavLink>
 							</li>
 						{/each}
 					</ul>
@@ -292,7 +303,15 @@
 	</aside>
 
 	<main class="flex flex-1 flex-col px-6 pt-8 md:px-12 md:pt-16">
-		<slot />
+		<div class="mx-auto max-w-md px-4 sm:mx-0 sm:px-7 md:max-w-4xl md:px-6">
+			<div class="md:grid md:grid-cols-2 md:divide-x md:divide-neutral-200 md:dark:divide-neutral-600">
+				<DateSelect bind:selectedDay={$daySelected} />
+				<section
+					class="mt-12 flex flex-row flex-wrap items-center justify-center gap-4 md:mt-0 md:justify-start md:pl-14">
+					<slot />
+				</section>
+			</div>
+		</div>
 	</main>
 
 	<footer class="fixed bottom-20 right-5 flex items-center space-x-4 sm:bottom-5">

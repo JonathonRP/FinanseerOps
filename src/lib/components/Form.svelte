@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { BehaviorSubject } from 'rxjs';
-	import { createEventDispatcher, setContext } from 'svelte';
+	import { createEventDispatcher, onMount, setContext } from 'svelte';
 	import { type SubmitFunction, enhance } from '$app/forms';
 	import toast from 'svelte-french-toast';
 	import { writable } from 'svelte/store';
@@ -103,6 +103,10 @@
 
 	setContext('form', { valid: formValidity, submitting: formSubmitting });
 	setContext('fields', { handleInput, handleBlur });
+
+	onMount(() => {
+		handleValidation();
+	});
 </script>
 
 <form {action} {...$$restProps} novalidate bind:this={form} on:submit use:enhance={submit}>
