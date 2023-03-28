@@ -3,6 +3,7 @@ import { appRouter } from '$lib/server/api';
 import { createTransport } from 'nodemailer';
 import db from '$lib/server/db';
 import Email from '@auth/core/providers/email';
+import { addDays, isAfter } from 'date-fns';
 import { SvelteKitAuth, type SvelteKitAuthConfig } from '@auth/sveltekit';
 import { redirect, type Handle, type RequestEvent } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
@@ -10,12 +11,23 @@ import PrismaAdapter from '$lib/prisma/adapter';
 import { logger } from '$lib/server/logger';
 import { BUXFER_EMAIL as SERVER_USER, BUXFER_PASS, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
 
+function loginAndResume(url: URL, loginEndpoint: string, redirectReason?: string) {
+	const {pathname, searchParams} = url;
+	return `${loginEndpoint}?redirectTo=${pathname+searchParams}${redirectReason && `&reason=${redirectReason}`}`;
+}
+
 function authorization() {
 	return (async ({ event, resolve }) => {
+		const { url } = event;
+		const redirectTo = url.searchParams.get('redirectTo');
 		await event.locals.getSession();
 
 		if (!event.locals.session && !event.route.id?.includes('anonymous')) {
-			throw redirect(302, '/auth/signin');
+			throw redirect(302, loginAndResume(url, '/auth/signin'));
+		}
+
+		if(event.locals.session && redirectTo) {
+			throw redirect(302, `/${redirectTo.slice(1)}`);
 		}
 
 		return resolve(event);
@@ -23,14 +35,15 @@ function authorization() {
 }
 
 async function getBuxferToken(event: RequestEvent) {
+	const today = () => Date.now();
 	const provider = 'buxfer';
 	const token = await db.account
 	.findUnique({ where: { provider_providerAccountId: { provider, providerAccountId: SERVER_USER} } })
 	.then(account => {
-		if (account?.expires_at ?? Date.now() < Date.now()) { 
+		if (account && account.expires_at && isAfter(account.expires_at, new Date())) { 
 			return account?.access_token;
 		}
-	})
+	});
 
 	if (!token) {
 		const refreshedToken = await appRouter.createCaller(await createContext(event)).buxfer.login({
@@ -38,7 +51,7 @@ async function getBuxferToken(event: RequestEvent) {
 			password: BUXFER_PASS,
 		});
 
-		db.account.update({
+		await db.account.update({
 			where: {
 				provider_providerAccountId: {
 					provider,
@@ -46,8 +59,8 @@ async function getBuxferToken(event: RequestEvent) {
 				},
 			},
 			data: {
-				access_token: token,
-				expires_at: new Date(event.locals.session.expires).getDate(),
+				access_token: refreshedToken,
+				expires_at: addDays(today(), 1),
 			}
 		});
 

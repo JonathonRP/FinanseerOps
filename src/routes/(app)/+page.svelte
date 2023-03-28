@@ -49,6 +49,8 @@
 			[0, 0]
 		)
 	);
+
+	$: prepareFinanseerOpsData = combineLatest([balance$, expenses$]).pipe(take(1));
 </script>
 
 <svelte:head>
@@ -56,7 +58,7 @@
 	<meta name="description" content="FinanseerOps" />
 </svelte:head>
 
-{#await lastValueFrom(combineLatest([balance$, expenses$]).pipe(take(1)))}
+{#await lastValueFrom(prepareFinanseerOpsData)}
 	<ScoreCard label="Balance" score={undefined} delay={0} />
 	<ScoreCard label="Spent" score={undefined} delay={1} />
 	<ScoreCard label="Forecast" score={undefined} delay={2} />

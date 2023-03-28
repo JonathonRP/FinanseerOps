@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { StringWithAggregatesFilterObjectSchema } from './StringWithAggregatesFilter.schema';
 import { StringNullableWithAggregatesFilterObjectSchema } from './StringNullableWithAggregatesFilter.schema';
-import { IntNullableWithAggregatesFilterObjectSchema } from './IntNullableWithAggregatesFilter.schema';
+import { DateTimeNullableWithAggregatesFilterObjectSchema } from './DateTimeNullableWithAggregatesFilter.schema';
 
 import type { Prisma } from '@prisma/client';
 
@@ -37,7 +37,7 @@ const Schema: z.ZodType<Prisma.AccountScalarWhereWithAggregatesInput> = z
 			.optional()
 			.nullable(),
 		expires_at: z
-			.union([z.lazy(() => IntNullableWithAggregatesFilterObjectSchema), z.number()])
+			.union([z.lazy(() => DateTimeNullableWithAggregatesFilterObjectSchema), z.date()])
 			.optional()
 			.nullable(),
 		token_type: z

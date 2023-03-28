@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { StringFilterObjectSchema } from './StringFilter.schema';
 import { StringNullableFilterObjectSchema } from './StringNullableFilter.schema';
-import { IntNullableFilterObjectSchema } from './IntNullableFilter.schema';
+import { DateTimeNullableFilterObjectSchema } from './DateTimeNullableFilter.schema';
 
 import type { Prisma } from '@prisma/client';
 
@@ -37,7 +37,7 @@ const Schema: z.ZodType<Prisma.AccountScalarWhereInput> = z
 			.optional()
 			.nullable(),
 		expires_at: z
-			.union([z.lazy(() => IntNullableFilterObjectSchema), z.number()])
+			.union([z.lazy(() => DateTimeNullableFilterObjectSchema), z.date()])
 			.optional()
 			.nullable(),
 		token_type: z

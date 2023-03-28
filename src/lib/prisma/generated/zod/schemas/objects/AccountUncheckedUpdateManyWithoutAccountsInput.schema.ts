@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { StringFieldUpdateOperationsInputObjectSchema } from './StringFieldUpdateOperationsInput.schema';
 import { NullableStringFieldUpdateOperationsInputObjectSchema } from './NullableStringFieldUpdateOperationsInput.schema';
-import { NullableIntFieldUpdateOperationsInputObjectSchema } from './NullableIntFieldUpdateOperationsInput.schema';
+import { NullableDateTimeFieldUpdateOperationsInputObjectSchema } from './NullableDateTimeFieldUpdateOperationsInput.schema';
 
 import type { Prisma } from '@prisma/client';
 
@@ -20,7 +20,7 @@ const Schema: z.ZodType<Prisma.AccountUncheckedUpdateManyWithoutAccountsInput> =
 			.optional()
 			.nullable(),
 		expires_at: z
-			.union([z.number(), z.lazy(() => NullableIntFieldUpdateOperationsInputObjectSchema)])
+			.union([z.date(), z.lazy(() => NullableDateTimeFieldUpdateOperationsInputObjectSchema)])
 			.optional()
 			.nullable(),
 		token_type: z

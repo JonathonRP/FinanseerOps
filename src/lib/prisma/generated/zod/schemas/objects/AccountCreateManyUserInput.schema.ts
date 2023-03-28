@@ -10,7 +10,7 @@ const Schema: z.ZodType<Prisma.AccountCreateManyUserInput> = z
 		providerAccountId: z.string(),
 		refresh_token: z.string().optional().nullable(),
 		access_token: z.string().optional().nullable(),
-		expires_at: z.number().optional().nullable(),
+		expires_at: z.date().optional().nullable(),
 		token_type: z.string().optional().nullable(),
 		scope: z.string().optional().nullable(),
 		id_token: z.string().optional().nullable(),

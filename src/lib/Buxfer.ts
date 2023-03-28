@@ -188,6 +188,7 @@ export function BuxferClient(token: z.infer<typeof buxferToken> | null | undefin
 		},
 
 		// FIXME - still returning in error?
+		// TODO - use svelte query and websockets to fix above
 		async transactions(input: z.infer<typeof buxferTransactionsQuery>) {
 			const {
 				window: { start, end },

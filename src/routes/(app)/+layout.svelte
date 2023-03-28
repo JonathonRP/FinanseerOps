@@ -42,7 +42,7 @@
 	};
 
 	const routes = [
-		{ icon: dashboard, route: base, label: 'dashboard' },
+		{ icon: dashboard, route: `${base}/`, label: 'dashboard' },
 		{ route: 'transactions' },
 		{ route: 'analytics' },
 	];

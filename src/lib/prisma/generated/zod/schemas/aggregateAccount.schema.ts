@@ -5,8 +5,6 @@ import { AccountWhereUniqueInputObjectSchema } from './objects/AccountWhereUniqu
 import { AccountCountAggregateInputObjectSchema } from './objects/AccountCountAggregateInput.schema';
 import { AccountMinAggregateInputObjectSchema } from './objects/AccountMinAggregateInput.schema';
 import { AccountMaxAggregateInputObjectSchema } from './objects/AccountMaxAggregateInput.schema';
-import { AccountAvgAggregateInputObjectSchema } from './objects/AccountAvgAggregateInput.schema';
-import { AccountSumAggregateInputObjectSchema } from './objects/AccountSumAggregateInput.schema';
 
 export const AccountAggregateSchema = z.object({
 	orderBy: z
@@ -19,6 +17,4 @@ export const AccountAggregateSchema = z.object({
 	_count: z.union([z.literal(true), AccountCountAggregateInputObjectSchema]).optional(),
 	_min: AccountMinAggregateInputObjectSchema.optional(),
 	_max: AccountMaxAggregateInputObjectSchema.optional(),
-	_avg: AccountAvgAggregateInputObjectSchema.optional(),
-	_sum: AccountSumAggregateInputObjectSchema.optional(),
 });
