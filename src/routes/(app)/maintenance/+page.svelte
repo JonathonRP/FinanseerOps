@@ -1,4 +1,4 @@
-<div class="flex h-screen items-center justify-center">
+<div class="flex h-screen max-h-[100dvh] items-center justify-center">
 	<div class="flex max-w-2xl flex-col items-center justify-center">
 		<div>
 			<svg

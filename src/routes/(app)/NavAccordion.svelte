@@ -4,18 +4,10 @@
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
 	import { accordion } from '$lib/utils';
-	import { addCollection } from 'iconify-icon';
 	import NavLink from './NavLink.svelte';
 
 	export let icon = demo;
 	export let routes: string[];
-
-	addCollection({
-		prefix: 'tabler',
-		icons: {
-			chevronUp,
-		},
-	});
 
 	$: [, label] = routes[0].split('/');
 </script>

@@ -4,6 +4,11 @@ import { validateData } from '$lib/utils';
 import { logger } from '$lib/server/logger';
 import { error, fail } from '@sveltejs/kit';
 import { object, string, coerce } from 'zod';
+import { api } from '$lib/api';
+
+export async function load(event) {
+	await api.buxfer.accounts.ssr(event);
+}
 
 export const actions = {
 	updateUser: async (event) => {

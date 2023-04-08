@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
 {
-	"name": "FinanseerOps",
+	"name": "Finanzen",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/typescript-node:0-18",
 	"features": {
@@ -60,13 +60,15 @@
 				"esbenp.prettier-vscode",
 				"dbaeumer.vscode-eslint",
 				"eamodio.gitlens",
-				"csstools.postcss"
+				"csstools.postcss",
+				"alfredbirk.tailwind-documentation",
+				"KalimahApps.tailwind-config-viewer"
 			]
 		}
 	},
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	"remoteUser": "root",
-	"forwardPorts": [5000, 9181]
-	// "appPort": [5000, 9181]
+	"forwardPorts": [5000, 5001]
+	// "appPort": [5000]
 }

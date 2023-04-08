@@ -3,7 +3,7 @@ import { appRouter } from '$lib/server/api';
 import { createTransport } from 'nodemailer';
 import db from '$lib/server/db';
 import Email from '@auth/core/providers/email';
-import { addDays, isAfter } from 'date-fns';
+import { addDays, isBefore } from 'date-fns';
 import { SvelteKitAuth, type SvelteKitAuthConfig } from '@auth/sveltekit';
 import { redirect, type Handle, type RequestEvent } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
@@ -12,8 +12,8 @@ import { logger } from '$lib/server/logger';
 import { BUXFER_EMAIL as SERVER_USER, BUXFER_PASS, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
 
 function loginAndResume(url: URL, loginEndpoint: string, redirectReason?: string) {
-	const {pathname, searchParams} = url;
-	return `${loginEndpoint}?redirectTo=${pathname+searchParams}${redirectReason && `&reason=${redirectReason}`}`;
+	const { pathname, searchParams } = url;
+	return `${loginEndpoint}?redirectTo=${pathname + searchParams}${redirectReason && `&reason=${redirectReason}`}`;
 }
 
 function authorization() {
@@ -26,7 +26,7 @@ function authorization() {
 			throw redirect(302, loginAndResume(url, '/auth/signin'));
 		}
 
-		if(event.locals.session && redirectTo) {
+		if (event.locals.session && redirectTo) {
 			throw redirect(302, `/${redirectTo.slice(1)}`);
 		}
 
@@ -35,15 +35,15 @@ function authorization() {
 }
 
 async function getBuxferToken(event: RequestEvent) {
-	const today = () => Date.now();
 	const provider = 'buxfer';
 	const token = await db.account
-	.findUnique({ where: { provider_providerAccountId: { provider, providerAccountId: SERVER_USER} } })
-	.then(account => {
-		if (account && account.expires_at && isAfter(account.expires_at, new Date())) { 
-			return account?.access_token;
-		}
-	});
+		.findUnique({ where: { provider_providerAccountId: { provider, providerAccountId: SERVER_USER } } })
+		.then((account) => {
+			if (account && account.expires_at && isBefore(new Date(), account.expires_at)) {
+				return account?.access_token;
+			}
+			return null;
+		});
 
 	if (!token) {
 		const refreshedToken = await appRouter.createCaller(await createContext(event)).buxfer.login({
@@ -60,8 +60,8 @@ async function getBuxferToken(event: RequestEvent) {
 			},
 			data: {
 				access_token: refreshedToken,
-				expires_at: addDays(today(), 1),
-			}
+				expires_at: addDays(Date.now(), 1),
+			},
 		});
 
 		return refreshedToken;

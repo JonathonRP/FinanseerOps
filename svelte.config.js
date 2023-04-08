@@ -15,7 +15,7 @@ const config = {
 		experimental: {
 			inspector: {
 				showToggleButton: 'always',
-				toggleButtonPos: 'bottom-right',
+				toggleButtonPos: 'bottom-left',
 			},
 		},
 	},

@@ -32,6 +32,7 @@
 
 	const submit: SubmitFunction = ({ data }) => {
 		formSubmitting.next(true);
+		dispatch('submit', { data });
 
 		return async ({ result, update }) => {
 			switch (result.type) {
@@ -109,6 +110,6 @@
 	});
 </script>
 
-<form {action} {...$$restProps} novalidate bind:this={form} on:submit use:enhance={submit}>
+<form {action} {...$$restProps} novalidate bind:this={form} use:enhance={submit}>
 	<slot submitting={$formSubmitting} />
 </form>

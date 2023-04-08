@@ -1,7 +1,7 @@
 import { error, type HttpError } from '@sveltejs/kit';
 import { format } from 'date-fns';
 import path from 'path';
-import { array, number, object, string, union, z, never, coerce, date, intersection } from 'zod';
+import { array, number, object, string, union, z, never, coerce, date } from 'zod';
 
 type BuxferResponse = {
 	response: BuxferData;
@@ -94,25 +94,17 @@ export const buxferLoginAccount = object({
 });
 
 export const buxferTransactionsQuery = object({
-	window: object({
-		start: date(),
-		end: date(),
-	}),
-	page: number(),
+	startDate: date(),
+	endDate: date(),
+	cursor: number().nullish(),
 });
 
-const buxferTokenInternal = object({
-	token: coerce.string(),
+const buxferTransactionsQueryInternal = object({
+	token: buxferToken,
+	startDate: coerce.string(),
+	endDate: coerce.string(),
+	page: coerce.string(),
 });
-
-const buxferTransactionsQueryInternal = intersection(
-	buxferTokenInternal,
-	object({
-		startDate: coerce.string(),
-		endDate: coerce.string(),
-		page: coerce.string(),
-	})
-);
 
 const prefix = 'api';
 
@@ -145,7 +137,7 @@ const buxferProxy = async (
 			...headers,
 		},
 		body: new URLSearchParams(body),
-	} satisfies RequestInit;
+	} as RequestInit;
 
 	const rerouteURL = new URL(routes.get(endpoint) ?? <never>null, BuxferDomain);
 	const request = new Request(rerouteURL, buxferConfig);
@@ -183,25 +175,22 @@ export function BuxferClient(token: z.infer<typeof buxferToken> | null | undefin
 		},
 
 		async accounts() {
-			const { accounts } = await buxferProxy('accounts', buxferTokenInternal.parse({ token }));
+			const { accounts } = await buxferProxy('accounts', { token: buxferToken.parse(token) });
 			return buxferAccounts.parse(accounts);
 		},
 
 		// FIXME - still returning in error?
 		// TODO - use svelte query and websockets to fix above
 		async transactions(input: z.infer<typeof buxferTransactionsQuery>) {
-			const {
-				window: { start, end },
-				page,
-			} = input;
+			const { startDate, endDate, cursor } = input;
 			const dateFormat = 'yyyy-MM-dd';
 			const { numTransactions: totalTransactionsCount, transactions } = await buxferProxy(
 				'transactions',
 				buxferTransactionsQueryInternal.parse({
 					token,
-					startDate: format(start, dateFormat),
-					endDate: format(end, dateFormat),
-					page,
+					startDate: format(startDate, dateFormat),
+					endDate: format(endDate, dateFormat),
+					page: cursor,
 				})
 			);
 

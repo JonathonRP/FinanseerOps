@@ -33,7 +33,7 @@ const logger = createLogger({
 	levels: customLevels.levels,
 	level: LOG_LEVEL ?? dev ? 'debug' : 'warn',
 	format: devFormat,
-	transports: [new transports.Console({ debugStdout: true }), new transports.File({ filename: 'finanseerOps.log' })],
+	transports: [new transports.Console({ debugStdout: true }), new transports.File({ filename: 'finanzen.log' })],
 });
 
 export { logger };

@@ -26,4 +26,4 @@ export async function POST() {
 			logger.info(`Email sent: ${info.response}`);
 		}
 	});
-};
+}

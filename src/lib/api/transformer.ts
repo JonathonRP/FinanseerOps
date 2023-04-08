@@ -1,13 +1,9 @@
-import type { CombinedDataTransformer } from '@trpc/server/dist/transformer';
-// import { uneval } from 'devalue';
-import SuperJSON from 'superjson';
+import { stringify, parse } from 'devalue';
 
 export const transformer = {
-	input: SuperJSON,
-	output: SuperJSON,
-	// {
-	// 	serialize: (object) => uneval(object),
-	// 	// eslint-disable-next-line no-eval
-	// 	deserialize: (object) => eval(`${object}`),
-	// },
-} satisfies CombinedDataTransformer;
+	// serialize: (object: unknown) => uneval(object),
+	// eslint-disable-next-line no-eval
+	// deserialize: (object: string) => eval(`${object}`),
+	serialize: (object: unknown) => stringify(object),
+	deserialize: (object: string) => parse(object),
+};

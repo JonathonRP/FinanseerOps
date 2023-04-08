@@ -6,17 +6,17 @@ const config = {
 
 	server: {
 		port: 5000,
+		strictPort: true,
+		// hmr: {
+		// 	clientPort: 5000,
+		// 	port: 5001,
+		// },
+		// watch: {
+		// 	usePolling: true,
+		// },
 		// proxy: {
 		//   "/api": "https://www.buxfer.com",
 		// },
-	},
-
-	css: {
-		preprocessorOptions: {
-			scss: {
-				additionalData: '@use "src/variables.scss" as *;',
-			},
-		},
 	},
 };
 
