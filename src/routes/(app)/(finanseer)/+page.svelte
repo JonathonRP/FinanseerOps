@@ -10,6 +10,7 @@
 		combineLatest,
 		combineLatestWith,
 		debounceTime,
+		mergeMap,
 	} from 'rxjs';
 	import { SvelteSubject } from '$lib/utils';
 	import { api } from '$lib/api';
@@ -29,7 +30,6 @@
 		reduce((sum, { balance }) => sum + balance, 0)
 	);
 
-	// FIXME - why is initial cursor undefined?
 	const transactions = api.buxfer.transactions.infiniteQuery(
 		{
 			startDate: startOfMonth(subMonths($daySelected, 1)),
@@ -43,7 +43,7 @@
 					typeof lastPage === 'object' &&
 					'totalTransactionsCount' in lastPage &&
 					typeof lastPage.totalTransactionsCount === 'number' &&
-					Math.ceil(lastPage.totalTransactionsCount / 100) >= allPages.length
+					allPages.length < Math.ceil(lastPage.totalTransactionsCount / 100)
 				) {
 					return allPages.length + 1;
 				}
@@ -51,14 +51,15 @@
 			},
 		}
 	);
-	const transactions$ = from(
-		$transactions.data?.pages.flatMap((page) => {
+	const transactions$ = of($transactions).pipe(
+		switchMap((query) => from(query.data?.pages ?? []).pipe(combineLatestWith(of(query)))),
+		mergeMap(([page, query]) => {
 			const result = page.transactions;
-			if ($transactions.hasNextPage) {
-				$transactions.fetchNextPage();
+			if (query.hasNextPage) {
+				query.fetchNextPage();
 			}
-			return result;
-		}) || []
+			return result || [];
+		})
 	);
 
 	const expenses$ = daySelected.pipe(

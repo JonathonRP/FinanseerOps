@@ -96,7 +96,7 @@ export const buxferLoginAccount = object({
 export const buxferTransactionsQuery = object({
 	startDate: date(),
 	endDate: date(),
-	cursor: number().nullish(),
+	cursor: number().nullish().default(1),
 });
 
 const buxferTransactionsQueryInternal = object({

@@ -27,7 +27,7 @@
 					typeof lastPage === 'object' &&
 					'totalTransactionsCount' in lastPage &&
 					typeof lastPage.totalTransactionsCount === 'number' &&
-					Math.ceil(lastPage.totalTransactionsCount / 100) >= allPages.length
+					allPages.length < Math.ceil(lastPage.totalTransactionsCount / 100)
 				) {
 					return allPages.length + 1;
 				}
