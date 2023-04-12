@@ -7,6 +7,8 @@
 		endOfMonth,
 		endOfWeek,
 		format,
+		isAfter,
+		isBefore,
 		isEqual,
 		isSameMonth,
 		isToday,
@@ -17,12 +19,12 @@
 		subMonths,
 	} from 'date-fns';
 	import { page } from '$app/stores';
+	import { dateFormat } from '$lib/utils';
 
-	export let dateFormat = 'MM/dd/yyyy';
 	const today = startOfToday();
 
-	const date = $page.url.searchParams.get('selectedDay');
-	const selectedDay: Date | undefined = date ? parse(date, dateFormat, new Date()) : undefined;
+	$: date = $page.url.searchParams.get('processedDate');
+	$: processedDay = date ? parse(date, dateFormat, new Date()) : undefined;
 
 	let currentDay = today;
 	$: prevPeriod = subMonths(currentDay, 1);
@@ -34,7 +36,7 @@
 	});
 </script>
 
-<div class="md:pr-14">
+<div class="md:pr-7 lg:pr-14">
 	<div class="flex items-center">
 		<h2 class="mr-4 flex-auto font-semibold text-gray-900 dark:text-neutral-309">{format(currentDay, 'yyyy, MMMM')}</h2>
 		<button
@@ -53,7 +55,7 @@
 			on:click={function next() {
 				currentDay = nextPeriod;
 			}}
-			class="-my-1.5 -mr-1.5 -ml-2 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309">
+			class="-my-1.5 -ml-2 -mr-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309">
 			<span class="sr-only">Next month</span>
 			<iconify-icon icon={right} class="h-5 w-5" aria-hidden />
 		</button>
@@ -66,19 +68,21 @@
 	<div class="mt-2 grid grid-cols-7 text-sm">
 		{#each daysOfPeriod as day, dayIdx (day.toLocaleString())}
 			{@const { isSelected, dayIsToday, isPartOfMonth } = {
-				isSelected: isEqual(day, selectedDay || today),
+				isSelected: isEqual(day, processedDay || today),
 				dayIsToday: isToday(day),
 				isPartOfMonth: isSameMonth(day, currentDay),
 			}}
-			<!-- pt-1.5 -->
-			<div
-				class="py-3 {dayIdx > 6
+			<form
+				data-sveltekit-preload-data="tap"
+				action=""
+				method="get"
+				class="pb-2 pt-1.5 {dayIdx > 6
 					? 'border-t border-stone-200 border-opacity-75 dark:border-stone-600 dark:border-opacity-25'
 					: undefined}">
-				<a
-					href={isSameMonth(day, today) || day > today
-						? `?${new URLSearchParams({ selectedDay: format(day, dateFormat) })}`
-						: ''}
+				<button
+					name={(isBefore(day, today) || undefined) && 'processedDate'}
+					value={format(day, dateFormat)}
+					disabled={isAfter(day, today)}
 					class="mx-auto flex h-8 w-8 items-center justify-center rounded-full
 							{isSelected ? 'text-white' : undefined}
 							{isSelected && dayIsToday ? 'bg-primary-500' : undefined}
@@ -93,8 +97,8 @@
 					<time datetime={day.toLocaleString()}>
 						{format(day, 'd')}
 					</time>
-				</a>
-			</div>
+				</button>
+			</form>
 		{/each}
 	</div>
 </div>

@@ -1,18 +1,20 @@
 import { signIn } from '@auth/sveltekit/client';
 import { Role } from '@prisma/client';
-import { UserUpdateInputObjectSchema, UserWhereUniqueInputObjectSchema } from '$lib/prisma/generated/zod/schemas';
+import { object, string } from 'zod';
 import { adminProcedure, procedure, router } from '../trpc';
 
 export const userRouter = router({
-	update: procedure.input(UserUpdateInputObjectSchema).mutation(async ({ ctx, input }) => {
-		await ctx.db?.user.update({
-			where: {
-				id: ctx.session?.user?.id,
-			},
-			data: input,
-		});
+	update: procedure.input(object({ name: string() })).mutation(async ({ ctx, input }) => {
+		if (ctx.session?.user) {
+			await ctx.db?.user.update({
+				where: {
+					id: ctx.session.user.id,
+				},
+				data: input,
+			});
+		}
 	}),
-	invite: adminProcedure.input(UserWhereUniqueInputObjectSchema).mutation(async ({ ctx, input }) => {
+	invite: adminProcedure.input(object({ email: string().email() })).mutation(async ({ ctx, input }) => {
 		if (await ctx.db?.user.findUnique({ where: input })) {
 			throw new Error('Email is already invited');
 		}

@@ -7,23 +7,13 @@
 
 	let form: HTMLFormElement;
 
-	const values = writable({} as Record<string, string | number>);
+	const values = writable({} as Record<string, undefined | string | number | boolean | string[]>);
 	export let reset = false;
 
 	export let action: string;
 
-	// FIXME - $values not supplying values
-	export let validate = (
-		_values = Array.from(form.elements)
-			.map((field) => field as HTMLInputElement)
-			.reduce(
-				(res, input) => ({
-					...res,
-					[input.name]: input.valueAsNumber || input.value,
-				}),
-				{} as Record<string, string | number>
-			)
-	) => Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), {}) as Record<string, string>;
+	export let validate = (_values: typeof $values) =>
+		Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), {}) as Record<string, string>;
 
 	const formSubmitting = new BehaviorSubject(false);
 	const formValidity = new BehaviorSubject(false);
@@ -55,19 +45,23 @@
 		};
 	};
 
-	const handleValidation = (field: (EventTarget & HTMLInputElement) | undefined = undefined) => {
-		const errors = validate();
+	const handleValidation = (onlyField: (EventTarget & HTMLInputElement) | undefined = undefined) => {
+		const errors = validate($values);
 
-		if (field) {
-			field.setCustomValidity(errors[field.name] ?? '');
+		if (onlyField) {
+			onlyField.setCustomValidity(errors[onlyField.name] ?? '');
 		}
 
-		const fields = Array.from(form.elements).map((element) => element as HTMLInputElement);
-
-		// TODO - determine how to express using Array.map()
-		fields.forEach((input) => input.setCustomValidity(errors[input.name]));
+		Array.from(form.elements)
+			.map((element) => element as HTMLInputElement)
+			.reduce((error, input) => {
+				input.checkValidity();
+				input.setCustomValidity(errors[input.name] ?? '');
+				return { ...error, ...{ [input.name]: input.validationMessage } };
+			}, {});
 
 		formValidity.next(form.checkValidity());
+		return $formValidity;
 	};
 
 	const handleInput = ({ currentTarget }: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
@@ -81,7 +75,7 @@
 			nextValue = checked;
 		}
 		values.update((_v) => ({ ..._v, [name]: nextValue }));
-		handleValidation(currentTarget);
+		handleValidation();
 	};
 
 	const handleBlur = ({
@@ -90,26 +84,41 @@
 		currentTarget: EventTarget & HTMLInputElement;
 	}) => {
 		const { name, type, checked, value } = currentTarget;
-		let nextValue = value as any;
+		let nextValue: string | number | boolean | undefined | string[] = value;
 		if (type === 'range' || type === 'number') {
 			nextValue = nextValue === '' ? undefined : +nextValue;
 		} else if (type === 'select-multiple') {
-			nextValue = new Array<any>().map.call(currentTarget.querySelectorAll(':checked'), (option) => option.value);
+			nextValue = new Array<HTMLInputElement>().map.call(
+				currentTarget.querySelectorAll(':checked'),
+				(option) => option.value
+			) as string[];
 		} else if (type === 'checkbox') {
 			nextValue = checked;
 		}
 		values.update((_v) => ({ ..._v, [name]: nextValue }));
-		handleValidation(currentTarget);
+		handleValidation();
 	};
 
 	setContext('form', { valid: formValidity, submitting: formSubmitting });
-	setContext('fields', { handleInput, handleBlur });
 
 	onMount(() => {
+		$values = Array.from(form.elements)
+			.map((field) => field as HTMLInputElement)
+			.reduce(
+				(res, { name, valueAsNumber, value, checked, type }) => ({
+					...res,
+					[name]:
+						(type === 'checkbox' && checked) ||
+						((type === 'number' || type === 'range') && valueAsNumber) ||
+						(type !== 'checkbox' && type !== 'number' && value),
+				}),
+				<typeof $values>{}
+			);
+
 		handleValidation();
 	});
 </script>
 
 <form {action} {...$$restProps} novalidate bind:this={form} use:enhance={submit}>
-	<slot submitting={$formSubmitting} />
+	<slot submitting={$formSubmitting} {handleInput} {handleBlur} />
 </form>

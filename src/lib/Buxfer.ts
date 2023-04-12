@@ -1,7 +1,9 @@
 import { error, type HttpError } from '@sveltejs/kit';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import path from 'path';
 import { array, number, object, string, union, z, never, coerce, date } from 'zod';
+
+const DateFormat = 'yyyy-MM-dd';
 
 type BuxferResponse = {
 	response: BuxferData;
@@ -36,7 +38,7 @@ export const buxferTransactions = object({
 		object({
 			id: number(),
 			description: string(),
-			date: string(),
+			date: coerce.date().transform((arg) => parse(format(arg, DateFormat), DateFormat, new Date())),
 			type: string(),
 			amount: number(),
 			accountId: number(),
@@ -179,17 +181,14 @@ export function BuxferClient(token: z.infer<typeof buxferToken> | null | undefin
 			return buxferAccounts.parse(accounts);
 		},
 
-		// FIXME - still returning in error?
-		// TODO - use svelte query and websockets to fix above
 		async transactions(input: z.infer<typeof buxferTransactionsQuery>) {
 			const { startDate, endDate, cursor } = input;
-			const dateFormat = 'yyyy-MM-dd';
 			const { numTransactions: totalTransactionsCount, transactions } = await buxferProxy(
 				'transactions',
 				buxferTransactionsQueryInternal.parse({
 					token,
-					startDate: format(startDate, dateFormat),
-					endDate: format(endDate, dateFormat),
+					startDate: format(startDate, DateFormat),
+					endDate: format(endDate, DateFormat),
 					page: cursor,
 				})
 			);

@@ -1,27 +1,11 @@
 <script lang="ts">
-	import { isSameMonth, parse, startOfMonth, subMonths } from 'date-fns';
-	import {
-		of,
-		from,
-		switchMap,
-		filter,
-		reduce,
-		lastValueFrom,
-		combineLatest,
-		combineLatestWith,
-		debounceTime,
-		mergeMap,
-	} from 'rxjs';
-	import { SvelteSubject } from '$lib/utils';
+	import { isSameMonth, startOfMonth, subMonths } from 'date-fns';
+	import { from, filter, reduce, combineLatest, lastValueFrom } from 'rxjs';
 	import { api } from '$lib/api';
 	import ScoreCard from './ScoreCard.svelte';
 
 	export let data;
-	const { day } = data;
-	const today = new Date();
-
-	const daySelected = new SvelteSubject<Date>(day ?? today);
-	$: daySelected.set(day ?? today);
+	$: ({ processedDay } = data);
 
 	const accounts = api.buxfer.accounts.query();
 
@@ -30,13 +14,12 @@
 		reduce((sum, { balance }) => sum + balance, 0)
 	);
 
-	const transactions = api.buxfer.transactions.infiniteQuery(
+	$: transactions = api.buxfer.transactions.infiniteQuery(
 		{
-			startDate: startOfMonth(subMonths($daySelected, 1)),
-			endDate: $daySelected,
+			startDate: startOfMonth(subMonths(processedDay, 1)),
+			endDate: processedDay,
 		},
 		{
-			keepPreviousData: true,
 			getNextPageParam: (lastPage, allPages) => {
 				if (
 					lastPage &&
@@ -49,40 +32,26 @@
 				}
 				return undefined;
 			},
+			onSuccess(infiniteData) {
+				if (infiniteData.pageParams.splice(-1)) {
+					$transactions.fetchNextPage();
+				}
+			},
 		}
 	);
-	const transactions$ = of($transactions).pipe(
-		switchMap((query) => from(query.data?.pages ?? []).pipe(combineLatestWith(of(query)))),
-		mergeMap(([page, query]) => {
-			const result = page.transactions;
-			if (query.hasNextPage) {
-				query.fetchNextPage();
-			}
-			return result || [];
-		})
-	);
 
-	const expenses$ = daySelected.pipe(
-		debounceTime(150),
-		switchMap((selectedDay) => transactions$.pipe(combineLatestWith(of(selectedDay)))),
-		filter(([{ type }]) => type === 'expense'),
+	$: transactions$ = from($transactions.data?.pages.flatMap((page) => page.transactions) ?? []);
+
+	$: expenses$ = transactions$.pipe(
+		filter(({ type }) => type === 'expense'),
 		reduce(
-			([thisMonthSpent, lastMonthSpent], [{ date, amount }, selectedDay]) => {
-				const transactionDate = parse(date, 'MM/dd/yyyy', new Date());
-				return [
-					thisMonthSpent + (isSameMonth(transactionDate, selectedDay || today) ? amount : 0),
-					lastMonthSpent + (isSameMonth(transactionDate, subMonths(selectedDay || today, 1)) ? amount : 0),
-				];
-			},
-			[0, 0]
+			({ currMonthSpent, prevMonthSpent }, { date, amount }) => ({
+				currMonthSpent: currMonthSpent + (isSameMonth(date, processedDay) ? amount : 0),
+				prevMonthSpent: prevMonthSpent + (isSameMonth(date, subMonths(processedDay, 1)) ? amount : 0),
+			}),
+			{ currMonthSpent: 0, prevMonthSpent: 0 }
 		)
 	);
-
-	const prepareFinanseerData = combineLatest([balance$, expenses$]);
-
-	balance$.subscribe(console.log);
-	expenses$.subscribe(console.log);
-	prepareFinanseerData.subscribe(console.log);
 </script>
 
 <svelte:head>
@@ -90,11 +59,11 @@
 	<meta name="description" content="Finanseer Finanzen Portal" />
 </svelte:head>
 
-{#await lastValueFrom(prepareFinanseerData)}
+{#await lastValueFrom(combineLatest([balance$, expenses$]))}
 	<ScoreCard label="Balance" score={undefined} delay={0} />
 	<ScoreCard label="Spent" score={undefined} delay={1} />
 	<ScoreCard label="Forecast" score={undefined} delay={2} />
-{:then [balance, [currMonthSpent, prevMonthSpent]]}
+{:then [balance, { currMonthSpent, prevMonthSpent }]}
 	<ScoreCard label="Balance" score={balance} />
 	<ScoreCard label="Spent" score={currMonthSpent} comparison={{ score: prevMonthSpent, swap: true }} />
 	<ScoreCard label="Forecast" score={balance - currMonthSpent} />

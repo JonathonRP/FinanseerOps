@@ -1,17 +1,22 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import { page } from '$app/stores';
 	import MainLayout from './MainLayout.svelte';
 
-	$: name = ($page.route.id?.includes('finanseer') || undefined) && 'Finanseer';
+	export let data;
+	$: ({ finanseer, processedDate } = data);
 
-	$: preserveState = () =>
-		$page.route.id?.includes('dashboards') && $page.url.searchParams.get('selectedDay') ? $page.url.search : undefined;
+	$: name = (finanseer && 'Finanseer') || 'Finanzen';
 
-	$: links = ($page.route.id?.includes('finanseer') || undefined) && [
-		{ route: `${true ? `${base}/` : undefined}${preserveState()}` },
-		{ route: `${true ? `${base}/` : undefined}transactions${preserveState()}` },
-		{ route: `${false ? `${base}/` : undefined}analytics${preserveState()}` },
+	$: preserveState = finanseer && processedDate ? `?${new URLSearchParams({ processedDate })}` : undefined;
+
+	$: links = (processedDate && [
+		{ route: `${base}/${preserveState}` },
+		{ route: `${base}/transactions${preserveState}` },
+		{ route: false ? `${base}/analytics${preserveState}` : '/maintenance' },
+	]) || [
+		{ route: `${base}/` },
+		{ route: `${base}/transactions` },
+		{ route: false ? `${base}/analytics` : '/maintenance' },
 	];
 </script>
 

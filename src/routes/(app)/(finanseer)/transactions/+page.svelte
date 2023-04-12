@@ -1,23 +1,18 @@
-<!-- TODO - list of transactions (with info). search bar at top, total score card to right -->
 <script lang="ts">
-	import { isSameMonth, parse, startOfMonth, subMonths, formatRelative } from 'date-fns';
-	import { of, from, switchMap, filter, reduce, lastValueFrom, debounceTime, combineLatestWith, toArray } from 'rxjs';
-	import { SvelteSubject } from '$lib/utils';
+	import { isSameMonth, startOfMonth, subMonths, formatDistanceToNow } from 'date-fns';
+	import { from, filter, reduce, lastValueFrom, toArray } from 'rxjs';
 	import { api } from '$lib/api';
+	import search from '@iconify-icons/tabler/search';
+	import dot from '@iconify-icons/mdi/dot';
 	import ScoreCard from '../ScoreCard.svelte';
 
 	export let data;
-	const { day } = data;
+	$: ({ processedDay, searchFilter } = data);
 
-	const today = new Date();
-
-	const daySelected = new SvelteSubject<Date>(day ?? today);
-	$: daySelected.set(day ?? today);
-
-	const transactions = api.buxfer.transactions.infiniteQuery(
+	$: transactions = api.buxfer.transactions.infiniteQuery(
 		{
-			startDate: startOfMonth(subMonths($daySelected, 1)),
-			endDate: $daySelected,
+			startDate: startOfMonth(subMonths(processedDay, 1)),
+			endDate: processedDay,
 		},
 		{
 			keepPreviousData: true,
@@ -33,43 +28,38 @@
 				}
 				return undefined;
 			},
+			onSuccess(infiniteData) {
+				if (infiniteData.pageParams.splice(-1)) {
+					$transactions.fetchNextPage();
+				}
+			},
 		}
 	);
-	const transactions$ = from(
-		$transactions.data?.pages.flatMap((page) => {
-			const result = page.transactions;
-			if ($transactions.hasNextPage) {
-				$transactions.fetchNextPage();
-			}
-			return result;
-		}) || []
-	);
 
-	const transactionHistory$ = daySelected.pipe(
-		debounceTime(150),
-		switchMap((selectedDay) =>
-			transactions$.pipe(filter(({ date }) => isSameMonth(parse(date, 'MM-yyyy', new Date()), selectedDay)))
+	$: transactions$ = from($transactions.data?.pages.flatMap((page) => page.transactions) || []);
+
+	$: transactionHistory$ = transactions$.pipe(
+		filter(({ date }) => isSameMonth(date, processedDay)),
+		filter(({ type, tags, description }) =>
+			searchFilter
+				? type.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
+				  tags.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
+				  description.match(new RegExp(`${searchFilter}`, 'i')) !== null
+				: true
 		),
 		toArray()
 	);
 
-	const expenses$ = daySelected.pipe(
-		debounceTime(150),
-		switchMap((selectedDay) => transactions$.pipe(combineLatestWith(of(selectedDay)))),
-		filter(([{ type }]) => type === 'expense'),
+	$: expenses$ = transactions$.pipe(
+		filter(({ type }) => type === 'expense'),
 		reduce(
-			([thisMonthSpent, lastMonthSpent], [{ date, amount }, selectedDay]) => {
-				const transactionDate = parse(date, 'MM/dd/yyyy', new Date());
-				return [
-					thisMonthSpent + (isSameMonth(transactionDate, selectedDay || today) ? amount : 0),
-					lastMonthSpent + (isSameMonth(transactionDate, subMonths(selectedDay || today, 1)) ? amount : 0),
-				];
-			},
-			[0, 0]
+			({ currMonthSpent, prevMonthSpent }, { date, amount }) => ({
+				currMonthSpent: currMonthSpent + (isSameMonth(date, processedDay) ? amount : 0),
+				prevMonthSpent: prevMonthSpent + (isSameMonth(date, subMonths(processedDay, 1)) ? amount : 0),
+			}),
+			{ currMonthSpent: 0, prevMonthSpent: 0 }
 		)
 	);
-
-	expenses$.subscribe((val) => console.log(val));
 </script>
 
 <svelte:head>
@@ -77,11 +67,24 @@
 	<meta name="description" content="Finanseer Transactions Receipts" />
 </svelte:head>
 
-<div class="h-full md:grid md:grid-cols-[1fr_1fr]">
+<div class="h-full md:grid md:grid-cols-2">
+	<form
+		action=""
+		method="get"
+		class="flex w-full items-stretch rounded-full border-2 border-neutral-808 dark:border-neutral-309 md:col-span-2 md:w-96"
+		on:formdata={(e) => {
+			Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
+		}}>
+		<input name="search" class="w-full rounded-full bg-transparent px-3 text-lg" />
+		<button
+			class="flex border-spacing-0 items-center rounded-full bg-neutral-808 px-4 py-2.5 text-base font-semibold text-neutral-309 hover:bg-neutral-900 dark:bg-neutral-309 dark:text-neutral-808 hover:dark:bg-neutral-400">
+			<iconify-icon icon={search} inline />
+		</button>
+	</form>
 	<div
-		class="flex h-[26dvh] flex-col divide-y-2 divide-gray-100 overflow-hidden dark:divide-gray-500 md:mr-14 md:h-[80dvh] md:w-28">
+		class="mb-3.5 mt-3 flex h-[28dvh] snap-y snap-mandatory flex-col divide-y-2 divide-stone-200 overflow-auto dark:divide-stone-600 dark:divide-opacity-20 md:h-[50dvh] md:w-96">
 		{#await lastValueFrom(transactionHistory$)}
-			{#each new Array(3) as _blank, index (index)}
+			{#each new Array(6) as _blank, index (index)}
 				<div class="h-full">
 					<div
 						class="flex h-full w-full animate-pulse flex-row items-center justify-center space-x-5 pt-1"
@@ -102,34 +105,43 @@
 		{:then transacts}
 			{#each transacts as transaction, index (index)}
 				{@const { income, expense } = {
-					income: Math.sign(transaction.amount) === -1,
-					expense: Math.sign(transaction.amount) === 1,
+					income: transaction.type === 'income',
+					expense: transaction.type === 'expense',
 				}}
-				<div class="flex h-full w-full justify-between">
+				<div class="mx-2 flex shrink-0 snap-end items-end justify-between py-4">
 					<div>
-						<p class="text-base font-semibold text-black">{transaction.description}</p>
-						<p class="text-xs text-gray-200">
-							{formatRelative(parse(transaction.date, 'MM/dd/yyyy', new Date()), new Date())}
+						<p class="text-base font-semibold text-black dark:text-gray-300">{transaction.description}</p>
+						<p class="text-xs text-neutral-309">
+							{formatDistanceToNow(transaction.date)} ago <span><iconify-icon icon={dot} inline /></span>
+							{transaction.tags || 'Uncategorized'}
 						</p>
 					</div>
-					<p
-						class="mx-2 flex items-center rounded-full px-2 py-0.5 text-sm
+					<div>
+						<p
+							class="mx-2 flex h-full items-center rounded-full px-2 py-0.5 text-sm
                         {income ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
                         {expense ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}">
-						{transaction.amount}
-					</p>
-					<p class="text-xs text-gray-200">
-						{index + 1}/{transacts.length}
-					</p>
+							{transaction.amount.toLocaleString(navigator.languages[0] || navigator.language, {
+								style: 'currency',
+								currency: 'USD',
+								notation: 'compact',
+							})}
+						</p>
+						<p class="mt-0.5 flex items-center justify-center text-xs text-neutral-309">
+							{index + 1}/{transacts.length}
+						</p>
+					</div>
 				</div>
 			{/each}
 		{/await}
 	</div>
-	<div class="max-h-[6.8rem]">
-		{#await lastValueFrom(expenses$)}
-			<ScoreCard label="Spent" score={undefined} delay={1} />
-		{:then [currMonthSpent, prevMonthSpent]}
-			<ScoreCard label="Spent" score={currMonthSpent} comparison={{ score: prevMonthSpent, swap: true }} />
-		{/await}
+	<div class="col-span-2 grid grid-cols-[1fr_1fr]">
+		<div>
+			{#await lastValueFrom(expenses$)}
+				<ScoreCard label="Spent" score={undefined} delay={1} />
+			{:then { currMonthSpent, prevMonthSpent }}
+				<ScoreCard label="Spent" score={currMonthSpent} comparison={{ score: prevMonthSpent, swap: true }} />
+			{/await}
+		</div>
 	</div>
 </div>

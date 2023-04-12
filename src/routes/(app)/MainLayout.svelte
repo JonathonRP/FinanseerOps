@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { base } from '$app/paths';
 	import classes from 'svelte-transition-classes';
 	import { slide } from 'svelte/transition';
 
-	import { page } from '$app/stores';
+	import { page, navigating } from '$app/stores';
 	import { merge } from '$lib/utils';
 	import { session } from '$lib/stores/session';
 	import useBauhaus from '$lib/stores/useBauhaus';
@@ -13,12 +12,13 @@
 	import toast from 'svelte-french-toast';
 
 	import logo from '$lib/images/svelte-logo.svg';
-	import dashboard from '@iconify-icons/tabler/chart-infographic';
+	// import dashboard from '@iconify-icons/tabler/chart-infographic';
+	import dashboard from '@iconify-icons/tabler/chart-histogram';
+	import transactions from '@iconify-icons/tabler/history';
 	import newUser from '@iconify-icons/tabler/user-plus';
 
-	import Form from '$lib/Components/Form.svelte';
-	import Fields from '$lib/Components/Fields.svelte';
-	import Button from '$lib/Components/Button.svelte';
+	import Form from '$lib/components/Form.svelte';
+	import Button from '$lib/components/button.svelte';
 	import NavLink from './NavLink.svelte';
 
 	const state = {
@@ -29,12 +29,8 @@
 	export let links: { route: string }[] = [];
 	export let name = 'Finanzen';
 
-	const routes = merge(
-		[
-			{ icon: dashboard, route: `${true ? `${base}/` : undefined}`, label: 'dashboard' },
-			{ route: `${true ? `${base}/` : undefined}transactions`, label: 'transactions' },
-			{ route: `${false ? `${base}/` : undefined}analytics`, label: 'analytics' },
-		],
+	$: routes = merge(
+		[{ icon: dashboard, label: 'dashboard' }, { icon: transactions, label: 'transactions' }, { label: 'analytics' }],
 		links
 	);
 
@@ -42,6 +38,11 @@
 	let accountOpen: boolean = state.closed;
 
 	const { user } = $session;
+
+	$: if ($navigating && menuOpen) {
+		menuOpen = false;
+		accountOpen = false;
+	}
 
 	const toggleMenu = (definedState?: boolean | undefined) => (event: MouseEvent | KeyboardEvent) => {
 		const prevs = document.querySelectorAll('[aria-current="location"]');
@@ -86,7 +87,7 @@
 		on:keydown={toggleMenu(state.closed)}
 		class="fixed inset-0 z-10 bg-black bg-opacity-50 dark:bg-white dark:opacity-25 lg:hidden"
 		class:hidden={!menuOpen} />
-	<div class="fixed inset-y-0 z-10 hidden w-16 bg-white dark:bg-gray-800 sm:flex" class:sm:hidden={!menuOpen} />
+	<div class="fixed inset-0 z-10 hidden w-16 bg-white dark:bg-gray-800 sm:flex" class:sm:hidden={!menuOpen} />
 	<!-- Mobile bottom bar -->
 	<nav
 		aria-label="Options"
@@ -111,7 +112,7 @@
 	<!-- Left mini bar -->
 	<nav
 		aria-label="Options"
-		class="z-20 hidden w-16 flex-shrink-0 flex-col items-center rounded-br-3xl rounded-tr-3xl border-r-2 border-primary-100 bg-white py-4 shadow-md dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 sm:flex"
+		class="fixed inset-0 z-20 hidden w-16 flex-shrink-0 flex-col items-center rounded-br-3xl rounded-tr-3xl border-r-2 border-primary-100 bg-white py-4 shadow-md dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 md:flex lg:static"
 		class:rounded-none={false}
 		class:border-r-0={false}
 		class:shadow-none={false}>
@@ -170,17 +171,16 @@
 				<!-- UserSetting -->
 				{#if accountOpen}
 					<div transition:slide={{ duration: 300 }} class="flex-shrink-0 px-4 py-2">
-						<!-- FIXME - submitting still occures with error on name, useBauhaus is client only. -->
-						<!-- FIXME - loading state is not working, why? -->
 						<Form
 							method="post"
-							action="?/updateUser"
+							action="/user?/update"
 							let:submitting
+							let:handleBlur
 							validate={(values) => {
 								const errors = { name: '', useBauhaus: '' };
 								console.log(values);
 
-								if (values?.name === user?.name && Boolean(values?.useBauhaus) === $useBauhaus) {
+								if (values.name === user?.name && Boolean(values.useBauhaus) === $useBauhaus) {
 									errors.name = 'No changes to submit.';
 								}
 
@@ -197,33 +197,35 @@
 								if (dataForm.get('name') === user?.name) {
 									return false;
 								}
+								if (user) {
+									user.name = dataForm.get('name');
+								}
 								return true;
 							}}
 							on:success={(e) => {
 								toast.success(`Updated ${e.detail.data.get('name')}.`);
+								accountOpen = false;
 							}}
 							class="w-full space-y-4">
-							<Fields let:handleBlur>
+							<input
+								id="name"
+								name="name"
+								class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+								type="text"
+								value={user?.name}
+								on:blur={handleBlur}
+								disabled={submitting} />
+							<label class="mb-2 flex items-center font-bold" for="bauhaus">
 								<input
-									id="name"
-									name="name"
-									class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
-									type="text"
-									value={user?.name}
+									id="bauhaus"
+									name="useBauhaus"
+									class="form-checkbox mr-2 rounded-full leading-tight text-primary-500 focus:ring-primary-500 focus:ring-offset-neutral-808"
+									type="checkbox"
+									checked={$useBauhaus}
 									on:blur={handleBlur}
 									disabled={submitting} />
-								<label class="mb-2 flex items-center font-bold" for="bauhaus">
-									<input
-										id="bauhaus"
-										name="useBauhaus"
-										class="form-checkbox mr-2 rounded-full leading-tight text-primary-500 focus:ring-primary-500 focus:ring-offset-neutral-808"
-										type="checkbox"
-										checked={$useBauhaus}
-										on:blur={handleBlur}
-										disabled={submitting} />
-									<span class="text-sm">Use Buasuah</span>
-								</label>
-							</Fields>
+								<span class="text-sm">Use Buasuah</span>
+							</label>
 							<Button type="submit">Save Settings</Button>
 						</Form>
 					</div>
@@ -233,7 +235,7 @@
 				<ul class="flex-1 space-y-2 overflow-hidden px-4 py-10 hover:overflow-auto">
 					{#each routes as { icon, route, label }, id (id)}
 						<li>
-							<NavLink active={$page.url.pathname === route} {icon} {route}>
+							<NavLink active={$page.url.pathname === new URL(route, $page.url.origin).pathname} {icon} {route}>
 								{label}
 							</NavLink>
 						</li>
@@ -244,27 +246,26 @@
 					<div class="flex-shrink-0 px-4 py-2">
 						<Form
 							method="post"
-							action="?/inviteNewUser"
+							action="/user?/invite"
 							reset={true}
 							let:submitting
+							let:handleBlur
 							on:success={(e) => {
 								toast.success(`Sent invitation to ${e?.detail?.data.get('email')}.`);
 							}}
 							class="flex w-full items-center border-b py-2 transition-colors focus-within:border-primary-500 hover:border-primary-400">
 							<iconify-icon icon={newUser} inline class="mr-2 flex h-6 w-12 items-center" height="auto" />
-							<Fields let:handleBlur>
-								<input
-									id="email"
-									name="email"
-									class="mr-3 w-full appearance-none border-none bg-transparent px-2 py-1 leading-tight text-gray-600 focus:outline-none focus:ring-0 dark:text-neutral-309"
-									type="email"
-									inputmode="email"
-									on:blur={handleBlur}
-									placeholder="email address"
-									required
-									aria-label="email"
-									disabled={submitting} />
-							</Fields>
+							<input
+								id="email"
+								name="email"
+								class="mr-3 w-full appearance-none border-none bg-transparent px-2 py-1 leading-tight text-gray-600 focus:outline-none focus:ring-0 dark:text-neutral-309"
+								type="email"
+								inputmode="email"
+								on:blur={handleBlur}
+								placeholder="email address"
+								required
+								aria-label="email"
+								disabled={submitting} />
 							<Button type="submit" inline>Invite</Button>
 						</Form>
 					</div>
@@ -285,7 +286,7 @@
 	{/if}
 </aside>
 
-<main class="flex flex-1 flex-col px-6 pt-8 md:px-12 md:pt-16">
+<main class="flex flex-1 flex-col px-6 pt-8 md:pl-16 md:pr-32 md:pt-16 lg:px-12">
 	<slot />
 </main>
 
