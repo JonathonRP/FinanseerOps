@@ -21,6 +21,7 @@
 	"customizations": {
 		"vscode": {
 			"settings": {
+				"editor.fontLigatures": "'calt', 'ss01'",
 				"svelte.enable-ts-plugin": true,
 				"svelte.plugin.svelte.defaultScriptLanguage": "ts",
 

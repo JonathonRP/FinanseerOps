@@ -2,8 +2,10 @@ import { appRouter } from '$lib/server/api';
 import { createContext } from '$lib/server/api/trpc';
 import { validateData } from '$lib/utils';
 import { logger } from '$lib/server/logger';
-import { error, fail } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { object, string, coerce } from 'zod';
+import { TRPCError } from '@trpc/server';
+import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 
 export const actions = {
 	update: async (event) => {
@@ -11,29 +13,34 @@ export const actions = {
 		const { user } = event.locals.session;
 
 		// NOTE - handle formdata checkbox boolean existance and inexistance states for boolean.
-		const expectedUser = object({ useBauhaus: coerce.boolean().default(false), name: string() }).superRefine(
-			({ name }, ctx) => {
-				if (name === user?.name) {
+		const expectedUser = object({ useBauhaus: coerce.boolean().default(false), username: string() }).superRefine(
+			({ username }, ctx) => {
+				if (username === user?.name) {
 					ctx.addIssue({ code: 'custom', message: 'No changes to save.', path: ['name', 'useBauhaus'] });
 				}
 			}
 		);
-		const { data, errors } = await validateData(formData, expectedUser);
+		const result = await validateData(formData, expectedUser);
+		const { data } = result;
+		let { errors } = result;
 
 		if (errors) {
 			return fail(400, { formData: data, errors });
 		}
 
 		try {
-			if (user && user.name !== data.name) {
-				appRouter.createCaller(await createContext(event)).user.update({ ...user, ...data });
-			}
+			await appRouter
+				.createCaller(await createContext(event))
+				.user.update({ ...user, ...{ ...data, name: data.username } });
 
 			return { success: true };
 		} catch (err) {
 			logger.error(err);
-			// eslint-disable-next-line @typescript-eslint/no-throw-literal
-			throw error(500, { code: crypto.randomUUID(), message: 'Wow! you REALLY broke this!?' });
+			if (err instanceof TRPCError) {
+				errors = { user: [err.message] };
+				return fail(getHTTPStatusCodeFromError(err), { errors });
+			}
+			return fail(500, { errors });
 		}
 	},
 	invite: async (event) => {
@@ -43,20 +50,25 @@ export const actions = {
 				message: 'Email must be a valid email address.',
 			}),
 		});
-		const { data, errors } = await validateData(formData, expectedInvintation);
+		const result = await validateData(formData, expectedInvintation);
+		const { data } = result;
+		let { errors } = result;
 
 		if (errors) {
 			return fail(400, { formData: data, errors });
 		}
 
 		try {
-			appRouter.createCaller(await createContext(event)).user.invite(data);
+			await appRouter.createCaller(await createContext(event)).user.invite(data);
 
 			return { success: true };
 		} catch (err) {
 			logger.error(err);
-			// eslint-disable-next-line @typescript-eslint/no-throw-literal
-			throw error(500, { code: crypto.randomUUID(), message: 'Wow! you REALLY broke this!?' });
+			if (err instanceof TRPCError) {
+				errors = { email: [err.message] };
+				return fail(getHTTPStatusCodeFromError(err), { errors });
+			}
+			return fail(500, { errors: err });
 		}
 	},
 };

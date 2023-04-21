@@ -8,6 +8,9 @@
 	let form: HTMLFormElement;
 
 	const values = writable({} as Record<string, undefined | string | number | boolean | string[]>);
+	const formSubmitting = new BehaviorSubject(false);
+	const formValidity = new BehaviorSubject(false);
+
 	export let reset = false;
 
 	export let action: string;
@@ -15,8 +18,24 @@
 	export let validate = (_values: typeof $values) =>
 		Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), {}) as Record<string, string>;
 
-	const formSubmitting = new BehaviorSubject(false);
-	const formValidity = new BehaviorSubject(false);
+	const handleValidation = (onlyField: (EventTarget & HTMLInputElement) | undefined = undefined) => {
+		const errors = validate($values);
+
+		if (onlyField) {
+			onlyField.setCustomValidity(errors[onlyField.name] ?? '');
+		}
+
+		Array.from(form.elements)
+			.map((element) => element as HTMLInputElement)
+			.reduce((error, input) => {
+				input.checkValidity();
+				input.setCustomValidity(errors[input.name] ?? '');
+				return { ...error, ...{ [input.name]: input.validationMessage } };
+			}, {});
+
+		formValidity.next(form.checkValidity());
+		return $formValidity;
+	};
 
 	const dispatch = createEventDispatcher();
 
@@ -41,27 +60,9 @@
 				default:
 					await update({ reset });
 			}
+			handleValidation();
 			formSubmitting.next(false);
 		};
-	};
-
-	const handleValidation = (onlyField: (EventTarget & HTMLInputElement) | undefined = undefined) => {
-		const errors = validate($values);
-
-		if (onlyField) {
-			onlyField.setCustomValidity(errors[onlyField.name] ?? '');
-		}
-
-		Array.from(form.elements)
-			.map((element) => element as HTMLInputElement)
-			.reduce((error, input) => {
-				input.checkValidity();
-				input.setCustomValidity(errors[input.name] ?? '');
-				return { ...error, ...{ [input.name]: input.validationMessage } };
-			}, {});
-
-		formValidity.next(form.checkValidity());
-		return $formValidity;
 	};
 
 	const handleInput = ({ currentTarget }: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
@@ -108,9 +109,9 @@
 				(res, { name, valueAsNumber, value, checked, type }) => ({
 					...res,
 					[name]:
-						(type === 'checkbox' && checked) ||
 						((type === 'number' || type === 'range') && valueAsNumber) ||
-						(type !== 'checkbox' && type !== 'number' && value),
+						(type !== 'checkbox' && type !== 'number' && value) ||
+						checked,
 				}),
 				<typeof $values>{}
 			);

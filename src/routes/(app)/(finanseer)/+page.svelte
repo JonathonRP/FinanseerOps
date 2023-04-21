@@ -7,9 +7,9 @@
 	export let data;
 	$: ({ processedDay } = data);
 
-	const accounts = api.buxfer.accounts.query();
+	$: accounts = api.buxfer.accounts.query();
 
-	const balance$ = from($accounts.data ?? []).pipe(
+	$: balance$ = from($accounts.data ?? []).pipe(
 		filter(({ name }) => name.includes('1880') || name.includes('1334')),
 		reduce((sum, { balance }) => sum + balance, 0)
 	);
@@ -40,9 +40,7 @@
 		}
 	);
 
-	$: transactions$ = from($transactions.data?.pages.flatMap((page) => page.transactions) ?? []);
-
-	$: expenses$ = transactions$.pipe(
+	$: expenses$ = from($transactions.data?.pages.flatMap((page) => page.transactions) ?? []).pipe(
 		filter(({ type }) => type === 'expense'),
 		reduce(
 			({ currMonthSpent, prevMonthSpent }, { date, amount }) => ({

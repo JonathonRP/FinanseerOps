@@ -7,12 +7,10 @@
 		endOfMonth,
 		endOfWeek,
 		format,
-		isAfter,
 		isBefore,
 		isEqual,
 		isSameMonth,
 		isToday,
-		parse,
 		startOfMonth,
 		startOfToday,
 		startOfWeek,
@@ -23,8 +21,11 @@
 
 	const today = startOfToday();
 
-	$: date = $page.url.searchParams.get('processedDate');
-	$: processedDay = date ? parse(date, dateFormat, new Date()) : undefined;
+	$: ({
+		url: { searchParams, pathname },
+	} = $page);
+
+	export let processedDay: Date;
 
 	let currentDay = today;
 	$: prevPeriod = subMonths(currentDay, 1);
@@ -72,17 +73,20 @@
 				dayIsToday: isToday(day),
 				isPartOfMonth: isSameMonth(day, currentDay),
 			}}
-			<form
-				data-sveltekit-preload-data="tap"
-				action=""
-				method="get"
+			<div
 				class="pb-2 pt-1.5 {dayIdx > 6
 					? 'border-t border-stone-200 border-opacity-75 dark:border-stone-600 dark:border-opacity-25'
 					: undefined}">
-				<button
-					name={(isBefore(day, today) || undefined) && 'processedDate'}
-					value={format(day, dateFormat)}
-					disabled={isAfter(day, today)}
+				<a
+					href={`${pathname}${
+						((isBefore(day, today) || searchParams.has('search')) &&
+							`?${new URLSearchParams({
+								...(isBefore(day, today) && { processedDate: format(day, dateFormat) }),
+								...(searchParams.has('search') && { search: searchParams.get('search') || '' }),
+							})}`) ||
+						''
+					}
+					`}
 					class="mx-auto flex h-8 w-8 items-center justify-center rounded-full
 							{isSelected ? 'text-white' : undefined}
 							{isSelected && dayIsToday ? 'bg-primary-500' : undefined}
@@ -97,8 +101,8 @@
 					<time datetime={day.toLocaleString()}>
 						{format(day, 'd')}
 					</time>
-				</button>
-			</form>
+				</a>
+			</div>
 		{/each}
 	</div>
 </div>

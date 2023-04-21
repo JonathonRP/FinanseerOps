@@ -1,14 +1,16 @@
 <script lang="ts">
 	import classes from 'svelte-transition-classes';
 	import { slide } from 'svelte/transition';
+	import { derived } from 'svelte/store';
 
-	import { page, navigating } from '$app/stores';
+	import { base } from '$app/paths';
+	import { page } from '$app/stores';
 	import { merge } from '$lib/utils';
 	import { session } from '$lib/stores/session';
 	import useBauhaus from '$lib/stores/useBauhaus';
-	import { Role } from '@prisma/client';
 	import { signOut } from '@auth/sveltekit/client';
 
+	import { api } from '$lib/api';
 	import toast from 'svelte-french-toast';
 
 	import logo from '$lib/images/svelte-logo.svg';
@@ -26,23 +28,33 @@
 		open: true,
 	};
 
-	export let links: { route: string }[] = [];
 	export let name = 'Finanzen';
+	export let links: { route: string }[] = [];
 
 	$: routes = merge(
 		[{ icon: dashboard, label: 'dashboard' }, { icon: transactions, label: 'transactions' }, { label: 'analytics' }],
-		links
+		Object.assign(
+			[],
+			[
+				{ route: `${base}/` },
+				{ route: `${base}/transactions` },
+				{ route: false ? `${base}/analytics` : '/maintenance' },
+			],
+			links
+		)
 	);
 
 	let menuOpen: boolean = state.closed;
 	let accountOpen: boolean = state.closed;
 
-	const { user } = $session;
-
-	$: if ($navigating && menuOpen) {
-		menuOpen = false;
-		accountOpen = false;
-	}
+	const session$ = derived(
+		[session, derived(api.user.retrieve.query(), ($user) => $user.data)],
+		([$session, $user]) => ({
+			...$session,
+			user: $user,
+		})
+	);
+	$: ({ user } = $session$);
 
 	const toggleMenu = (definedState?: boolean | undefined) => (event: MouseEvent | KeyboardEvent) => {
 		const prevs = document.querySelectorAll('[aria-current="location"]');
@@ -176,44 +188,41 @@
 							action="/user?/update"
 							let:submitting
 							let:handleBlur
+							let:handleInput
 							validate={(values) => {
-								const errors = { name: '', useBauhaus: '' };
-								console.log(values);
+								const errors = { username: '', useBauhaus: '' };
 
-								if (values.name === user?.name && Boolean(values.useBauhaus) === $useBauhaus) {
-									errors.name = 'No changes to submit.';
+								if (user && values.username === user?.name && Boolean(values.useBauhaus) === $useBauhaus) {
+									errors.username = 'No changes to submit.';
 								}
 
 								return errors;
 							}}
 							on:submit={(e) => {
-								const dataForm = e.detail.data;
+								const form = Object.fromEntries(e.detail.data);
 
-								if (dataForm.get('useBauhaus') !== useBauhaus) {
-									useBauhaus.set(Boolean(dataForm.get('useBauhaus')));
+								if (form.useBauhaus !== $useBauhaus) {
+									useBauhaus.set(Boolean(form.useBauhaus));
 									toast.success(`Now using ${$useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
 								}
 
-								if (dataForm.get('name') === user?.name) {
+								if (user && user.name === form.username) {
 									return false;
-								}
-								if (user) {
-									user.name = dataForm.get('name');
 								}
 								return true;
 							}}
 							on:success={(e) => {
-								toast.success(`Updated ${e.detail.data.get('name')}.`);
-								accountOpen = false;
+								toast.success(`Updated ${e.detail.data.get('username')}.`);
 							}}
 							class="w-full space-y-4">
 							<input
 								id="name"
-								name="name"
+								name="username"
 								class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
 								type="text"
 								value={user?.name}
 								on:blur={handleBlur}
+								on:input={handleInput}
 								disabled={submitting} />
 							<label class="mb-2 flex items-center font-bold" for="bauhaus">
 								<input
@@ -223,6 +232,7 @@
 									type="checkbox"
 									checked={$useBauhaus}
 									on:blur={handleBlur}
+									on:input={handleInput}
 									disabled={submitting} />
 								<span class="text-sm">Use Buasuah</span>
 							</label>
@@ -242,7 +252,7 @@
 					{/each}
 				</ul>
 
-				{#if user?.role === Role.admin}
+				{#if user?.role === 'admin'}
 					<div class="flex-shrink-0 px-4 py-2">
 						<Form
 							method="post"
@@ -250,6 +260,7 @@
 							reset={true}
 							let:submitting
 							let:handleBlur
+							let:handleInput
 							on:success={(e) => {
 								toast.success(`Sent invitation to ${e?.detail?.data.get('email')}.`);
 							}}
@@ -262,6 +273,7 @@
 								type="email"
 								inputmode="email"
 								on:blur={handleBlur}
+								on:input={handleInput}
 								placeholder="email address"
 								required
 								aria-label="email"

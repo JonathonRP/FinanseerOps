@@ -102,7 +102,9 @@ function authentication() {
 							to: identifier,
 							from: provider.from,
 							subject: `Sign in to ${host}`,
+							// eslint-disable-next-line @typescript-eslint/no-use-before-define
 							text: text({ url, host }),
+							// eslint-disable-next-line @typescript-eslint/no-use-before-define
 							html: html({ url, host, theme }),
 						});
 						const failed = result.rejected.concat(result.pending).filter(Boolean);
@@ -146,6 +148,7 @@ function authentication() {
 					}
 				},
 			},
+			trustHost: true,
 		};
 
 		return SvelteKitAuth(authOptions)(...args);

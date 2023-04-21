@@ -1,5 +1,5 @@
-export async function load(event) {
-	const searchFilter = event.url.searchParams.get('search');
+export async function load({ url: { searchParams } }) {
+	const searchFilter = searchParams.get('search');
 
 	return {
 		searchFilter,

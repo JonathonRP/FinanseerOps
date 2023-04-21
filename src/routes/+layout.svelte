@@ -4,13 +4,15 @@
 	import 'sweetalert2/src/sweetalert2.scss';
 	import { Toaster } from 'svelte-french-toast';
 
-	import { addIcon } from 'iconify-icon';
-	import icon from '@iconify-icons/tabler/2fa.js';
+	import { api } from '$lib/api';
+	import { QueryClientProvider } from '@tanstack/svelte-query';
 
-	addIcon('2fa', icon);
+	export let data;
 </script>
 
 <Toaster position="top-right" />
 <div class="app flex h-screen max-h-[100dvh] dark:text-neutral-309">
-	<slot />
+	<QueryClientProvider client={api.hydrateQueryClient(data.api)}>
+		<slot />
+	</QueryClientProvider>
 </div>

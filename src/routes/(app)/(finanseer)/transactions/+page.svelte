@@ -52,6 +52,13 @@
 
 	$: expenses$ = transactions$.pipe(
 		filter(({ type }) => type === 'expense'),
+		filter(({ type, tags, description }) =>
+			searchFilter
+				? type.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
+				  tags.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
+				  description.match(new RegExp(`${searchFilter}`, 'i')) !== null
+				: true
+		),
 		reduce(
 			({ currMonthSpent, prevMonthSpent }, { date, amount }) => ({
 				currMonthSpent: currMonthSpent + (isSameMonth(date, processedDay) ? amount : 0),
@@ -84,7 +91,7 @@
 	<div
 		class="mb-3.5 mt-3 flex h-[28dvh] snap-y snap-mandatory flex-col divide-y-2 divide-stone-200 overflow-auto dark:divide-stone-600 dark:divide-opacity-20 md:h-[50dvh] md:w-96">
 		{#await lastValueFrom(transactionHistory$)}
-			{#each new Array(6) as _blank, index (index)}
+			{#each { length: 6 } as _blank, index (index)}
 				<div class="h-full">
 					<div
 						class="flex h-full w-full animate-pulse flex-row items-center justify-center space-x-5 pt-1"
@@ -118,16 +125,17 @@
 					</div>
 					<div>
 						<p
-							class="mx-2 flex h-full items-center rounded-full px-2 py-0.5 text-sm
+							class="mx-2 flex h-full items-center justify-center rounded-full px-2 py-0.5 text-sm
                         {income ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
-                        {expense ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}">
+                        {expense ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}
+						{!income && !expense ? 'bg-stone-200 dark:bg-slate-900' : undefined}">
 							{transaction.amount.toLocaleString(navigator.languages[0] || navigator.language, {
 								style: 'currency',
 								currency: 'USD',
 								notation: 'compact',
 							})}
 						</p>
-						<p class="mt-0.5 flex items-center justify-center text-xs text-neutral-309">
+						<p class="mx-2 mt-0.5 flex items-center justify-end px-2 text-xs text-neutral-309">
 							{index + 1}/{transacts.length}
 						</p>
 					</div>

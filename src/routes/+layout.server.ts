@@ -1,5 +1,8 @@
-export async function load({ locals: { session } }) {
+import { api } from '$lib/api';
+
+export async function load(event) {
 	return {
-		session,
+		session: event.locals.session,
+		api: api.ssr(event),
 	};
 }

@@ -14,6 +14,8 @@
 		"naumovs.color-highlight",
 		"bierner.color-info",
 		"gruntfuggly.todo-tree",
-		"exodiusstudios.comment-anchors"
+		"exodiusstudios.comment-anchors",
+		"yoavbls.pretty-ts-errors",
+		"johnpapa.winteriscoming"
 	]
 }

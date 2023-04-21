@@ -1,9 +1,10 @@
 import nodemailer from 'nodemailer';
 import { logger } from '$lib/server/logger';
+import { json } from '@sveltejs/kit';
 import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
 
 // TODO - evaluate Upstash and Vercel cronjobs alternatives.
-export async function POST() {
+export async function POST({ url }) {
 	const transporter = nodemailer.createTransport({
 		service: 'gmail',
 		auth: {
@@ -11,19 +12,63 @@ export async function POST() {
 			pass: SERVER_PASS,
 		},
 	});
+
 	const mailOptions = {
-		from: EMAIL_FROM,
+		from: EMAIL_FROM.replace('Finanzen', 'Finanseer'),
 		to: SERVER_USER,
 		subject: 'Personal Financal Report',
-		text: '',
+		text: `Go check your finances! @${url.origin}`,
+		// eslint-disable-next-line @typescript-eslint/no-use-before-define
+		html: html(url),
 	};
 
+	let result;
 	transporter.sendMail(mailOptions, (error, info) => {
 		// TODO - replace with logging collection data service (ex. Sentry).
 		if (error) {
-			logger.error(error);
+			result = error;
+			logger.error(result);
 		} else {
-			logger.info(`Email sent: ${info.response}`);
+			result = `Email sent: ${info.response}`;
+			logger.info(result);
 		}
 	});
+
+	return json(result);
+
+	function html(site: URL) {
+		const escapedHost = site.host.replace(/\./g, '&#8203;.');
+
+		const brandColor = '#ff3e00';
+		const buttonText = '#fff';
+
+		const color = {
+			background: '#f9f9f9',
+			text: '#444',
+			mainBackground: '#fff',
+		};
+		return `
+<body style="background: ${color.background};">
+  <table width="100%" border="0" cellspacing="20" cellpadding="0"
+    style="background: ${color.mainBackground}; max-width: 600px; margin: auto; border-radius: 10px;">
+    <tr>
+      <td align="center"
+        style="padding: 10px 0px; font-size: 22px; font-family: Helvetica, Arial, sans-serif; color: ${color.text};">
+        Review finances at <strong>${escapedHost}</strong>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding: 20px 0;">
+        <table border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center" style="border-radius: 5px;" bgcolor="${brandColor}"><a href="${site.origin}"
+                target="_blank"
+                style="font-size: 18px; font-family: Helvetica, Arial, sans-serif; color: ${buttonText}; text-decoration: none; border-radius: 5px; padding: 10px 20px; border: 1px solid ${brandColor}; display: inline-block; font-weight: bold;">View Finances</a></td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>`;
+	}
 }

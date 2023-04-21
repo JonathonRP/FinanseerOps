@@ -16,11 +16,11 @@
 	{type}
 	{...$$restProps}
 	on:click
-	class="rounded-full bg-primary-500 text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 disabled:bg-primary-700 dark:focus:ring-offset-neutral-808 {inline
+	class="item-center flex justify-center rounded-full bg-primary-500 text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 disabled:bg-primary-700 dark:focus:ring-offset-neutral-808 {inline
 		? 'flex-shrink-0 border-4 border-primary-500 px-2 py-1 text-sm hover:border-primary-600 disabled:border-primary-700'
-		: 'w-full px-4 py-2 text-center'}"
+		: ' w-full px-4 py-2'}"
 	aria-busy={loading}
 	disabled={disabled || (valid && !$valid) || loading || (submitting && $submitting)}>
-	<iconify-icon icon={loadingIcon} inline class="{loading ? 'flex' : 'hidden'} w-full items-center justify-center" />
+	<iconify-icon icon={loadingIcon} inline class="{loading || (submitting && $submitting) ? 'flex' : 'hidden'} fixed" />
 	<slot />
 </button>
