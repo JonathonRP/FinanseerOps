@@ -2,6 +2,7 @@ import { error, type HttpError } from '@sveltejs/kit';
 import { format, parse } from 'date-fns';
 import path from 'path';
 import { array, number, object, string, union, z, never, coerce, date } from 'zod';
+import { logger } from './logger';
 
 const DateFormat = 'yyyy-MM-dd';
 
@@ -110,16 +111,16 @@ const buxferTransactionsQueryInternal = object({
 
 const prefix = 'api';
 
-const api = {
+const apis = {
 	login: 'login',
 	accounts: 'accounts',
 	transactions: 'transactions',
 } as const;
 
 const routes = new Map<string, string>([
-	[api.login, path.join(prefix, api.login)],
-	[api.accounts, path.join(prefix, api.accounts)],
-	[api.transactions, path.join(prefix, api.transactions)],
+	[apis.login, path.join(prefix, apis.login)],
+	[apis.accounts, path.join(prefix, apis.accounts)],
+	[apis.transactions, path.join(prefix, apis.transactions)],
 ]);
 
 const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
@@ -127,7 +128,7 @@ const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
 const BuxferDomain = 'https://www.buxfer.com';
 
 const buxferProxy = async (
-	endpoint: keyof typeof api,
+	endpoint: keyof typeof apis,
 	body:
 		| z.infer<typeof buxferLoginAccount>
 		| (z.infer<typeof buxferTransactionsQueryInternal> & { token: z.infer<typeof buxferToken> })
@@ -159,8 +160,7 @@ const buxferProxy = async (
 	} catch (e) {
 		const err = e as HttpError;
 		// TODO - replace with logging collection data service (ex. Sentry).
-		// eslint-disable-next-line no-console
-		console.error('fetchError: ', err);
+		logger.error('fetchError: ', err);
 		// eslint-disable-next-line @typescript-eslint/no-throw-literal
 		throw error(err.status || 500, err.body);
 	}

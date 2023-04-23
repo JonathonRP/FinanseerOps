@@ -5,7 +5,8 @@
 // TODO - evaluate upstash vs [planetscale/database-js, koskimas/kysely, depot/kysely-planetscale, lawrenceecchen/prisma-generator-kysely, (custom authjs adapter)]
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["jsonProtocol"]
 }
 
 datasource db {

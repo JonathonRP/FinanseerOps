@@ -1,5 +1,7 @@
 // import * as Sentry from '@sentry/svelte';
 
+import { api } from '$lib/api';
+
 // Sentry.init({
 /* ... */
 // });
@@ -10,10 +12,10 @@ export async function handleError({ error, event }) {
 	// Sentry.captureException(error, { event, errorId });
 
 	// TODO - replace with logging collection data service (ex. Sentry).
-	// eslint-disable-next-line no-console
-	console.error((error as Error).message, error, { event, errorId });
+	api.logger.error.query({ error, ...{ event, errorId } });
 
 	return {
+		code: errorId,
 		message: (error as Error).message ?? 'Whoops!',
 	};
 }

@@ -5,7 +5,7 @@ import {
 	buxferAccounts,
 	BuxferClient,
 	buxferTransactions,
-} from '$lib/Buxfer';
+} from '$lib/server/buxfer';
 import { procedure, router } from '../trpc';
 
 export const buxferRouter = router({
