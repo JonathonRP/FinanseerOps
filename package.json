@@ -2,6 +2,7 @@
 	"name": "finanzen",
 	"version": "0.0.1",
 	"scripts": {
+		"postinstall": "prisma generate",
 		"db:seed": "dotenv -e .env.local -- pnpx prisma db seed",
 		"db:push": "dotenv -e .env.local -- pnpx prisma db push",
 		"prisma:generate": "dotenv -e .env.local -- pnpx prisma generate",
