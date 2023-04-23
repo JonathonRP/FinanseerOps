@@ -8,7 +8,8 @@ const config = {
 	preprocess: [vitePreprocess()],
 
 	kit: {
-		adapter: adapter({ runtime: 'edge', regions: 'all' }),
+		// { runtime: 'edge', regions: 'all' }
+		adapter: adapter(),
 	},
 
 	vitePlugin: {
