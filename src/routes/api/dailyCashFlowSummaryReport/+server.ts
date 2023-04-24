@@ -1,10 +1,13 @@
 import nodemailer from 'nodemailer';
 import { logger } from '$lib/server/logger';
 import { json } from '@sveltejs/kit';
+import { appRouter } from '$lib/server/api';
+import { createContext } from '$lib/server/api/trpc';
 import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
+import type { RequestHandler } from './$types';
 
 // TODO - evaluate Upstash and Vercel cronjobs alternatives.
-export async function POST({ url }) {
+const handle = (async ({ url, ...event }) => {
 	const transporter = nodemailer.createTransport({
 		service: 'gmail',
 		auth: {
@@ -15,7 +18,9 @@ export async function POST({ url }) {
 
 	const mailOptions = {
 		from: EMAIL_FROM.replace('Finanzen', 'Finanseer'),
-		to: SERVER_USER,
+		to: (await appRouter.createCaller(await createContext({ ...event, url })).users.retrieve())
+			.filter((user) => user.emailVerified)
+			.map((user) => user.email ?? ''),
 		subject: 'Personal Financal Report',
 		text: `Go check your finances! @${url.origin}`,
 		// eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -71,4 +76,6 @@ export async function POST({ url }) {
   </table>
 </body>`;
 	}
-}
+}) satisfies RequestHandler;
+export const GET = handle;
+export const POST = handle;
