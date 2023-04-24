@@ -3,7 +3,7 @@ import { logger } from '$lib/server/logger';
 import { json } from '@sveltejs/kit';
 import { appRouter } from '$lib/server/api';
 import { createContext } from '$lib/server/api/trpc';
-import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
+import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS, VERCEL_URL } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
 // TODO - evaluate Upstash and Vercel cronjobs alternatives.
@@ -21,10 +21,10 @@ const handle = (async ({ url, ...event }) => {
 		to: (await appRouter.createCaller(await createContext({ ...event, url })).users.retrieve())
 			.filter((user) => user.emailVerified)
 			.map((user) => user.email ?? ''),
-		subject: 'Personal Financal Report',
+		subject: 'Daily CashFlow Summary Report',
 		text: `Go check your finances! @${url.origin}`,
 		// eslint-disable-next-line @typescript-eslint/no-use-before-define
-		html: html(url),
+		html: html(VERCEL_URL || url),
 	};
 
 	let result;
