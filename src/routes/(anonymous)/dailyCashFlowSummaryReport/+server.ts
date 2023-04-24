@@ -34,7 +34,7 @@ const handle = (async ({ url, ...event }) => {
 			result = error;
 			logger.error(result);
 		} else {
-			result = `Email sent: ${info.response}`;
+			result = `Email sent: ${info.response} ${VERCEL_URL}`;
 			logger.info(result);
 		}
 	});
