@@ -16,19 +16,19 @@ const handle = (async ({ url, ...event }) => {
 		},
 	});
 
-	const mailOptions = {
+	const mailOptions = async (site = new URL(VERCEL_URL) || url) => ({
 		from: EMAIL_FROM.replace('Finanzen', 'Finanseer'),
 		to: (await appRouter.createCaller(await createContext({ ...event, url })).users.retrieve())
 			.filter((user) => user.emailVerified)
 			.map((user) => user.email ?? ''),
 		subject: 'Daily CashFlow Summary Report',
-		text: `Go check your finances! @${url.origin}`,
+		text: `Go check your finances! @${site.origin}`,
 		// eslint-disable-next-line @typescript-eslint/no-use-before-define
-		html: html(VERCEL_URL || url),
-	};
+		html: html(site),
+	});
 
 	let result;
-	transporter.sendMail(mailOptions, (error, info) => {
+	transporter.sendMail(await mailOptions(), (error, info) => {
 		// TODO - replace with logging collection data service (ex. Sentry).
 		if (error) {
 			result = error;
