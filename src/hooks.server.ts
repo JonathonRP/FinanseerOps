@@ -9,7 +9,7 @@ import { redirect, type Handle, type RequestEvent } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import PrismaAdapter from '$lib/prisma/adapter';
 import { logger } from '$lib/server/logger';
-import { BUXFER_EMAIL as SERVER_USER, BUXFER_PASS, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
+import { BUXFER_EMAIL as SERVER_USER, BUXFER_PASS, EMAIL_FROM, SERVER_PASS, VERCEL } from '$env/static/private';
 
 function loginAndResume(url: URL, loginEndpoint: string, redirectReason?: string) {
 	const { pathname, searchParams } = url;
@@ -96,7 +96,7 @@ function authentication() {
 					from: EMAIL_FROM,
 					async sendVerificationRequest(params) {
 						const { identifier, url, provider, theme } = params;
-						const { host } = new URL(url);
+						const { host } = new URL((VERCEL && `https://${event.request.headers.get('host')}`) || url);
 						const transport = createTransport(provider.server);
 						const result = await transport.sendMail({
 							to: identifier,
