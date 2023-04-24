@@ -16,7 +16,7 @@ const handle = (async ({ url, ...event }) => {
 		},
 	});
 
-	const mailOptions = async (site = new URL(VERCEL_URL) || url) => ({
+	const mailOptions = async (site = new URL(VERCEL_URL, 'https://') || url) => ({
 		from: EMAIL_FROM.replace('Finanzen', 'Finanseer'),
 		to: (await appRouter.createCaller(await createContext({ ...event, url })).users.retrieve())
 			.filter((user) => user.emailVerified)
@@ -77,5 +77,6 @@ const handle = (async ({ url, ...event }) => {
 </body>`;
 	}
 }) satisfies RequestHandler;
+
 export const GET = handle;
 export const POST = handle;
