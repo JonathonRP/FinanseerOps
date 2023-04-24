@@ -3,8 +3,7 @@ import { logger } from '$lib/server/logger';
 import { json } from '@sveltejs/kit';
 import { appRouter } from '$lib/server/api';
 import { createContext } from '$lib/server/api/trpc';
-import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS } from '$env/static/private';
-import { VERCEL_URL } from '$env/dynamic/private';
+import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS, VERCEL_URL } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
 // TODO - evaluate Upstash and Vercel cronjobs alternatives.
