@@ -1,0 +1,62 @@
+import { PrismaClient } from '@prisma/client';
+import { admin } from './data/admin';
+
+const db = new PrismaClient();
+
+if (!process.env.BUXFER_EMAIL) {
+	throw new Error('Please define Buxfer Account Email');
+}
+
+const defaultUser = {
+	email: process.env.BUXFER_EMAIL,
+	...admin,
+};
+
+const mainAccount = {
+	type: 'email',
+	provider: 'buxfer',
+	providerAccountId: process.env.BUXFER_EMAIL.normalize(),
+};
+
+async function main() {
+	await db.user.upsert({
+		where: {
+			email: defaultUser.email,
+		},
+		create: {
+			...defaultUser,
+			accounts: {
+				create: mainAccount,
+			},
+		},
+		update: {
+			...defaultUser,
+			accounts: {
+				upsert: [
+					{
+						where: {
+							provider_providerAccountId: {
+								provider: mainAccount.provider,
+								providerAccountId: mainAccount.providerAccountId,
+							},
+						},
+						create: mainAccount,
+						update: mainAccount,
+					},
+				],
+			},
+		},
+	});
+}
+
+export default main()
+	.then(async () => {
+		await db.$disconnect();
+	})
+	.catch(async (err) => {
+		// eslint-disable-next-line no-console
+		console.error('error:', err);
+		// NOTE - this file is run outside/isolated from application, this console log is to surface error.
+		await db.$disconnect();
+		process.exit(1);
+	});
