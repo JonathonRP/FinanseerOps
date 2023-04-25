@@ -1,7 +1,7 @@
 {
 	"crons": [
 		{
-			"path": "/dailyCashFlowSummaryReport",
+			"path": "/emailReminder",
 			"schedule": "0 8 * * *"
 		}
 	]
