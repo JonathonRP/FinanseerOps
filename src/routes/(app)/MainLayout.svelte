@@ -298,7 +298,7 @@
 	{/if}
 </aside>
 
-<main class="flex flex-1 flex-col px-6 pt-8 md:pl-16 md:pr-32 md:pt-16 lg:px-12">
+<main class="flex flex-1 flex-col px-6 pb-16 pt-8 md:pl-16 md:pr-32 lg:px-12">
 	<slot />
 </main>
 

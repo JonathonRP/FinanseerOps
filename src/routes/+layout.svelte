@@ -11,7 +11,7 @@
 </script>
 
 <Toaster position="top-right" />
-<div class="app flex h-screen max-h-[100dvh] dark:text-neutral-309">
+<div class="app flex min-h-[100dvh] dark:text-neutral-309">
 	<QueryClientProvider client={api.hydrateQueryClient(data.api)}>
 		<slot />
 	</QueryClientProvider>
