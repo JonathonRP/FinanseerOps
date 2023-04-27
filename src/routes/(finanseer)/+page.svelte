@@ -2,7 +2,7 @@
 	import { isSameMonth, startOfMonth, subMonths } from 'date-fns';
 	import { from, filter, reduce, combineLatest, lastValueFrom } from 'rxjs';
 	import { api } from '$lib/api';
-	import ScoreCard from './ScoreCard.svelte';
+	import ScoreCard from '$lib/components/dashboardWidgets/widgets/baseScoreCard.svelte';
 
 	export let data;
 	$: ({ processedDay } = data);

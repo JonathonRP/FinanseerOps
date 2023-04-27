@@ -4,7 +4,7 @@
 	import { api } from '$lib/api';
 	import search from '@iconify-icons/tabler/search';
 	import dot from '@iconify-icons/mdi/dot';
-	import ScoreCard from '../ScoreCard.svelte';
+	import ScoreCard from '$lib/components/dashboardWidgets/widgets/baseScoreCard.svelte';
 
 	export let data;
 	$: ({ processedDay, searchFilter } = data);
