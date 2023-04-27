@@ -78,13 +78,13 @@
 	<form
 		action=""
 		method="get"
-		class="flex w-full items-stretch rounded-full border-2 border-neutral-808 dark:border-neutral-309 md:col-span-2 md:w-96"
+		class="flex w-full rounded-full border-2 border-neutral-808 dark:border-neutral-309 md:col-span-2 md:w-96"
 		on:formdata={(e) => {
 			Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
 		}}>
-		<input name="search" class="w-full rounded-full bg-transparent px-3 text-lg" />
+		<input name="search" class="w-full rounded-full bg-transparent px-3 text-xs" />
 		<button
-			class="flex border-spacing-0 items-center rounded-full bg-neutral-808 px-4 py-2.5 text-base font-semibold text-neutral-309 hover:bg-neutral-900 dark:bg-neutral-309 dark:text-neutral-808 hover:dark:bg-neutral-400">
+			class="flex border-spacing-0 items-center rounded-full bg-neutral-808 px-[0.625rem] py-[0.525rem] text-sm font-semibold text-neutral-309 hover:bg-neutral-900 dark:bg-neutral-309 dark:text-neutral-808 hover:dark:bg-neutral-400">
 			<iconify-icon icon={search} inline />
 		</button>
 	</form>
