@@ -36,29 +36,23 @@
 		}
 	);
 
-	$: transactions$ = from($transactions.data?.pages.flatMap((page) => page.transactions) || []);
-
-	$: transactionHistory$ = transactions$.pipe(
-		filter(({ date }) => isSameMonth(date, processedDay)),
+	$: transactions$ = from($transactions.data?.pages.flatMap((page) => page.transactions) || []).pipe(
 		filter(({ type, tags, description }) =>
 			searchFilter
 				? type.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
 				  tags.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
 				  description.match(new RegExp(`${searchFilter}`, 'i')) !== null
 				: true
-		),
+		)
+	);
+
+	$: transactionHistory$ = transactions$.pipe(
+		filter(({ date }) => isSameMonth(date, processedDay)),
 		toArray()
 	);
 
 	$: expenses$ = transactions$.pipe(
 		filter(({ type }) => type === 'expense'),
-		filter(({ type, tags, description }) =>
-			searchFilter
-				? type.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
-				  tags.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
-				  description.match(new RegExp(`${searchFilter}`, 'i')) !== null
-				: true
-		),
 		reduce(
 			({ currMonthSpent, prevMonthSpent }, { date, amount }) => ({
 				currMonthSpent: currMonthSpent + (isSameMonth(date, processedDay) ? amount : 0),
