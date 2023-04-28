@@ -14,6 +14,7 @@ const handle = (async ({ url, ...event }) => {
 			user: SERVER_USER,
 			pass: SERVER_PASS,
 		},
+		secure: true,
 	});
 
 	const mailOptions = {
@@ -21,25 +22,26 @@ const handle = (async ({ url, ...event }) => {
 		to: (await appRouter.createCaller(await createContext({ ...event, url })).users.retrieve())
 			.filter((user) => user.emailVerified)
 			.map((user) => user.email ?? ''),
-		subject: 'Reminder',
+		subject: '***Important - Reminder to check CashFlow',
 		text: `Go check your finances! @${url.origin}`,
 		// eslint-disable-next-line @typescript-eslint/no-use-before-define
 		html: html(url),
 	};
 
-	let result;
-	transporter.sendMail(mailOptions, (error, info) => {
-		// TODO - replace with logging collection data service (ex. Sentry).
-		if (error) {
-			result = error;
-			logger.error(result);
-		} else {
-			result = `Email sent: ${info.response}`;
-			logger.info(result);
-		}
+	await new Promise((resolve, reject) => {
+		transporter.sendMail(mailOptions, (error, info) => {
+			// TODO - replace with logging collection data service (ex. Sentry).
+			if (error) {
+				logger.error(error);
+				reject(error);
+			} else {
+				logger.info(info);
+				resolve(`Email sent: ${info.response}`);
+			}
+		});
 	});
 
-	return json(result);
+	return json({ success: true });
 
 	function html(site: URL) {
 		const escapedHost = site.host.replace(/\./g, '&#8203;.');

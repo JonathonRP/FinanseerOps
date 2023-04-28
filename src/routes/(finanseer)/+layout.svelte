@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import MainLayout from '../MainLayout.svelte';
+	import MainLayout from '../(app)/MainLayout.svelte';
 	import DateSelect from './DateSelect.svelte';
 
 	export let data;
