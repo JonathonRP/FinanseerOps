@@ -22,7 +22,7 @@ const handle = (async ({ url, ...event }) => {
 		to: (await appRouter.createCaller(await createContext({ ...event, url })).users.retrieve())
 			.filter((user) => user.emailVerified)
 			.map((user) => user.email ?? ''),
-		subject: '[ACTION REQUIRED] Reminder to check CashFlow',
+		subject: '[URGENT] Reminder to check CashFlow',
 		text: `Go check your finances! @${url.origin}`,
 		// eslint-disable-next-line @typescript-eslint/no-use-before-define
 		html: html(url),
