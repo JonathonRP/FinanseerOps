@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { isSameDay, startOfMonth, subMonths, formatDistanceToNow, addDays } from 'date-fns';
-	import { from, filter, reduce, lastValueFrom, toArray, tap, pipe } from 'rxjs';
+	import { formatDistanceToNow, addDays } from 'date-fns';
+	import { from, filter, reduce, lastValueFrom, toArray } from 'rxjs';
 	import { api } from '$lib/api';
 	import search from '@iconify-icons/tabler/search';
 	import dot from '@iconify-icons/mdi/dot';
@@ -59,8 +59,7 @@
 				  tags.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
 				  description.match(new RegExp(`${searchFilter}`, 'i')) !== null
 				: true
-		),
-		tap((val) => console.log(val))
+		)
 	);
 
 	$: expenses$ = transactions$.pipe(
