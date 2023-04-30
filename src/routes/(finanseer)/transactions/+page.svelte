@@ -1,18 +1,34 @@
 <script lang="ts">
-	import { isSameMonth, startOfMonth, subMonths, formatDistanceToNow } from 'date-fns';
-	import { from, filter, reduce, lastValueFrom, toArray } from 'rxjs';
+	import { isSameDay, startOfMonth, subMonths, formatDistanceToNow, addDays } from 'date-fns';
+	import { from, filter, reduce, lastValueFrom, toArray, tap } from 'rxjs';
 	import { api } from '$lib/api';
 	import search from '@iconify-icons/tabler/search';
 	import dot from '@iconify-icons/mdi/dot';
 	import ScoreCard from '$lib/components/dashboardWidgets/widgets/baseScoreCard.svelte';
 
 	export let data;
+
+	const presence = {
+		initial: {
+			y: 10,
+			opacity: 0,
+		},
+		animate: {
+			y: 0,
+			opacity: 1,
+		},
+		exit: {
+			y: -10,
+			opacity: 0,
+		},
+	};
+
 	$: ({ processedDay, searchFilter } = data);
 
 	$: transactions = api.buxfer.transactions.infiniteQuery(
 		{
-			startDate: startOfMonth(subMonths(processedDay, 1)),
-			endDate: processedDay,
+			startDate: processedDay,
+			endDate: addDays(processedDay, 1),
 		},
 		{
 			keepPreviousData: true,
@@ -47,19 +63,15 @@
 	);
 
 	$: transactionHistory$ = transactions$.pipe(
-		filter(({ date }) => isSameMonth(date, processedDay)),
 		toArray()
 	);
 
 	$: expenses$ = transactions$.pipe(
 		filter(({ type }) => type === 'expense'),
 		reduce(
-			({ currMonthSpent, prevMonthSpent }, { date, amount }) => ({
-				currMonthSpent: currMonthSpent + (isSameMonth(date, processedDay) ? amount : 0),
-				prevMonthSpent: prevMonthSpent + (isSameMonth(date, subMonths(processedDay, 1)) ? amount : 0),
-			}),
-			{ currMonthSpent: 0, prevMonthSpent: 0 }
-		)
+			(acc, { date, amount }) => acc + amount,
+			0
+		),
 	);
 </script>
 
@@ -72,7 +84,7 @@
 	<form
 		action=""
 		method="get"
-		class="flex w-full rounded-full border-2 border-neutral-808 dark:border-neutral-309 md:col-span-2 md:w-96"
+		class="flex h-9 w-full rounded-full border-2 border-neutral-808 dark:border-neutral-309 md:col-span-2 md:w-96"
 		on:formdata={(e) => {
 			Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
 		}}>
@@ -120,9 +132,9 @@
 					<div>
 						<p
 							class="mx-2 flex h-full items-center justify-center rounded-full px-2 py-0.5 text-sm
-                        {income ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
-                        {expense ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}
-						{!income && !expense ? 'bg-stone-200 dark:bg-slate-900' : undefined}">
+			{income ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
+			{expense ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}
+			{!income && !expense ? 'bg-stone-200 dark:bg-slate-900' : undefined}">
 							{transaction.amount.toLocaleString(navigator.languages[0] || navigator.language, {
 								style: 'currency',
 								currency: 'USD',
@@ -140,9 +152,9 @@
 	<div class="col-span-2 grid grid-cols-[1fr_1fr]">
 		<div>
 			{#await lastValueFrom(expenses$)}
-				<ScoreCard label="Spent" score={undefined} delay={1} />
-			{:then { currMonthSpent, prevMonthSpent }}
-				<ScoreCard label="Spent" score={currMonthSpent} comparison={{ score: prevMonthSpent, swap: true }} />
+				<ScoreCard label="Spent" score={undefined} />
+			{:then currDaySpent }
+				<ScoreCard label="Spent" score={currDaySpent} />
 			{/await}
 		</div>
 	</div>
