@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatDistanceToNow, addDays } from 'date-fns';
+	import { formatDistanceToNow, addDays, format } from 'date-fns';
 	import { from, filter, reduce, lastValueFrom, toArray } from 'rxjs';
 	import { api } from '$lib/api';
 	import search from '@iconify-icons/tabler/search';
@@ -23,7 +23,7 @@
 		},
 	};
 
-	$: ({ processedDay, searchFilter } = data);
+	$: ({ processedDate, processedDay, searchFilter } = data);
 
 	$: transactions = api.buxfer.transactions.infiniteQuery(
 		{
@@ -84,7 +84,8 @@
 		on:formdata={(e) => {
 			Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
 		}}>
-		<input name="search" class="w-full rounded-full bg-transparent px-3 text-xs" />
+		<input type="hidden" name="processedDate" bind:value={processedDate} />
+		<input name="search" class="w-full rounded-full bg-transparent px-3 text-xs" value={searchFilter} />
 		<button
 			class="flex border-spacing-0 items-center rounded-full bg-neutral-808 px-[0.625rem] py-[0.525rem] text-sm font-semibold text-neutral-309 hover:bg-neutral-900 dark:bg-neutral-309 dark:text-neutral-808 hover:dark:bg-neutral-400">
 			<iconify-icon icon={search} inline />
