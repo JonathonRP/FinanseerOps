@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { isSameDay, startOfMonth, subMonths, formatDistanceToNow, addDays } from 'date-fns';
-	import { from, filter, reduce, lastValueFrom, toArray, tap } from 'rxjs';
+	import { formatDistanceToNow, addDays } from 'date-fns';
+	import { from, filter, reduce, lastValueFrom, toArray } from 'rxjs';
 	import { api } from '$lib/api';
 	import search from '@iconify-icons/tabler/search';
 	import dot from '@iconify-icons/mdi/dot';
@@ -27,7 +27,7 @@
 
 	$: transactions = api.buxfer.transactions.infiniteQuery(
 		{
-			startDate: processedDay,
+			startDate: addDays(processedDay, 1),
 			endDate: addDays(processedDay, 1),
 		},
 		{
@@ -62,14 +62,10 @@
 		)
 	);
 
-	$: transactionHistory$ = transactions$.pipe(
-		toArray()
-	);
-
 	$: expenses$ = transactions$.pipe(
 		filter(({ type }) => type === 'expense'),
 		reduce(
-			(acc, { date, amount }) => acc + amount,
+			(acc, { amount }) => acc + amount,
 			0
 		),
 	);
@@ -96,7 +92,7 @@
 	</form>
 	<div
 		class="mb-3.5 mt-3 flex h-[28dvh] snap-y snap-mandatory flex-col divide-y-2 divide-stone-200 overflow-auto dark:divide-stone-600 dark:divide-opacity-20 md:h-[50dvh] md:w-96">
-		{#await lastValueFrom(transactionHistory$)}
+		{#await lastValueFrom(transactions$.pipe(toArray()))}
 			{#each { length: 6 } as _blank, index (index)}
 				<div class="h-full">
 					<div
