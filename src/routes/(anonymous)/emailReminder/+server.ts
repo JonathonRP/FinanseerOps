@@ -3,7 +3,7 @@ import { logger } from '$lib/server/logger';
 import { json } from '@sveltejs/kit';
 import { appRouter } from '$lib/server/api';
 import { createContext } from '$lib/server/api/trpc';
-import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS, VERCEL, VERCEL_URL } from '$env/static/private';
+import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS, VERCEL_DOMAIN } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
 // TODO - evaluate Upstash and Vercel cronjobs alternatives.
@@ -25,7 +25,7 @@ const handle = (async ({ url, ...event }) => {
 		subject: 'Reminder to check CashFlow',
 		text: `Go check your finances!`,
 		// eslint-disable-next-line @typescript-eslint/no-use-before-define
-		html: html((VERCEL && new URL(`https://${VERCEL_URL}`)) || url),
+		html: html(new URL(`https://${VERCEL_DOMAIN}`) || url),
 	};
 
 	await new Promise((resolve, reject) => {

@@ -1,18 +1,11 @@
 <script lang="ts">
-	import { from, filter, reduce, combineLatest, lastValueFrom } from 'rxjs';
+	import { from, filter, reduce, lastValueFrom } from 'rxjs';
 	import { isSameMonth, startOfMonth, subMonths } from 'date-fns';
 	import { api } from '$lib/api';
 	import ScoreCard from './baseScoreCard.svelte';
 
 	export let processedDay: Date;
 	export let delay: number;
-
-	$: accounts = api.buxfer.accounts.query();
-
-	$: balance$ = from($accounts.data ?? []).pipe(
-		filter(({ name }) => name.includes('1880') || name.includes('1334')),
-		reduce((sum, { balance }) => sum + balance, 0)
-	);
 
 	$: transactions = api.buxfer.transactions.infiniteQuery(
 		{
@@ -42,12 +35,18 @@
 
 	$: expenses$ = from($transactions.data?.pages.flatMap((page) => page.transactions) ?? []).pipe(
 		filter(({ type }) => type === 'expense'),
-		reduce((acc, { date, amount }) => acc + (isSameMonth(date, processedDay) ? amount : 0), 0)
+		reduce(
+			({ currMonthSpent, prevMonthSpent }, { date, amount }) => ({
+				currMonthSpent: currMonthSpent + (isSameMonth(date, processedDay) ? amount : 0),
+				prevMonthSpent: prevMonthSpent + (isSameMonth(date, subMonths(processedDay, 1)) ? amount : 0),
+			}),
+			{ currMonthSpent: 0, prevMonthSpent: 0 }
+		)
 	);
 </script>
 
-{#await lastValueFrom(combineLatest([balance$, expenses$]))}
-	<ScoreCard label="Forecast" score={undefined} {delay} />
-{:then [balance, spent]}
-	<ScoreCard label="Forecast" score={balance - spent} />
+{#await lastValueFrom(expenses$)}
+	<ScoreCard label="Spent" score={undefined} {delay} />
+{:then {currMonthSpent, prevMonthSpent}}
+	<ScoreCard label="Spent" score={currMonthSpent} comparison={{ score: prevMonthSpent, swap: true }} />
 {/await}
