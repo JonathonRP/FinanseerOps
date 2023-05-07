@@ -29,6 +29,7 @@
 	} = $page);
 
 	export let processedDay: Date;
+	let container: HTMLDivElement;
 
 	let currentDay = today;
 	$: prevPeriod = subMonths(currentDay, 1);
@@ -40,14 +41,16 @@
 	});
 </script>
 
-<div class="h-[357px] max-h-[357px] min-h-[357px] md:pr-7 lg:pr-14">
+<div
+	bind:this={container}
+	class="max-h-[{container?.clientHeight}px] min-h-[{container?.clientHeight}px] md:pr-7 lg:pr-14">
 	<div class="flex items-center">
 		{#key currentDay}
 			<h2
-				in:fly={{ x: 40 * direction, opacity: 0, duration: 500 / 2, delay: 300 / 2, easing: cubicInOut }}
-				out:fly={{ x: -40 * direction, opacity: 0, duration: 200 / 2, easing: cubicInOut }}
+				in:fly={{ x: 40 * direction, opacity: 0, duration: 500 / 2, delay: 500 / 2, easing: cubicInOut }}
+				out:fly={{ x: -40 * direction, opacity: 0, duration: 500 / 2, easing: cubicInOut }}
 				class="mr-4 flex-auto font-semibold text-gray-900 dark:text-neutral-309">
-				{format(currentDay, 'yyyy, MMMM')}
+				{format(currentDay, 'yyyy, MMM')}
 			</h2>
 		{/key}
 		<button
@@ -75,16 +78,16 @@
 	</div>
 	{#key currentDay}
 		<div
-			in:fly={{ x: 40 * direction, opacity: 0, duration: 200 / 2, delay: 600 / 2, easing: cubicInOut }}
-			out:fly={{ x: -40 * direction, opacity: 0, duration: 200 / 2, delay: 300 / 2, easing: cubicInOut }}
+			in:fly={{ x: 40 * direction, opacity: 0, duration: 500 / 2, delay: 500 / 2, easing: cubicInOut }}
+			out:fly={{ x: -40 * direction, opacity: 0, duration: 500 / 2, delay: 100 / 2, easing: cubicInOut }}
 			class="mt-5 grid grid-cols-7 text-center text-xs leading-6 text-gray-500 dark:text-neutral-309">
 			{#each daysOfPeriod.slice(0, 7) as day, dayIdx (dayIdx)}
 				<span>{format(day, 'eeeeee')}</span>
 			{/each}
 		</div>
 		<div
-			in:fly={{ x: 40 * direction, opacity: 0, duration: 200 / 2, delay: 600 / 2, easing: cubicInOut }}
-			out:fly={{ x: -40 * direction, opacity: 0, duration: 200 / 2, delay: 300 / 2, easing: cubicInOut }}
+			in:fly={{ x: 40 * direction, opacity: 0, duration: 500 / 2, delay: 500 / 2, easing: cubicInOut }}
+			out:fly={{ x: -40 * direction, opacity: 0, duration: 500 / 2, delay: 100 / 2, easing: cubicInOut }}
 			class="mt-2 grid grid-cols-7 text-sm">
 			{#each daysOfPeriod as day, dayIdx (day.toLocaleString())}
 				{@const { isSelected, dayIsToday, isPartOfMonth } = {
