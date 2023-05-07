@@ -1,23 +1,16 @@
 <script lang="ts">
-	import { from, filter, reduce, combineLatest, lastValueFrom } from 'rxjs';
-	import { isSameMonth, startOfMonth, subMonths } from 'date-fns';
+	import { from, filter, reduce, lastValueFrom } from 'rxjs';
+	import { addDays, isSameMonth, startOfMonth } from 'date-fns';
 	import { api } from '$lib/api';
-	import ScoreCard from './baseScoreCard.svelte';
+	import ScoreCard from './ScoreCard.svelte';
 
 	export let processedDay: Date;
 	export let delay: number;
 
-	$: accounts = api.buxfer.accounts.query();
-
-	$: balance$ = from($accounts.data ?? []).pipe(
-		filter(({ name }) => name.includes('1880') || name.includes('1334')),
-		reduce((sum, { balance }) => sum + balance, 0)
-	);
-
 	$: transactions = api.buxfer.transactions.infiniteQuery(
 		{
-			startDate: startOfMonth(subMonths(processedDay, 1)),
-			endDate: processedDay,
+			startDate: startOfMonth(processedDay),
+			endDate: addDays(processedDay, 1),
 		},
 		{
 			getNextPageParam: (lastPage, allPages) => {
@@ -46,8 +39,8 @@
 	);
 </script>
 
-{#await lastValueFrom(combineLatest([balance$, expenses$]))}
-	<ScoreCard label="Forecast" score={undefined} {delay} />
-{:then [balance, spent]}
-	<ScoreCard label="Forecast" score={balance - spent} />
+{#await lastValueFrom(expenses$)}
+	<ScoreCard label="Budget" score={undefined} {delay} />
+{:then spent}
+	<ScoreCard label="Budget" score={2000} comparison={{ score: spent, swap: true }} />
 {/await}

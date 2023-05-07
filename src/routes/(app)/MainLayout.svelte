@@ -18,9 +18,9 @@
 	import dashboard from '@iconify-icons/tabler/chart-histogram';
 	import transactions from '@iconify-icons/tabler/history';
 	import newUser from '@iconify-icons/tabler/user-plus';
+	import loadingIcon from '@iconify-icons/line-md/loading-loop';
 
 	import Form from '$lib/components/Form.svelte';
-	import Button from '$lib/components/button.svelte';
 	import NavLink from './NavLink.svelte';
 
 	const state = {
@@ -32,16 +32,11 @@
 	export let links: { route: string }[] = [];
 
 	$: routes = merge(
-		[{ icon: dashboard, label: 'dashboard' }, { icon: transactions, label: 'transactions' }, { label: 'analytics' }],
-		Object.assign(
-			[],
-			[
-				{ route: `${base}/` },
-				{ route: `${base}/transactions` },
-				{ route: false ? `${base}/analytics` : '/maintenance' },
-			],
-			links
-		)
+		[
+			{ icon: dashboard, label: 'dashboard' },
+			{ icon: transactions, label: 'transactions' },
+		],
+		Object.assign([], [{ route: `${base}/` }, { route: `${base}/transactions` }], links)
 	);
 
 	let menuOpen: boolean = state.closed;
@@ -51,7 +46,7 @@
 		[session, derived(api.user.retrieve.query(), ($user) => $user.data)],
 		([$session, $user]) => ({
 			...$session,
-			user: $user,
+			user: $user || { name: '', image: '', role: 'user' },
 		})
 	);
 	$: ({ user } = $session$);
@@ -85,7 +80,7 @@
 			.slice(0, 6);
 
 	$: userImage =
-		user?.image ||
+		user.image ||
 		`https://source.boringavatars.com/${($useBauhaus && 'bauhaus') || 'beam'}/120/${encodeURIComponent(
 			user?.name ?? ''
 		)}?colors=000000,ff3e00,CDCDCD,4075a6,${randomColor()}`;
@@ -187,12 +182,13 @@
 							method="post"
 							action="/user?/update"
 							let:submitting
+							let:valid
 							let:handleBlur
 							let:handleInput
 							validate={(values) => {
 								const errors = { username: '', useBauhaus: '' };
 
-								if (user && values.username === user?.name && Boolean(values.useBauhaus) === $useBauhaus) {
+								if (values.username === user?.name && Boolean(values.useBauhaus) === $useBauhaus) {
 									errors.username = 'No changes to submit.';
 								}
 
@@ -201,14 +197,15 @@
 							on:submit={(e) => {
 								const form = Object.fromEntries(e.detail.data);
 
-								if (form.useBauhaus !== $useBauhaus) {
+								if (Boolean(form.useBauhaus) !== $useBauhaus) {
 									useBauhaus.set(Boolean(form.useBauhaus));
 									toast.success(`Now using ${$useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
 								}
 
-								if (user && user.name === form.username) {
+								if (user.name === form.username) {
 									return false;
 								}
+								user.name = form.username;
 								return true;
 							}}
 							on:success={(e) => {
@@ -220,7 +217,7 @@
 								name="username"
 								class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
 								type="text"
-								value={user?.name}
+								value={user.name}
 								on:blur={handleBlur}
 								on:input={handleInput}
 								disabled={submitting} />
@@ -236,7 +233,14 @@
 									disabled={submitting} />
 								<span class="text-sm">Use Buasuah</span>
 							</label>
-							<Button type="submit">Save Settings</Button>
+							<button
+								type="submit"
+								class="item-center flex w-full justify-center rounded-full bg-primary-500 px-4 py-2 text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 disabled:bg-primary-700 dark:focus:ring-offset-neutral-808"
+								aria-busy={submitting}
+								disabled={!valid || submitting}>
+								<iconify-icon icon={loadingIcon} inline class="{submitting ? 'flex' : 'hidden'} fixed" />
+								Save Settings
+							</button>
 						</Form>
 					</div>
 				{/if}
@@ -252,13 +256,14 @@
 					{/each}
 				</ul>
 
-				{#if user?.role === 'admin'}
+				{#if user.role === 'admin'}
 					<div class="flex-shrink-0 px-4 py-2">
 						<Form
 							method="post"
 							action="/user?/invite"
 							reset={true}
 							let:submitting
+							let:valid
 							let:handleBlur
 							let:handleInput
 							on:success={(e) => {
@@ -278,19 +283,25 @@
 								required
 								aria-label="email"
 								disabled={submitting} />
-							<Button type="submit" inline>Invite</Button>
+							<button
+								type="submit"
+								class="item-center flex flex-shrink-0 justify-center rounded-full border-4 border-primary-500 bg-primary-500 px-2 py-1 text-sm text-white transition-colors hover:border-primary-600 hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 disabled:border-primary-700 disabled:bg-primary-700 dark:focus:ring-offset-neutral-808"
+								aria-busy={submitting}
+								disabled={!valid || submitting}>
+								<iconify-icon icon={loadingIcon} inline class="{submitting ? 'flex' : 'hidden'} fixed" />
+								Invite
+							</button>
 						</Form>
 					</div>
 				{/if}
 				{#if user}
 					<div class="flex-shrink-0 p-4">
-						<Button
+						<button
 							type="button"
-							on:click={() => {
-								signOut();
-							}}>
+							class="item-center flex w-full justify-center rounded-full bg-primary-500 px-4 py-2 text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 disabled:bg-primary-700 dark:focus:ring-offset-neutral-808"
+							on:click={() => signOut()}>
 							Sign Out
-						</Button>
+						</button>
 					</div>
 				{/if}
 			</nav>

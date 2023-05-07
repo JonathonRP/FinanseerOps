@@ -121,5 +121,5 @@
 </script>
 
 <form {action} {...$$restProps} novalidate bind:this={form} use:enhance={submit}>
-	<slot submitting={$formSubmitting} {handleInput} {handleBlur} />
+	<slot valid={$formValidity} submitting={$formSubmitting} {handleInput} {handleBlur} />
 </form>

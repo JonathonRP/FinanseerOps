@@ -1,27 +1,14 @@
 <script lang="ts">
-	import { formatDistanceToNow, addDays, format } from 'date-fns';
-	import { from, filter, reduce, lastValueFrom, toArray } from 'rxjs';
+	import { formatDistanceToNow, addDays } from 'date-fns';
+	import { filter, toArray, switchMap, scan, of, startWith } from 'rxjs';
 	import { api } from '$lib/api';
 	import search from '@iconify-icons/tabler/search';
 	import dot from '@iconify-icons/mdi/dot';
-	import ScoreCard from '$lib/components/dashboardWidgets/widgets/baseScoreCard.svelte';
+	import { slide } from 'svelte/transition';
+	import { cubicInOut } from 'svelte/easing';
+	import ScoreCard from '../widgets/ScoreCard.svelte';
 
 	export let data;
-
-	const presence = {
-		initial: {
-			y: 10,
-			opacity: 0,
-		},
-		animate: {
-			y: 0,
-			opacity: 1,
-		},
-		exit: {
-			y: -10,
-			opacity: 0,
-		},
-	};
 
 	$: ({ processedDate, processedDay, searchFilter } = data);
 
@@ -31,7 +18,6 @@
 			endDate: addDays(processedDay, 1),
 		},
 		{
-			keepPreviousData: true,
 			getNextPageParam: (lastPage, allPages) => {
 				if (
 					lastPage &&
@@ -52,7 +38,8 @@
 		}
 	);
 
-	$: transactions$ = from($transactions.data?.pages.flatMap((page) => page.transactions) || []).pipe(
+	$: transactions$ = of($transactions.data).pipe(
+		switchMap((transactsData) => transactsData?.pages.flatMap((page) => page.transactions) ?? []),
 		filter(({ type, tags, description }) =>
 			searchFilter
 				? type.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
@@ -62,12 +49,12 @@
 		)
 	);
 
+	$: transactionsHistory = transactions$.pipe(toArray());
+
 	$: expenses$ = transactions$.pipe(
 		filter(({ type }) => type === 'expense'),
-		reduce(
-			(acc, { amount }) => acc + amount,
-			0
-		),
+		scan((acc, { amount }) => acc + amount, 0),
+		startWith(0)
 	);
 </script>
 
@@ -75,7 +62,6 @@
 	<title>Finanseer - Transactions History</title>
 	<meta name="description" content="Finanseer Transactions Receipts" />
 </svelte:head>
-
 <div class="h-full md:grid md:grid-cols-2">
 	<form
 		action=""
@@ -92,67 +78,44 @@
 		</button>
 	</form>
 	<div
-		class="mb-3.5 mt-3 flex h-[28dvh] snap-y snap-mandatory flex-col divide-y-2 divide-stone-200 overflow-auto dark:divide-stone-600 dark:divide-opacity-20 md:h-[50dvh] md:w-96">
-		{#await lastValueFrom(transactions$.pipe(toArray()))}
-			{#each { length: 6 } as _blank, index (index)}
-				<div class="h-full">
-					<div
-						class="flex h-full w-full animate-pulse flex-row items-center justify-center space-x-5 pt-1"
-						class:animation-delay-150={index % 1 === 0}
-						class:animation-delay-300={index % 2 === 0}
-						style="animation-fill-mode: backwards">
-						<div
-							class="via-gray h-8 w-44 animate-gradient-x rounded-md bg-gradient-to-r from-gray-300 via-white to-gray-50 dark:from-gray-800 dark:via-gray-500 dark:to-gray-600"
-							class:animation-delay-150={index % 1 === 0}
-							class:animation-delay-300={index % 2 === 0}
-							style="animation-fill-mode: backwards" />
-					</div>
-					<p class="hidden">
-						{_blank}
+		class="mb-3.5 mt-3 flex max-h-[28dvh] min-h-0 snap-y snap-mandatory flex-col divide-y-2 divide-stone-200 overflow-auto dark:divide-stone-600 dark:divide-opacity-20 md:max-h-[50dvh] md:w-96">
+		{#each $transactionsHistory as transaction, index (index)}
+			{@const { income, expense } = {
+				income: transaction.type === 'income',
+				expense: transaction.type === 'expense',
+			}}
+			<div
+				class="mx-2 flex shrink-0 snap-end items-end justify-between overflow-hidden py-4"
+				transition:slide={{ duration: 800, easing: cubicInOut }}>
+				<div>
+					<p class="text-base font-semibold text-black dark:text-gray-300">{transaction.description}</p>
+					<p class="text-xs text-neutral-309">
+						{formatDistanceToNow(transaction.date)} ago <span><iconify-icon icon={dot} inline /></span>
+						{transaction.tags || 'Uncategorized'}
 					</p>
 				</div>
-			{/each}
-		{:then transacts}
-			{#each transacts as transaction, index (index)}
-				{@const { income, expense } = {
-					income: transaction.type === 'income',
-					expense: transaction.type === 'expense',
-				}}
-				<div class="mx-2 flex shrink-0 snap-end items-end justify-between py-4">
-					<div>
-						<p class="text-base font-semibold text-black dark:text-gray-300">{transaction.description}</p>
-						<p class="text-xs text-neutral-309">
-							{formatDistanceToNow(transaction.date)} ago <span><iconify-icon icon={dot} inline /></span>
-							{transaction.tags || 'Uncategorized'}
-						</p>
-					</div>
-					<div>
-						<p
-							class="mx-2 flex h-full items-center justify-center rounded-full px-2 py-0.5 text-sm
+				<div>
+					<p
+						class="mx-2 flex h-full items-center justify-center rounded-full px-2 py-0.5 text-sm
 			{income ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
 			{expense ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}
 			{!income && !expense ? 'bg-stone-200 dark:bg-slate-900' : undefined}">
-							{transaction.amount.toLocaleString(navigator.languages[0] || navigator.language, {
-								style: 'currency',
-								currency: 'USD',
-								notation: 'compact',
-							})}
-						</p>
-						<p class="mx-2 mt-0.5 flex items-center justify-end px-2 text-xs text-neutral-309">
-							{index + 1}/{transacts.length}
-						</p>
-					</div>
+						{transaction.amount.toLocaleString(navigator.languages[0] || navigator.language, {
+							style: 'currency',
+							currency: 'USD',
+							notation: 'compact',
+						})}
+					</p>
+					<p class="mx-2 mt-0.5 flex items-center justify-end px-2 text-xs text-neutral-309">
+						{index + 1}/{$transactionsHistory.length}
+					</p>
 				</div>
-			{/each}
-		{/await}
+			</div>
+		{/each}
 	</div>
 	<div class="col-span-2 grid grid-cols-[1fr_1fr]">
 		<div>
-			{#await lastValueFrom(expenses$)}
-				<ScoreCard label="Spent" score={undefined} />
-			{:then currDaySpent }
-				<ScoreCard label="Spent" score={currDaySpent} />
-			{/await}
+			<ScoreCard label="Spent" score={$expenses$} />
 		</div>
 	</div>
 </div>

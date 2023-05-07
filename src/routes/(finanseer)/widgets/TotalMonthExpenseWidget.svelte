@@ -1,16 +1,17 @@
 <script lang="ts">
-	import { from, filter, reduce, lastValueFrom } from 'rxjs';
-	import { isSameMonth, startOfMonth, subMonths } from 'date-fns';
+	import { filter, switchMap, reduce, of } from 'rxjs';
+	import { addDays, format, isSameMonth, startOfMonth, subMonths } from 'date-fns';
 	import { api } from '$lib/api';
-	import ScoreCard from './baseScoreCard.svelte';
+	import { dateFormat } from '$lib/utils';
+	import ScoreCard from './ScoreCard.svelte';
 
 	export let processedDay: Date;
-	export let delay: number;
 
+	$: prevMonth = subMonths(processedDay, 1);
 	$: transactions = api.buxfer.transactions.infiniteQuery(
 		{
-			startDate: startOfMonth(subMonths(processedDay, 1)),
-			endDate: processedDay,
+			startDate: startOfMonth(prevMonth),
+			endDate: addDays(processedDay, 1),
 		},
 		{
 			getNextPageParam: (lastPage, allPages) => {
@@ -33,20 +34,24 @@
 		}
 	);
 
-	$: expenses$ = from($transactions.data?.pages.flatMap((page) => page.transactions) ?? []).pipe(
+	$: expenses$ = of($transactions.data).pipe(
+		switchMap((data) => data?.pages.flatMap((page) => page.transactions) ?? []),
 		filter(({ type }) => type === 'expense'),
 		reduce(
 			({ currMonthSpent, prevMonthSpent }, { date, amount }) => ({
 				currMonthSpent: currMonthSpent + (isSameMonth(date, processedDay) ? amount : 0),
-				prevMonthSpent: prevMonthSpent + (isSameMonth(date, subMonths(processedDay, 1)) ? amount : 0),
+				prevMonthSpent: prevMonthSpent + (isSameMonth(date, prevMonth) ? amount : 0),
 			}),
 			{ currMonthSpent: 0, prevMonthSpent: 0 }
 		)
 	);
+
+	$: processedDate = format(processedDay, dateFormat);
 </script>
 
-{#await lastValueFrom(expenses$)}
-	<ScoreCard label="Spent" score={undefined} {delay} />
-{:then {currMonthSpent, prevMonthSpent}}
-	<ScoreCard label="Spent" score={currMonthSpent} comparison={{ score: prevMonthSpent, swap: true }} />
-{/await}
+<form action="/transactions" method="get">
+	<input type="hidden" name="processedDate" bind:value={processedDate} />
+	<button class="text-start">
+		<ScoreCard label="Spent" score={$expenses$.currMonthSpent} swap comparison={{ score: $expenses$.prevMonthSpent }} />
+	</button>
+</form>
