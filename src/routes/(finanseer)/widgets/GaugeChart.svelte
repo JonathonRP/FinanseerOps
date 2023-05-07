@@ -6,13 +6,14 @@
 	import * as d3 from 'd3';
 	import { numberFormat } from '$lib/utils';
 
-	export let data: [value: number, range: number];
+	export let data: [value: number, limit: number, monthQuerter: number];
 
 	const value = tweened(0, { duration: 700, easing: sineInOut });
 
-	$: [$value, limit] = data;
+	$: [$value, limit, monthQuerter] = data;
 
 	$: percent = derived(value, ($value) => Math.round(($value / limit) * 100));
+	$: monthQuerterPercent = derived(percent, ($percent) => Math.round(($percent / monthQuerter) * 100));
 
 	// Settings
 	export let width: number;
@@ -40,8 +41,8 @@
 		<path d={arc.endAngle(angle)()} class="fill-slate-200 dark:fill-slate-400" fill="currentColor" />
 		<path
 			d={arc.endAngle(-angle + ($value / data[1]) * 2 * angle)()}
-			class={($percent > 85 && 'fill-red-100 dark:fill-red-900') ||
-				($percent > 50 && 'fill-yellow-100 dark:fill-yellow-500') ||
+			class={($monthQuerterPercent > 85 && 'fill-red-100 dark:fill-red-900') ||
+				($monthQuerterPercent > 50 && 'fill-yellow-100 dark:fill-yellow-500') ||
 				'fill-green-100 dark:fill-green-900'}
 			fill="currentColor" />
 		<g class="legend" transform={`translate(${-(width / 2) - 25}, ${-95})`}>
@@ -52,6 +53,11 @@
 		<text
 			text-anchor="end"
 			fill="currentColor"
+			paint-order="stroke"
+			stroke="black"
+			stroke-width="1.5px"
+			stroke-linecap="butt"
+			stroke-linejoin="miter"
 			transform={`translate(${$gauge.centroid($gauge())[0] + angle * 4},${
 				$gauge.centroid($gauge())[1] + angle * 4
 			}) scale(.6)`}>

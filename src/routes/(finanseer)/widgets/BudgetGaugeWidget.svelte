@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { filter, switchMap, of, reduce } from 'rxjs';
-	import { addDays, startOfMonth } from 'date-fns';
+	import { addDays, getDaysInMonth, startOfMonth } from 'date-fns';
 	import { api } from '$lib/api';
 
 	import GaugeChart from './GaugeChart.svelte';
@@ -9,6 +9,7 @@
 	export let processedDay: Date;
 
 	const budget = 2000;
+	const monthQuerter = Math.round((processedDay.getDate() / getDaysInMonth(processedDay)) * 100);
 
 	$: transactions = api.buxfer.transactions.infiniteQuery(
 		{
@@ -44,5 +45,5 @@
 </script>
 
 <ScoreCard label="Budget">
-	<GaugeChart data={[$expenses$, budget]} width={148} />
+	<GaugeChart data={[$expenses$, budget, monthQuerter]} width={148} />
 </ScoreCard>

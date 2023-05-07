@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { ComponentType } from 'svelte';
-	import defaultWidgets from './widgets';
+	import { defaultWidgets, adminWidgets } from './widgets';
 
 	export let data;
 	$: ({ processedDay, session } = data);
 
 	$: widgets =
-		(session.user?.role === 'admin' && new Map<string, ComponentType>(Object.entries(defaultWidgets))) ||
+		(session.user?.role === 'admin' && new Map<string, ComponentType>(Object.entries(adminWidgets))) ||
 		new Map<string, ComponentType>(Object.entries(defaultWidgets));
 
 	$: dashboardUserLayout = Array.from(widgets.keys());
