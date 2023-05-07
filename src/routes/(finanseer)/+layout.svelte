@@ -21,7 +21,7 @@
 </script>
 
 <MainLayout name="Finanseer" {links}>
-	<div class="max-w-md sm:mx-0 md:max-w-4xl">
+	<div class="mx-auto w-80 max-w-md sm:mx-0 md:w-full md:max-w-4xl">
 		<div class="md:grid md:grid-cols-2 md:divide-x md:divide-neutral-200 md:dark:divide-neutral-600">
 			<DateSelect {processedDay} />
 			<div class="relative mt-8 flex h-[70dvh] flex-col md:mt-0 md:pl-7 lg:pl-14">
