@@ -1,10 +1,15 @@
 <script lang="ts">
-	import { widgets } from '$lib/utils';
+	import type { ComponentType } from 'svelte';
+	import defaultWidgets from './widgets';
 
 	export let data;
-	$: ({ processedDay } = data);
+	$: ({ processedDay, session } = data);
 
-	const dashboardUserLayout = ['balance', 'spent', 'forecast'];
+	$: widgets =
+		(session.user?.role === 'admin' && new Map<string, ComponentType>(Object.entries(defaultWidgets))) ||
+		new Map<string, ComponentType>(Object.entries(defaultWidgets));
+
+	$: dashboardUserLayout = Array.from(widgets.keys());
 </script>
 
 <svelte:head>
@@ -13,5 +18,5 @@
 </svelte:head>
 
 {#each dashboardUserLayout as widget, index (index)}
-	<svelte:component this={widgets.get(widget)} {processedDay} delay={index} />
+	<svelte:component this={widgets.get(widget)} {...{ ...(widget !== 'balance' && { processedDay }), ...{} }} />
 {/each}
