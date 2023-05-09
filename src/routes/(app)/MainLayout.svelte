@@ -98,7 +98,7 @@
 	<!-- Mobile bottom bar -->
 	<nav
 		aria-label="Options"
-		class="shadow-t fixed inset-x-0 bottom-0 flex flex-row items-center justify-between rounded-t-3xl border-t border-primary-100 bg-white px-4 py-2 dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 sm:hidden">
+		class="shadow-t fixed inset-x-0 bottom-0 z-10 flex flex-row items-center justify-between rounded-t-3xl border-t border-primary-100 bg-white px-4 py-2 dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 sm:hidden">
 		<!-- Menu button -->
 		<button
 			on:click={toggleMenu()}
@@ -309,7 +309,7 @@
 	{/if}
 </aside>
 
-<main class="flex flex-1 flex-col px-6 pb-16 pt-8 md:pl-16 md:pr-32 lg:px-12">
+<main class="flex flex-1 flex-col px-6 pb-16 pt-8 md:pl-32 md:pr-32 lg:px-12">
 	<slot />
 </main>
 
