@@ -18,8 +18,9 @@
 	} from 'date-fns';
 	import { page } from '$app/stores';
 	import { dateFormat } from '$lib/utils';
-	import { fly } from 'svelte/transition';
+	import { fly, type FlyParams } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
+	import { derived, writable } from 'svelte/store';
 
 	const today = startOfToday();
 	let direction: number;
@@ -29,7 +30,9 @@
 	} = $page);
 
 	export let processedDay: Date;
-	let container: HTMLDivElement;
+
+	const height = writable(0);
+	const containerHeight = derived(height, ($height) => ($height === 281 && 357) || 310);
 
 	let currentDay = today;
 	$: prevPeriod = subMonths(currentDay, 1);
@@ -39,11 +42,25 @@
 		start: startOfWeek(startOfMonth(currentDay), { weekStartsOn: 1 }),
 		end: endOfWeek(endOfMonth(currentDay), { weekStartsOn: 1 }),
 	});
+
+	const calendarChange = (node: Element, options: FlyParams) => {
+		const { delay, duration, easing } = options;
+		const h = parseFloat(getComputedStyle(node).height);
+
+		return {
+			delay,
+			duration,
+			easing,
+			css: (t: number, u: number) => `
+				height: ${$containerHeight === 357 ? h + (234 - 281 * (t * 2 + u * 2)) : h}px;
+				overflow: hidden;
+				${fly(node, options)?.css?.(t, u)};
+			`,
+		};
+	};
 </script>
 
-<div
-	bind:this={container}
-	class="max-h-[{container?.clientHeight}px] min-h-[{container?.clientHeight}px] md:pr-7 lg:pr-14">
+<div class="overflow-hidden md:pr-7 lg:pr-14" style="height: {$containerHeight}px">
 	<div class="flex items-center">
 		{#key currentDay}
 			<h2
@@ -78,7 +95,7 @@
 	</div>
 	{#key currentDay}
 		<div
-			in:fly={{ x: 40 * direction, opacity: 0, duration: 500 / 2, delay: 500 / 2, easing: cubicInOut }}
+			in:fly={{ x: 40 * direction, opacity: 0, duration: 500 / 2, delay: 800 / 2, easing: cubicInOut }}
 			out:fly={{ x: -40 * direction, opacity: 0, duration: 500 / 2, delay: 100 / 2, easing: cubicInOut }}
 			class="mt-5 grid grid-cols-7 text-center text-xs leading-6 text-gray-500 dark:text-neutral-309">
 			{#each daysOfPeriod.slice(0, 7) as day, dayIdx (dayIdx)}
@@ -86,9 +103,10 @@
 			{/each}
 		</div>
 		<div
-			in:fly={{ x: 40 * direction, opacity: 0, duration: 500 / 2, delay: 500 / 2, easing: cubicInOut }}
-			out:fly={{ x: -40 * direction, opacity: 0, duration: 500 / 2, delay: 100 / 2, easing: cubicInOut }}
-			class="mt-2 grid grid-cols-7 text-sm">
+			bind:clientHeight={$height}
+			in:calendarChange={{ x: 40 * direction, opacity: 0, duration: 500 / 2, delay: 800 / 2, easing: cubicInOut }}
+			out:calendarChange={{ x: -40 * direction, opacity: 0, duration: 500 / 2, delay: 100 / 2, easing: cubicInOut }}
+			class="mt-2 grid grid-cols-7 overflow-hidden text-sm">
 			{#each daysOfPeriod as day, dayIdx (day.toLocaleString())}
 				{@const { isSelected, dayIsToday, isPartOfMonth } = {
 					isSelected: isEqual(day, processedDay || today),

@@ -13,7 +13,6 @@
 	$: [$value, limit, monthQuerter] = data;
 
 	$: percent = derived(value, ($value) => Math.round(($value / limit) * 100));
-	$: monthQuerterPercent = derived(percent, ($percent) => Math.round(($percent / monthQuerter) * 100));
 
 	// Settings
 	export let width: number;
@@ -41,8 +40,8 @@
 		<path d={arc.endAngle(angle)()} class="fill-slate-200 dark:fill-slate-400" fill="currentColor" />
 		<path
 			d={arc.endAngle(-angle + ($value / data[1]) * 2 * angle)()}
-			class={($monthQuerterPercent > 85 && 'fill-red-100 dark:fill-red-900') ||
-				($monthQuerterPercent > 50 && 'fill-yellow-100 dark:fill-yellow-500') ||
+			class={($percent > 75 && monthQuerter < 50 && 'fill-red-100 dark:fill-red-900') ||
+				($percent > 50 && monthQuerter < 75 && 'fill-yellow-100 dark:fill-yellow-500') ||
 				'fill-green-100 dark:fill-green-900'}
 			fill="currentColor" />
 		<g class="legend" transform={`translate(${-(width / 2) - 25}, ${-95})`}>
