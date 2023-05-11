@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatDistanceToNow, addDays } from 'date-fns';
+	import { formatDistanceToNow, addDays, startOfMonth, isSameDay } from 'date-fns';
 	import { filter, toArray, switchMap, scan, of, startWith } from 'rxjs';
 	import { api } from '$lib/api';
 	import search from '@iconify-icons/tabler/search';
@@ -14,7 +14,7 @@
 
 	$: transactions = api.buxfer.transactions.infiniteQuery(
 		{
-			startDate: addDays(processedDay, 1),
+			startDate: startOfMonth(processedDay),
 			endDate: addDays(processedDay, 1),
 		},
 		{
@@ -40,12 +40,12 @@
 
 	$: transactions$ = of($transactions.data).pipe(
 		switchMap((transactsData) => transactsData?.pages.flatMap((page) => page.transactions) ?? []),
-		filter(({ type, tags, description }) =>
+		filter(({ type, tags, description, date }) =>
 			searchFilter
-				? type.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
-				  tags.match(new RegExp(`${searchFilter}`, 'i')) !== null ||
-				  description.match(new RegExp(`${searchFilter}`, 'i')) !== null
-				: true
+				? type.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null ||
+				  tags.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null ||
+				  description.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null
+				: isSameDay(date, processedDay)
 		)
 	);
 
