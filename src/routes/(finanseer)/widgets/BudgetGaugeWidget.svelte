@@ -45,5 +45,5 @@
 </script>
 
 <ScoreCard label="Budget">
-	<GaugeChart data={[$expenses$, budget, monthQuerter]} width={148} />
+	<GaugeChart data={[$expenses$, budget, monthQuerter]} />
 </ScoreCard>

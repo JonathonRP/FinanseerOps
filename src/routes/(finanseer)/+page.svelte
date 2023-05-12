@@ -17,6 +17,8 @@
 	<meta name="description" content="Finanseer Finanzen Portal" />
 </svelte:head>
 
-{#each dashboardUserLayout as widget, index (index)}
-	<svelte:component this={widgets.get(widget)} {...{ ...(widget !== 'balance' && { processedDay }), ...{} }} />
-{/each}
+<dl class="flex flex-row flex-wrap items-center justify-center gap-4 md:justify-start">
+	{#each dashboardUserLayout as widget, index (index)}
+		<svelte:component this={widgets.get(widget)} {...{ ...(widget !== 'balance' && { processedDay }), ...{} }} />
+	{/each}
+</dl>

@@ -1,4 +1,4 @@
-export default (node: Element) => ({
+export default (node: HTMLFormElement) => ({
 	update() {},
 	destroy() {},
 });
