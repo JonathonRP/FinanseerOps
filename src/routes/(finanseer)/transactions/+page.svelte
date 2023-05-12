@@ -6,6 +6,7 @@
 	import dot from '@iconify-icons/mdi/dot';
 	import { slide } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
+	import { numberFormat } from '$lib/utils';
 	import ScoreCard from '../widgets/ScoreCard.svelte';
 
 	export let data;
@@ -62,11 +63,11 @@
 	<title>Finanseer - Transactions History</title>
 	<meta name="description" content="Finanseer Transactions Receipts" />
 </svelte:head>
-<div class="h-full md:grid md:grid-cols-2">
+<div class="grid h-full w-[90dvw] max-w-[450px] grid-cols-2 gap-4 md:w-[45dvw] md:max-w-none">
 	<form
 		action=""
 		method="get"
-		class="flex h-9 w-full rounded-full border-2 border-neutral-808 dark:border-neutral-309 md:col-span-2 md:w-96"
+		class="col-span-2 flex h-9 rounded-full border-2 border-neutral-808 dark:border-neutral-309"
 		on:formdata={(e) => {
 			Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
 		}}>
@@ -77,8 +78,9 @@
 			<iconify-icon icon={search} inline />
 		</button>
 	</form>
+
 	<div
-		class="mb-3.5 mt-3 flex max-h-[28dvh] min-h-0 snap-y snap-mandatory flex-col divide-y-2 divide-stone-200 overflow-auto dark:divide-stone-600 dark:divide-opacity-20 md:max-h-[50dvh] md:w-96">
+		class="col-span-2 flex max-h-[28dvh] min-h-0 snap-y snap-mandatory flex-col divide-y-2 divide-stone-200 overflow-auto dark:divide-stone-600 dark:divide-opacity-20 md:max-h-[50dvh]">
 		{#each $transactionsHistory as transaction, index (index)}
 			{@const { income, expense } = {
 				income: transaction.type === 'income',
@@ -100,11 +102,9 @@
 			{income ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
 			{expense ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}
 			{!income && !expense ? 'bg-stone-200 dark:bg-slate-900' : undefined}">
-						{transaction.amount.toLocaleString(navigator.languages[0] || navigator.language, {
-							style: 'currency',
-							currency: 'USD',
-							notation: 'compact',
-						})}
+						{transaction.amount.toLocaleString(navigator.languages[0] || navigator.language, numberFormat)}
+						/
+						{$expenses$.toLocaleString(navigator.languages[0] || navigator.language, numberFormat)}
 					</p>
 					<p class="mx-2 mt-0.5 flex items-center justify-end px-2 text-xs text-neutral-309">
 						{index + 1}/{$transactionsHistory.length}
@@ -112,10 +112,5 @@
 				</div>
 			</div>
 		{/each}
-	</div>
-	<div class="col-span-2 grid grid-cols-[1fr_1fr]">
-		<div>
-			<ScoreCard label="Spent" score={$expenses$} />
-		</div>
 	</div>
 </div>

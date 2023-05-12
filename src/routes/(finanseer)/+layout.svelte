@@ -40,8 +40,7 @@
 							delay: 100 / 2,
 							opacity: 0,
 							easing: cubicInOut,
-						}}
-						class="flex flex-row flex-wrap items-center justify-center gap-4 md:justify-start">
+						}}>
 						<slot />
 					</section>
 				{/key}

@@ -4,6 +4,7 @@
 	import { api } from '$lib/api';
 	import { dateFormat } from '$lib/utils';
 	import ScoreCard from './ScoreCard.svelte';
+	import AreaChart from './AreaChart.svelte';
 
 	export let processedDay: Date;
 
@@ -49,9 +50,11 @@
 	$: processedDate = format(processedDay, dateFormat);
 </script>
 
-<ScoreCard label="Spent" score={$expenses$.currMonthSpent} swap comparison={{ score: $expenses$.prevMonthSpent }}>
-	<form action="/transactions" method="get" slot="additional">
-		<input type="hidden" name="processedDate" bind:value={processedDate} />
-		<button>view all</button>
-	</form>
-</ScoreCard>
+<form action="/transactions" method="get">
+	<input type="hidden" name="processedDate" bind:value={processedDate} />
+	<button class="text-start">
+		<ScoreCard label="Spent" score={$expenses$.currMonthSpent} swap comparison={{ score: $expenses$.prevMonthSpent }}>
+			<AreaChart />
+		</ScoreCard>
+	</button>
+</form>

@@ -31,15 +31,19 @@
 	}
 </script>
 
-<DashboardWidget>
-	<div class="text-base text-gray-400 dark:text-gray-300">
-		{label}
-	</div>
-	<div class="flex w-[164.57px] items-center pt-1">
+<DashboardWidget hasAdditional={$$slots.additional}>
+	<dt>
+		<p class="text-base text-gray-400 dark:text-gray-300">
+			{label}
+		</p>
+	</dt>
+	<dd
+		class="flex w-[164.57px] flex-wrap items-center pt-1 text-gray-900 dark:text-gray-100 {$$slots.additional &&
+			'h-[54.29px] pb-6'}">
 		{#if score !== null && score !== undefined}
-			<div transition:fade={{ duration: 300 }} class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+			<p transition:fade={{ duration: 300 }} class="text-2xl font-bold text-gray-900 dark:text-gray-100">
 				{$score$.toLocaleString(locale, numberFormat)}
-			</div>
+			</p>
 
 			{#if comparison && comparison.score && comparison.score > 0}
 				{@const { compare, positiveColor, negativeColor } = {
@@ -52,18 +56,21 @@
 						? (compare && positiveColor) || negativeColor
 						: (compare && negativeColor) || positiveColor,
 				}}
-				<span
+				<p
 					class="mx-2 flex items-center rounded-full px-2 py-0.5 text-sm
 					{color === 'green' ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
 					{color === 'red' ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}"
 					transition:fade={{ duration: 300 }}>
-					<span>
-						{$comparisonScore$.toLocaleString(locale, numberFormat)}
-					</span>
+					{$comparisonScore$.toLocaleString(locale, numberFormat)}
 					<iconify-icon inline icon={compare ? down : up} />
-				</span>
+				</p>
 			{/if}
 		{/if}
 		<slot />
-	</div>
+		{#if $$slots.additional}
+			<div class="absolute inset-x-0 bottom-0 bg-gray-50 px-6 py-3 text-sm text-primary-500 dark:bg-stone-900/10">
+				<slot name="additional" />
+			</div>
+		{/if}
+	</dd>
 </DashboardWidget>

@@ -21,6 +21,7 @@
 	import { fly, type FlyParams } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { derived, writable } from 'svelte/store';
+	import { swipe } from 'svelte-gestures';
 
 	const today = startOfToday();
 	let direction: number;
@@ -43,6 +44,16 @@
 		end: endOfWeek(endOfMonth(currentDay), { weekStartsOn: 1 }),
 	});
 
+	const next = () => {
+		currentDay = nextPeriod;
+		direction = 1;
+	};
+
+	const previous = () => {
+		currentDay = prevPeriod;
+		direction = -1;
+	};
+
 	const calendarChange = (node: Element, options: FlyParams) => {
 		const { delay, duration, easing } = options;
 		const h = parseFloat(getComputedStyle(node).height);
@@ -58,9 +69,23 @@
 			`,
 		};
 	};
+
+	// use:pan={{ delay: 200 }}
+	// on:pan={function handle(event) {
+	// 	// console.log(event.detail);
+	// 	if (event.detail.x < 60) next();
+	// 	if (event.detail.x > 360) previous();
+	// }}
 </script>
 
-<div class="overflow-hidden md:pr-7 lg:pr-14" style="height: {$containerHeight}px">
+<div
+	use:swipe
+	on:swipe={function handle(event) {
+		if (event.detail.direction === 'left') next();
+		if (event.detail.direction === 'right') previous();
+	}}
+	class="overflow-hidden md:pr-7 lg:pr-14"
+	style="height: {$containerHeight}px">
 	<div class="flex items-center">
 		{#key currentDay}
 			<h2
@@ -73,10 +98,7 @@
 		<button
 			id="prev"
 			type="button"
-			on:click={function prev() {
-				currentDay = prevPeriod;
-				direction = -1;
-			}}
+			on:click={previous}
 			class="-my-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309">
 			<span class="sr-only">Previous month</span>
 			<iconify-icon icon={left} class="h-5 w-5" aria-hidden />
@@ -84,10 +106,7 @@
 		<button
 			id="next"
 			type="button"
-			on:click={function next() {
-				currentDay = nextPeriod;
-				direction = 1;
-			}}
+			on:click={next}
 			class="-my-1.5 -ml-2 -mr-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309">
 			<span class="sr-only">Next month</span>
 			<iconify-icon icon={right} class="h-5 w-5" aria-hidden />
