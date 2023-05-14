@@ -35,9 +35,9 @@
 
 <div
 	class="@container relative h-full w-full"
-	style:--marginTop="0px"
+	style:--marginTop="5px"
 	style:--marginLeft="5px"
-	style:--marginRight="42px"
+	style:--marginRight="48px"
 	style:--marginBottom="0px">
 	<!-- Chart area -->
 	<svg
