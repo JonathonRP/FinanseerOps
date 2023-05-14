@@ -7,7 +7,6 @@
 	import { slide } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { numberFormat } from '$lib/utils';
-	import ScoreCard from '../widgets/ScoreCard.svelte';
 
 	export let data;
 
@@ -103,8 +102,6 @@
 			{expense ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}
 			{!income && !expense ? 'bg-stone-200 dark:bg-slate-900' : undefined}">
 						{transaction.amount.toLocaleString(navigator.languages[0] || navigator.language, numberFormat)}
-						/
-						{$expenses$.toLocaleString(navigator.languages[0] || navigator.language, numberFormat)}
 					</p>
 					<p class="mx-2 mt-0.5 flex items-center justify-end px-2 text-xs text-neutral-309">
 						{index + 1}/{$transactionsHistory.length}
@@ -112,5 +109,19 @@
 				</div>
 			</div>
 		{/each}
+		<div
+			class="mx-2 flex shrink-0 snap-end items-end justify-between overflow-hidden py-4"
+			transition:slide={{ duration: 800, easing: cubicInOut }}>
+			<div>
+				<p class="text-base font-semibold text-black dark:text-gray-300">Total</p>
+			</div>
+			<div>
+				<p
+					class="mx-2 flex h-full items-center justify-center rounded-full px-2 py-0.5 text-sm
+			{'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'}">
+					{$expenses$.toLocaleString(navigator.languages[0] || navigator.language, numberFormat)}
+				</p>
+			</div>
+		</div>
 	</div>
 </div>
