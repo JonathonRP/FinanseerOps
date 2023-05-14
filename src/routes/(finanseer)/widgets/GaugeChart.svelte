@@ -37,7 +37,7 @@
 	class="@container relative h-full w-full"
 	style:--marginTop="5px"
 	style:--marginLeft="5px"
-	style:--marginRight="48px"
+	style:--marginRight="50px"
 	style:--marginBottom="0px">
 	<!-- Chart area -->
 	<svg
