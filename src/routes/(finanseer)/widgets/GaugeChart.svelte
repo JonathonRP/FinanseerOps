@@ -35,9 +35,9 @@
 
 <div
 	class="@container relative h-full w-full"
-	style:--marginTop="5px"
-	style:--marginLeft="5px"
-	style:--marginRight="54px"
+	style:--marginTop="0px"
+	style:--marginLeft="2px"
+	style:--marginRight="5px"
 	style:--marginBottom="0px">
 	<!-- Chart area -->
 	<svg
@@ -48,9 +48,6 @@
           translate-y-[var(--marginTop)]
           overflow-visible">
 		<svg class="overflow-visible" viewBox={`0 0 148 74`} preserveAspectRatio="none">
-			<!-- transform={`translate(${148 / 2}, calc(${148 / 3} + var(--marginTop) ))`} -->
-			<!-- class="translate-x-[calc(100%-var(--marginLeft)-var(--marginRight))]
-          translate-y-[calc(100%-var(--marginTop)-var(--marginBottom))]" -->
 			<g transform={`translate(74, 74)`}>
 				<path
 					d={arc.endAngle(angle)()}
@@ -68,32 +65,14 @@
 				{/if}
 				<g class="legend">
 					<text
-						y="-15"
-						class="text-lg font-bold"
+						y="-5"
+						class="text-2xl font-bold"
 						alignment-baseline="after-edge"
 						text-anchor="middle"
 						fill="currentColor">
 						{$percent}%
 					</text>
-					<text x="40" y="0" class="text-xs" alignment-baseline="after-edge" text-anchor="middle" fill="currentColor">
-						{limit.toLocaleString(locale, numberFormat)}
-					</text>
 				</g>
-				{#if $percent > 0}
-					<text
-						class="text-xs dark:stroke-black"
-						alignment-baseline="middle"
-						text-anchor="middle"
-						fill="currentColor"
-						paint-order="stroke"
-						stroke="currentColor"
-						stroke-width="1.5px"
-						stroke-linecap="butt"
-						stroke-linejoin="miter"
-						transform={`translate(${$gauge.centroid($gauge())[0]},${$gauge.centroid($gauge())[1] + angle})`}>
-						{$value.toLocaleString(locale, numberFormat)}
-					</text>
-				{/if}
 			</g>
 		</svg>
 	</svg>
