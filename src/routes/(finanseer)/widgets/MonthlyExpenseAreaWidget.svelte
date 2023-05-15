@@ -48,13 +48,44 @@
 	);
 
 	$: processedDate = format(processedDay, dateFormat);
+
+	const data = [
+		{
+			year: 2000,
+			popularity: 50,
+		},
+		{
+			year: 2001,
+			popularity: 150,
+		},
+		{
+			year: 2002,
+			popularity: 200,
+		},
+		{
+			year: 2003,
+			popularity: 130,
+		},
+		{
+			year: 2004,
+			popularity: 240,
+		},
+		{
+			year: 2005,
+			popularity: 380,
+		},
+		{
+			year: 2006,
+			popularity: 420,
+		},
+	];
 </script>
 
 <form action="/transactions" method="get">
 	<input type="hidden" name="processedDate" bind:value={processedDate} />
 	<button class="text-start">
 		<ScoreCard label="Spent" score={$expenses$.currMonthSpent} swap comparison={{ score: $expenses$.prevMonthSpent }}>
-			<AreaChart />
+			<AreaChart data={data.flatMap(Object.values)} />
 		</ScoreCard>
 	</button>
 </form>

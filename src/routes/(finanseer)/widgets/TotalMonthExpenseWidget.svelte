@@ -52,6 +52,6 @@
 <ScoreCard label="Spent" score={$expenses$.currMonthSpent} swap comparison={{ score: $expenses$.prevMonthSpent }}>
 	<form action="/transactions" method="get" slot="additional">
 		<input type="hidden" name="processedDate" bind:value={processedDate} />
-		<button>view all</button>
+		<button>view more</button>
 	</form>
 </ScoreCard>

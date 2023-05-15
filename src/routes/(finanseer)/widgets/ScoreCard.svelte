@@ -38,8 +38,8 @@
 		</p>
 	</dt>
 	<dd
-		class="flex w-[164.57px] flex-wrap items-center pt-1 text-gray-900 dark:text-gray-100 {$$slots.additional &&
-			'h-[54.29px] pb-6'}">
+		class="flex w-[164.57px] flex-wrap items-center pt-1 text-gray-900 dark:text-gray-100 {$$slots.default &&
+			'h-[64px]'}">
 		{#if score !== null && score !== undefined}
 			<p transition:fade={{ duration: 300 }} class="text-2xl font-bold text-gray-900 dark:text-gray-100">
 				{$score$.toLocaleString(locale, numberFormat)}
@@ -66,9 +66,11 @@
 				</p>
 			{/if}
 		{/if}
-		<slot />
+		{#if $$slots.default}
+			<slot />
+		{/if}
 		{#if $$slots.additional}
-			<div class="absolute inset-x-0 bottom-0 bg-gray-50 px-6 py-3 text-sm text-primary-500 dark:bg-stone-900/10">
+			<div class="absolute inset-x-0 bottom-0 bg-gray-50 px-6 py-3 text-sm text-primary-500 dark:bg-stone-900/20">
 				<slot name="additional" />
 			</div>
 		{/if}
