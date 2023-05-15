@@ -37,35 +37,35 @@
 			{label}
 		</p>
 	</dt>
-	<dd
-		class="flex w-[164.57px] flex-wrap items-center pt-1 text-gray-900 dark:text-gray-100 {$$slots.default &&
-			'h-[64px]'}">
-		{#if score !== null && score !== undefined}
-			<p transition:fade={{ duration: 300 }} class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-				{$score$.toLocaleString(locale, numberFormat)}
-			</p>
+	<dd class="flex w-[164.57px] items-start pt-1 text-gray-900 dark:text-gray-100 {$$slots.default && 'h-[64px]'}">
+		<div class="flex items-center">
+			{#if score !== null && score !== undefined}
+				<p transition:fade={{ duration: 300 }} class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+					{$score$.toLocaleString(locale, numberFormat)}
+				</p>
 
-			{#if comparison && comparison.score && comparison.score > 0}
-				{@const { compare, positiveColor, negativeColor } = {
-					compare: comparison.swap ? score > comparison.score : score < comparison.score,
-					positiveColor: swap || false ? comparison.negativeColor || 'red' : comparison.positiveColor || 'green',
-					negativeColor: swap || false ? comparison.positiveColor || 'green' : comparison.negativeColor || 'red',
-				}}
-				{@const { color } = {
-					color: comparison.swap
-						? (compare && positiveColor) || negativeColor
-						: (compare && negativeColor) || positiveColor,
-				}}
-				<p
-					class="mx-2 flex items-center rounded-full px-2 py-0.5 text-sm
+				{#if comparison && comparison.score && comparison.score > 0}
+					{@const { compare, positiveColor, negativeColor } = {
+						compare: comparison.swap ? score > comparison.score : score < comparison.score,
+						positiveColor: swap || false ? comparison.negativeColor || 'red' : comparison.positiveColor || 'green',
+						negativeColor: swap || false ? comparison.positiveColor || 'green' : comparison.negativeColor || 'red',
+					}}
+					{@const { color } = {
+						color: comparison.swap
+							? (compare && positiveColor) || negativeColor
+							: (compare && negativeColor) || positiveColor,
+					}}
+					<p
+						class="mx-2 flex items-center rounded-full px-2 py-0.5 text-sm
 					{color === 'green' ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
 					{color === 'red' ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}"
-					transition:fade={{ duration: 300 }}>
-					{$comparisonScore$.toLocaleString(locale, numberFormat)}
-					<iconify-icon inline icon={compare ? down : up} />
-				</p>
+						transition:fade={{ duration: 300 }}>
+						{$comparisonScore$.toLocaleString(locale, numberFormat)}
+						<iconify-icon inline icon={compare ? down : up} />
+					</p>
+				{/if}
 			{/if}
-		{/if}
+		</div>
 		{#if $$slots.default}
 			<slot />
 		{/if}

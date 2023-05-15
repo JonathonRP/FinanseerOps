@@ -44,6 +44,6 @@
 	);
 </script>
 
-<ScoreCard label="Budget">
+<ScoreCard label="Budget" score={budget}>
 	<GaugeChart data={[$expenses$, budget, monthQuerter]} />
 </ScoreCard>
