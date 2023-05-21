@@ -47,6 +47,9 @@ const config = {
 					},
 				},
 			},
+			containers: {
+				'2xs': '15rem',
+			},
 		},
 	},
 
@@ -66,6 +69,7 @@ const config = {
 			);
 		}),
 		require('@tailwindcss/forms'),
+		require('@tailwindcss/container-queries'),
 	],
 };
 

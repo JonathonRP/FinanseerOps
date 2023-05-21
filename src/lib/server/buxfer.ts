@@ -1,5 +1,6 @@
 import { error, type HttpError } from '@sveltejs/kit';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
+import { utcToZonedTime } from 'date-fns-tz';
 import path from 'path';
 import { array, number, object, string, union, z, never, coerce, date } from 'zod';
 import { logger } from './logger';
@@ -39,7 +40,9 @@ export const buxferTransactions = object({
 		object({
 			id: number(),
 			description: string(),
-			date: coerce.date().transform((arg) => parse(format(arg, DateFormat), DateFormat, new Date())),
+			date: string()
+				.or(date())
+				.transform((arg) => utcToZonedTime(arg, '+18:00')),
 			type: string(),
 			amount: number(),
 			accountId: number(),
@@ -104,8 +107,8 @@ export const buxferTransactionsQuery = object({
 
 const buxferTransactionsQueryInternal = object({
 	token: buxferToken,
-	startDate: coerce.string(),
-	endDate: coerce.string(),
+	startDate: date().transform((arg) => format(arg, DateFormat)),
+	endDate: date().transform((arg) => format(arg, DateFormat)),
 	page: coerce.string(),
 });
 
@@ -187,8 +190,8 @@ export function BuxferClient(token: z.infer<typeof buxferToken> | null | undefin
 				'transactions',
 				buxferTransactionsQueryInternal.parse({
 					token,
-					startDate: format(startDate, DateFormat),
-					endDate: format(endDate, DateFormat),
+					startDate,
+					endDate,
 					page: cursor,
 				})
 			);

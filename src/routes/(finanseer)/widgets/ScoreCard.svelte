@@ -17,7 +17,7 @@
 
 	let locale: string;
 	onMount(() => {
-		locale = navigator.languages[0] || navigator.language;
+		locale = navigator?.languages[0] || navigator?.language;
 	});
 
 	const score$ = tweened(0, { duration: 300 });
@@ -41,7 +41,7 @@
 		<div class="flex items-center">
 			{#if score !== null && score !== undefined}
 				<p transition:fade={{ duration: 300 }} class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-					{$score$.toLocaleString(locale, numberFormat)}
+					{numberFormat(locale).format($score$)}
 				</p>
 
 				{#if comparison && comparison.score && comparison.score > 0}
@@ -60,7 +60,7 @@
 					{color === 'green' ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
 					{color === 'red' ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}"
 						transition:fade={{ duration: 300 }}>
-						{$comparisonScore$.toLocaleString(locale, numberFormat)}
+						{numberFormat(locale).format($comparisonScore$)}
 						<iconify-icon inline icon={compare ? down : up} />
 					</p>
 				{/if}
@@ -70,7 +70,8 @@
 			<slot />
 		{/if}
 		{#if $$slots.additional}
-			<div class="absolute inset-x-0 bottom-0 bg-gray-50 px-6 py-3 text-sm text-primary-500 dark:bg-stone-900/20">
+			<div
+				class="absolute inset-x-0 bottom-0 bg-gray-50 px-6 py-[.60rem] text-sm text-primary-500 dark:bg-slate-900/40">
 				<slot name="additional" />
 			</div>
 		{/if}

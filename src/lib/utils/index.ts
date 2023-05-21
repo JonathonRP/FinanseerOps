@@ -8,4 +8,7 @@ export { SvelteSubject } from './svelteSubject';
 
 export const dateFormat = 'MM/dd/yyyy';
 
-export const numberFormat: Intl.NumberFormatOptions = { style: 'currency', currency: 'USD', notation: 'compact' };
+export const numberFormat = (
+	locale: string | string[] = 'en-US',
+	currency: Intl.NumberFormatOptions['currency'] = 'USD'
+) => Intl.NumberFormat(locale, { style: 'currency', currency, notation: 'compact' });
