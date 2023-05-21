@@ -16,6 +16,7 @@
 		"gruntfuggly.todo-tree",
 		"exodiusstudios.comment-anchors",
 		"yoavbls.pretty-ts-errors",
-		"johnpapa.winteriscoming"
+		"johnpapa.winteriscoming",
+		"alfredbirk.instant-docs"
 	]
 }
