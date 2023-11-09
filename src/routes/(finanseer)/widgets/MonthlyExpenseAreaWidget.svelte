@@ -3,8 +3,8 @@
 	import { addDays, format, isSameMonth, startOfMonth, subMonths } from 'date-fns';
 	import { api } from '$lib/api';
 	import { dateFormat } from '$lib/utils';
-	import ScoreCard from './ScoreCard.svelte';
-	import AreaChart from './AreaChart.svelte';
+	import ScoreCard from '../ScoreCard.svelte';
+	import AreaChart from '../charts/AreaChart.svelte';
 
 	export let processedDay: Date;
 
@@ -81,11 +81,6 @@
 	];
 </script>
 
-<form action="/transactions" method="get">
-	<input type="hidden" name="processedDate" bind:value={processedDate} />
-	<button class="text-start">
-		<ScoreCard label="Spent" score={$expenses$.currMonthSpent} swap comparison={{ score: $expenses$.prevMonthSpent }}>
-			<AreaChart data={data.flatMap(Object.values)} />
-		</ScoreCard>
-	</button>
-</form>
+<ScoreCard label="Spent" score={$expenses$.currMonthSpent} swap comparison={{ score: $expenses$.prevMonthSpent }}>
+	<AreaChart data={data.flatMap(Object.values)} />
+</ScoreCard>

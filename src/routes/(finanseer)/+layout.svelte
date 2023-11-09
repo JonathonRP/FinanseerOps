@@ -1,10 +1,15 @@
 <script lang="ts">
-	import { base } from '$app/paths';
-	import { fly } from 'svelte/transition';
+	import { fly, slide } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
-	import search from '@iconify-icons/tabler/search';
-	import MainLayout from '../(app)/MainLayout.svelte';
+	import { api } from '$lib/api';
+	import { formatDistanceToNow, isSameDay, startOfMonth } from 'date-fns';
+	import { filter, of, reduce, startWith, switchMap, take, toArray } from 'rxjs';
+	import { numberFormat } from '$lib/utils';
+	import { AnimateSharedLayout, Motion, AnimatePresence } from 'svelte-motion';
+	import { base } from '$app/paths';
+	import 'iconify-icon';
 	import DateSelect from './DateSelect.svelte';
+	import MainLayout from '../(app)/MainLayout.svelte';
 
 	export let data;
 
@@ -18,48 +23,154 @@
 	$: preserveState = processedDate ? `?${new URLSearchParams({ processedDate })}` : undefined;
 
 	$: links = (processedDate && [{ route: `${base}/${preserveState}` }]) || undefined;
+
+	$: transactions = api.buxfer.transactions.infiniteQuery(
+		{
+			startDate: startOfMonth(processedDay),
+			endDate: processedDay,
+		},
+		{
+			getNextPageParam: (lastPage, allPages) => {
+				if (
+					lastPage &&
+					typeof lastPage === 'object' &&
+					'totalTransactionsCount' in lastPage &&
+					typeof lastPage.totalTransactionsCount === 'number' &&
+					allPages.length < Math.ceil(lastPage.totalTransactionsCount / 100)
+				) {
+					return allPages.length + 1;
+				}
+				return undefined;
+			},
+			onSuccess(infiniteData) {
+				if (infiniteData.pageParams.splice(-1)) {
+					$transactions.fetchNextPage();
+				}
+			},
+		}
+	);
+
+	$: transactions$ = of($transactions.data).pipe(
+		switchMap((transactsData) => transactsData?.pages.flatMap((page) => page.transactions) ?? []),
+		filter(({ type, tags, description, date }) =>
+			searchFilter
+				? type.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null ||
+				  tags.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null ||
+				  description.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null
+				: isSameDay(date, processedDay) || true
+		),
+		take(5)
+	);
+
+	$: transactionsHistory = transactions$.pipe(toArray());
+
+	$: expenses$ = transactions$.pipe(
+		filter(({ type }) => type === 'expense'),
+		reduce((acc, { amount }) => acc + amount, 0),
+		startWith(0)
+	);
 </script>
 
 <MainLayout name="Finanseer" {links}>
-	<div class="mx-auto w-full sm:mx-0 sm:max-w-xl md:max-w-none lg:max-w-6xl">
-		<form
-			action=""
-			method="get"
-			class="mb-8 flex h-10 rounded-full border-2 border-neutral-808 dark:border-neutral-309"
-			on:formdata={(e) => {
-				Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
-			}}>
-			<input type="hidden" name="processedDate" bind:value={processedDate} />
-			<input name="search" class="w-full rounded-full bg-transparent px-3 text-xs" value={searchFilter} />
-			<button
-				class="flex border-spacing-0 items-center rounded-full bg-neutral-808 px-[0.625rem] py-[0.525rem] text-sm font-semibold text-neutral-309 hover:bg-neutral-900 dark:bg-neutral-309 dark:text-neutral-808 hover:dark:bg-neutral-400">
-				<iconify-icon icon={search} inline />
-			</button>
-		</form>
-		<div class="md:grid md:grid-cols-[1fr_2fr] md:divide-x md:divide-neutral-200 md:dark:divide-neutral-600">
-			<DateSelect {processedDay} {searchFilter} />
-			<div class="my-8 md:mt-0 md:pl-7 lg:pl-14">
-				{#key pathname}
-					<section
-						class="@container"
-						in:fly={{
-							y: -400 * (pathname === '/' ? 1 : -1),
-							duration: 500 / 2,
-							delay: 200 / 2,
-							opacity: 0,
-							easing: cubicInOut,
-						}}
-						out:fly={{
-							y: -400 * (pathname === '/' ? -1 : 1),
-							duration: 500 / 2,
-							delay: 100 / 2,
-							opacity: 0,
-							easing: cubicInOut,
-						}}>
-						<slot />
-					</section>
-				{/key}
-			</div>
+	<AnimateSharedLayout type="crossfade">
+		<div
+			class="flex flex-col-reverse {(pathname === '/' && 'lg:flex-row-reverse lg:justify-end') ||
+				'lg:flex-row lg:justify-start lg:gap-4 lg:w-[332px]'}">
+			<Motion layoutId="side-bar" let:motion={aside}>
+				<div use:aside class="flex flex-col gap-4">
+					<Motion layoutId="main-date-1" let:motion={date}>
+						<div use:date class="hidden xl:flex">
+							<DateSelect {processedDay} {searchFilter} />
+						</div>
+					</Motion>
+					<div class="ml-3 {(pathname !== '/' && 'hidden') || ''}">
+						<span class="flex items-baseline justify-between">
+							<div class="flex flex-col items-start">
+								<p class="text-base font-medium">Recent Transactions</p>
+								<p class="flex h-full items-center justify-center rounded-full py-0.5 text-xs">
+									Spent {numberFormat().format($expenses$)}
+								</p>
+							</div>
+							<form
+								method="get"
+								action="/transactions"
+								on:formdata={(e) => {
+									Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
+								}}>
+								<input type="hidden" name="processedDate" bind:value={processedDate} />
+								<input type="hidden" name="search" bind:value={searchFilter} />
+								<button class="flex flex-row items-center justify-between text-sm">
+									See all
+									<iconify-icon class="h-4 w-6 text-base" height inline icon="tabler:chevron-right" />
+								</button>
+							</form>
+						</span>
+						{#if $transactionsHistory.length}
+							<div
+								class="flex overflow-hidden max-w-xs snap-y snap-mandatory flex-col divide-y-2 divide-stone-200 dark:divide-stone-600 dark:divide-opacity-20">
+								{#each $transactionsHistory as transaction, index (index)}
+									{@const { income, expense } = {
+										income: transaction.type === 'income',
+										expense: transaction.type === 'expense',
+									}}
+									<div
+										class="mx-2 flex shrink-0 snap-end items-end justify-between overflow-hidden py-4"
+										transition:slide={{ duration: 800, easing: cubicInOut }}>
+										<div>
+											<p class="text-base font-light text-black dark:text-gray-300">{transaction.description}</p>
+											<p class="text-xs text-neutral-309">
+												{formatDistanceToNow(transaction.date)} ago
+												<span><iconify-icon icon="mdi:dot" inline /></span>
+												{transaction.tags || 'Uncategorized'}
+											</p>
+										</div>
+										<div>
+											<p
+												class="mx-2 flex h-full items-center justify-center rounded-full px-2 py-0.5 text-xs
+						{income ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-emerald-400' : undefined}
+						{expense ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : undefined}
+						{!income && !expense ? 'bg-stone-200 dark:bg-slate-900' : undefined}">
+												{numberFormat().format(transaction.amount)}
+											</p>
+											<p class="mx-2 mt-0.5 flex items-center justify-end px-2 text-xs text-neutral-309">
+												{index + 1}/{$transactionsHistory.length}
+											</p>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				</div>
+			</Motion>
+			<Motion layoutId="main" let:motion={main}>
+				<div use:main class="mx-auto h-full w-full sm:mx-0 md:max-w-none lg:min-w-0 lg:max-w-4xl">
+					<div class="mb-8 h-full w-full sm:mt-0">
+						<!-- TODO: use framer motion AnimatePresence -->
+						<!-- in:fly={{
+									y: -400 * (pathname === '/' ? 1 : -1),
+									duration: 300,
+									delay: 300,
+									opacity: 0,
+									easing: cubicInOut,
+								}}
+								out:fly={{
+									y: -400 * (pathname === '/' ? -1 : 1),
+									duration: 300,
+									delay: 50,
+									opacity: 0,
+									easing: cubicInOut,
+								}} -->
+						{#key pathname}
+							<section class="@container">
+								<AnimatePresence list={[{ key: pathname }]} exitBeforeEnter>
+									<slot />
+								</AnimatePresence>
+							</section>
+						{/key}
+					</div>
+				</div>
+			</Motion>
 		</div>
-	</div>
+	</AnimateSharedLayout>
 </MainLayout>

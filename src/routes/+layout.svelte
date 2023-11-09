@@ -8,11 +8,13 @@
 	import { QueryClientProvider } from '@tanstack/svelte-query';
 
 	export let data;
+
+	$: queryClient = api.hydrateFromServer(data.api);
 </script>
 
 <Toaster position="top-right" />
 <div class="app flex min-h-[100dvh] dark:text-neutral-309">
-	<QueryClientProvider client={api.hydrateQueryClient(data.api)}>
+	<QueryClientProvider client={queryClient}>
 		<slot />
 	</QueryClientProvider>
 </div>

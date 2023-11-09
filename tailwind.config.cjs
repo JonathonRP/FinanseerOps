@@ -3,9 +3,16 @@ const plugin = require('tailwindcss/plugin');
 /** @type {import('tailwindcss').Config} */
 const config = {
 	content: ['./src/**/*.{html,js,svelte,ts}'],
-
+	variants: {
+		extend: {
+			'background-image': ['autofill'],
+		},
+	},
 	theme: {
 		extend: {
+			backgroundImage: {
+				none: 'none !important',
+			},
 			colors: {
 				primary: {
 					100: '#ffd8cc',
@@ -68,6 +75,7 @@ const config = {
 				}
 			);
 		}),
+		require('tailwind-scrollbar'),
 		require('@tailwindcss/forms'),
 		require('@tailwindcss/container-queries'),
 	],

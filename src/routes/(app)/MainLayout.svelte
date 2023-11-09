@@ -2,8 +2,6 @@
 	import classes from 'svelte-transition-classes';
 	import { derived } from 'svelte/store';
 
-	import { base } from '$app/paths';
-	import { page } from '$app/stores';
 	import { merge } from '$lib/utils';
 	import { session } from '$lib/stores/session';
 	import useBauhaus from '$lib/stores/useBauhaus';
@@ -11,18 +9,17 @@
 
 	import { api } from '$lib/api';
 	import toast from 'svelte-french-toast';
+	import { AnimatePresence } from 'svelte-motion';
 
 	import logo from '$lib/images/svelte-logo.svg';
-	// import dashboard from '@iconify-icons/tabler/chart-infographic';
-	import dashboard from '@iconify-icons/tabler/chart-histogram';
-	import newUser from '@iconify-icons/tabler/user-plus';
-	import logout from '@iconify-icons/tabler/logout';
-	import rightChev from '@iconify-icons/tabler/chevron-right';
-	import close from '@iconify-icons/tabler/circle-x';
-	import loadingIcon from '@iconify-icons/line-md/loading-loop';
+	// import dashboard from '@iconify/icons-tabler/chart-infographic';
 
+	import { mediaQuery } from '$lib/stores/mediaQuery';
 	import Form from '$lib/components/Form.svelte';
+	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 	import NavLink from './NavLink.svelte';
+	import Modal from './Modal.svelte';
 
 	const state = {
 		closed: false,
@@ -34,7 +31,10 @@
 	export let name = 'Finanzen';
 	export let links: { route: string }[] = [];
 
-	$: routes = merge([{ icon: dashboard, label: 'dashboard' }], Object.assign([], [{ route: `${base}/` }], links));
+	$: routes = merge(
+		[{ icon: 'tabler:chart-histogram', label: 'dashboard' }],
+		Object.assign([], [{ route: `${base}/` }], links)
+	);
 
 	let menuOpen: boolean = state.closed;
 	let accountOpen: boolean = state.closed;
@@ -44,12 +44,13 @@
 		[session, derived(api.user.retrieve.query(), ($user) => $user.data)],
 		([$session, $user]) => ({
 			...$session,
-			user: $user || { name: '', image: '', role: 'user' },
+			user: $user || undefined,
 		})
 	);
 	$: ({ user } = $session$);
+	$: sm = mediaQuery('(max-width: 768px)');
 
-	const toggleAccount = (definedState?: boolean | undefined) => (event: MouseEvent | KeyboardEvent) => {
+	const toggleAccount = (definedState?: boolean | undefined) => (event: MouseEvent | KeyboardEvent | Event) => {
 		const prevs = document.querySelectorAll('[aria-current="location"]');
 		prevs?.forEach((prev) => {
 			prev.ariaCurrent = null;
@@ -65,6 +66,7 @@
 				accountOpen = definedState ?? !accountOpen;
 				break;
 			default:
+				accountOpen = definedState ?? !accountOpen;
 				break;
 		}
 		if (accountOpen) {
@@ -115,7 +117,7 @@
 			.slice(0, 6);
 
 	$: userImage =
-		user.image ||
+		user?.image ||
 		`https://source.boringavatars.com/${($useBauhaus && 'bauhaus') || 'beam'}/120/${encodeURIComponent(
 			user?.name ?? ''
 		)}?colors=000000,ff3e00,CDCDCD,4075a6,${randomColor()}`;
@@ -127,7 +129,7 @@
 		toggleMenuWidth(state.closed)(e);
 		toggleInvitation(state.closed)(e);
 	}} />
-{#if user.role === 'admin'}
+{#if user?.role === 'admin'}
 	<dialog
 		id="inviteUser"
 		bind:this={userInvitation}
@@ -147,7 +149,7 @@
 				toast.success(`Sent invitation to ${e?.detail?.data.get('email')}.`);
 			}}
 			class="flex w-full items-center border-b py-2 transition-colors focus-within:border-primary-500 hover:border-primary-400">
-			<iconify-icon icon={newUser} inline class="mr-2 flex h-6 w-12 items-center" height="auto" />
+			<iconify-icon icon="tabler:user-plus" inline class="mr-2 flex h-6 w-12 items-center" height="auto" />
 			<input
 				id="email"
 				name="email"
@@ -162,7 +164,7 @@
 				disabled={submitting} />
 			<button type="button" formmethod="dialog" value="cancel" class="absolute right-0 top-0">
 				<span class="flex items-center justify-center">
-					<iconify-icon class="h-6 w-6" icon={close} inline height="auto" />
+					<iconify-icon class="h-6 w-6" icon="tabler:x" inline height="auto" />
 				</span>
 			</button>
 			<button
@@ -170,7 +172,7 @@
 				class="item-center flex flex-shrink-0 justify-center rounded-full border-4 border-primary-500 bg-primary-500 px-2 py-1 text-sm text-white transition-colors hover:border-primary-600 hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 disabled:border-primary-700 disabled:bg-primary-700 dark:focus:ring-offset-neutral-808"
 				aria-busy={submitting}
 				disabled={!valid || submitting}>
-				<iconify-icon icon={loadingIcon} inline class="{submitting ? 'flex' : 'hidden'} fixed" />
+				<iconify-icon icon="line-md:loading-loop" inline class="{submitting ? 'flex' : 'hidden'} fixed" />
 				Invite
 			</button>
 		</Form>
@@ -178,16 +180,11 @@
 {/if}
 <!-- side-bar -->
 <aside class="flex flex-shrink-0 transition-all">
-	<div
-		on:click={toggleAccount(state.closed)}
-		on:keydown={toggleAccount(state.closed)}
-		class="fixed inset-0 z-10 bg-black bg-opacity-50 dark:bg-white dark:opacity-25 lg:hidden"
-		class:hidden={!accountOpen} />
-	<div class="fixed inset-0 z-10 hidden w-16 bg-white dark:bg-gray-800 sm:flex" class:sm:hidden={!accountOpen} />
+	<div class="fixed inset-0 z-10 hidden w-16 md:flex" class:sm:hidden={!accountOpen} />
 	<!-- Mobile bottom bar -->
 	<nav
 		aria-label="Options"
-		class="shadow-t fixed inset-x-0 bottom-0 z-10 flex flex-row items-center justify-between rounded-t-3xl border-t border-primary-100 bg-white px-4 py-2 dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 md:hidden">
+		class="shadow-t fixed inset-x-0 bottom-0 z-10 flex flex-row items-center justify-between rounded-t-2xl bg-white px-3 py-2 dark:bg-gray-800 dark:shadow-neutral-309/20 md:hidden">
 		<!-- Links -->
 		<ul class="flex-1 space-x-2 overflow-hidden hover:overflow-auto">
 			{#each routes as { icon, route, label }, id (id)}
@@ -200,13 +197,13 @@
 		</ul>
 		<div class="flex items-center">
 			<div class="px-1">
-				{#if user.role === 'admin'}
+				{#if user?.role === 'admin'}
 					<button
 						type="button"
 						on:click={toggleInvitation()}
 						class="rounded-lg opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-neutral-808">
 						<span class="flex items-center justify-center rounded-lg p-1 shadow-md">
-							<iconify-icon class="h-6 w-6" icon={newUser} inline height="auto" />
+							<iconify-icon class="h-6 w-6" icon="tabler:user-plus" inline height="auto" />
 						</span>
 						<span class="sr-only">expand invitation</span>
 					</button>
@@ -225,8 +222,9 @@
 	<!-- Left mini bar -->
 	<nav
 		aria-label="Options"
-		class="fixed inset-0 z-20 hidden w-16 flex-shrink-0 flex-col items-center rounded-br-3xl rounded-tr-3xl border-r-2 border-primary-100 bg-white py-4 shadow-md transition-[width] duration-300 @container dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 md:flex lg:static"
+		class="fixed inset-0 z-20 hidden w-16 flex-shrink-0 flex-col items-center py-4 transition-[width] duration-300 @container dark:shadow-neutral-309/20 md:static md:flex"
 		class:w-64={menuOpen}
+		class:sm:w-72={menuOpen}
 		class:rounded-none={false}
 		class:border-r-0={false}
 		class:shadow-none={false}>
@@ -262,13 +260,13 @@
 				{/each}
 			</ul>
 
-			{#if user.role === 'admin'}
+			{#if user?.role === 'admin'}
 				<button
 					type="button"
 					on:click={toggleInvitation()}
 					class="relative rounded-lg opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 focus:ring-offset-white @[12rem]:flex @[12rem]:w-full @[12rem]:items-center @[12rem]:space-x-2 @[12rem]:px-4 dark:focus:ring-offset-neutral-808">
 					<span class="flex items-center rounded-lg p-1 shadow-md">
-						<iconify-icon class="h-6 w-6" icon={newUser} inline height="auto" />
+						<iconify-icon class="h-6 w-6" icon="tabler:user-plus" inline height="auto" />
 					</span>
 					<span class="invisible @[6rem]:visible">invintation</span>
 					<span class="sr-only">expand invitation</span>
@@ -283,139 +281,145 @@
 				<span class="flex items-center rounded-lg shadow-md">
 					<img class="h-10 w-10" src={userImage} alt="user profile" />
 				</span>
-				<p class="hidden @[6rem]:flex">{user.name}</p>
+				<p class="hidden @[6rem]:flex">{user?.name}</p>
 				<span class="sr-only">user menu</span>
 			</button>
 			<button type="button" class="relative" on:click={toggleMenuWidth()}>
 				<span class="flex items-center transition-transform @[6rem]:-rotate-180">
-					<iconify-icon class="h-6 w-1" icon={rightChev} inline height="auto" />
+					<iconify-icon class="h-6 w-1" icon="tabler:chevron-right" inline height="auto" />
 				</span>
 				<span class="sr-only">expand menu</span>
 			</button>
 		</div>
 	</nav>
 
-	{#if accountOpen}
-		<div
-			in:classes={{
-				duration: 300,
-				base: 'transform transition-transform duration-300',
-				from: 'translate-x-full sm:-translate-x-full',
-				to: 'translate-x-0',
-			}}
-			out:classes={{
-				duration: 300,
-				base: 'transform transition-transform duration-300',
-				from: 'translate-x-0',
-				to: 'translate-x-full sm:-translate-x-full',
-			}}
-			class="fixed inset-y-0 right-0 z-10 w-64 flex-shrink-0 border-primary-100 bg-white shadow-lg dark:border-primary-400/20 dark:bg-gray-800 dark:shadow-neutral-309/20 max-[640px]:rounded-bl-3xl max-[640px]:rounded-tl-3xl max-[640px]:border-l-2 sm:left-16 sm:w-72 sm:rounded-br-3xl sm:rounded-tr-3xl sm:border-r-2 lg:static lg:w-64">
-			<nav aria-label="Main" class="flex h-full flex-col">
-				<!-- <div class="flex flex-shrink-0 items-center justify-center py-10">
-					<h1 class="text-center text-xl font-bold">{name}</h1>
-				</div> -->
-				<div class="flex flex-1 flex-col py-10">
-					<!-- Account -->
-					<div class="flex flex-shrink-0 items-center justify-center">
-						<button type="button" class="h-20 w-20 rounded-full">
-							<img src={userImage} alt="user profile" />
-						</button>
-					</div>
+	<AnimatePresence show={accountOpen}>
+		{#if accountOpen}
+			<div
+				in:classes={{
+					duration: 300,
+					base: 'md:transform md:transition-transform md:duration-300',
+					from: 'md:-translate-x-full',
+					to: 'md:translate-x-0',
+				}}
+				out:classes={{
+					duration: 300,
+					base: 'md:transform md:transition-transform md:duration-300',
+					from: 'md:translate-x-0',
+					to: 'md:-translate-x-full',
+				}}
+				class="md:static md:inset-y-0 md:left-16 md:mx-0 md:h-auto md:w-72 md:bg-inherit md:shadow-none md:dark:bg-inherit">
+				<Modal
+					on:close={(e) => {
+						toggleAccount(state.closed)(e);
+					}}>
+					<nav aria-label="User Account Settings" class="flex h-full flex-col md:px-4">
+						<div class="flex flex-1 flex-col py-10">
+							<!-- Account -->
+							<div class="flex flex-shrink-0 items-center justify-center">
+								<button type="button" class="h-20 w-20 rounded-full">
+									<img src={userImage} alt="user profile" />
+								</button>
+							</div>
 
-					<!-- UserSetting -->
-					<div class="flex flex-shrink-0 px-4 py-2">
-						<Form
-							method="post"
-							action="/user?/update"
-							let:submitting
-							let:valid
-							let:handleBlur
-							let:handleInput
-							validate={(values) => {
-								const errors = { username: '', useBauhaus: '' };
+							<!-- UserSetting -->
+							<div class="flex flex-shrink-0 px-4 py-2">
+								<Form
+									method="post"
+									action="/user?/update"
+									let:submitting
+									let:valid
+									let:handleBlur
+									let:handleInput
+									validate={(values) => {
+										const errors = { username: '', useBauhaus: '' };
 
-								if (values.username === user?.name && Boolean(values.useBauhaus) === $useBauhaus) {
-									errors.username = 'No changes to submit.';
-								}
+										if (values.username === user?.name && Boolean(values.useBauhaus) === $useBauhaus) {
+											errors.username = 'No changes to submit.';
+										}
 
-								return errors;
-							}}
-							on:submit={(e) => {
-								const form = Object.fromEntries(e.detail.data);
+										return errors;
+									}}
+									on:submit={(e) => {
+										const form = Object.fromEntries(e.detail.data);
 
-								if (Boolean(form.useBauhaus) !== $useBauhaus) {
-									useBauhaus.set(Boolean(form.useBauhaus));
-									toast.success(`Now using ${$useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
-								}
+										if (Boolean(form.useBauhaus) !== $useBauhaus) {
+											useBauhaus.set(Boolean(form.useBauhaus));
+											toast.success(`Now using ${$useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
+										}
 
-								if (user.name === form.username) {
-									return false;
-								}
-								user.name = form.username;
-								return true;
-							}}
-							on:success={(e) => {
-								toast.success(`Updated ${e.detail.data.get('username')}.`);
-							}}
-							class="w-full space-y-4">
-							<input
-								id="name"
-								name="username"
-								class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
-								type="text"
-								value={user.name}
-								on:blur={handleBlur}
-								on:input={handleInput}
-								disabled={submitting} />
-							<label class="mb-2 flex items-center font-bold" for="bauhaus">
-								<input
-									id="bauhaus"
-									name="useBauhaus"
-									class="form-checkbox mr-2 rounded-full leading-tight text-primary-500 focus:ring-primary-500 focus:ring-offset-neutral-808"
-									type="checkbox"
-									checked={$useBauhaus}
-									on:blur={handleBlur}
-									on:input={handleInput}
-									disabled={submitting} />
-								<span class="text-sm">Use Buasuah</span>
-							</label>
-							<button
-								type="submit"
-								class="item-center flex w-full justify-center rounded-full bg-primary-500 px-4 py-2 text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 disabled:bg-primary-700 dark:focus:ring-offset-neutral-808"
-								aria-busy={submitting}
-								disabled={!valid || submitting}>
-								<iconify-icon icon={loadingIcon} inline class="{submitting ? 'flex' : 'hidden'} fixed" />
-								Save Settings
-							</button>
-						</Form>
-					</div>
-				</div>
+										if (user) {
+											if (user.name === form.username) {
+												return false;
+											}
+											user.name = form.username;
+										}
+										return true;
+									}}
+									on:success={(e) => {
+										toast.success(`Updated ${e.detail.data.get('username')}.`);
+									}}
+									class="w-full space-y-4">
+									<input
+										id="name"
+										name="username"
+										class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+										type="text"
+										value={user?.name}
+										on:blur={handleBlur}
+										on:input={handleInput}
+										disabled={submitting} />
+									<label class="mb-2 flex items-center font-bold" for="bauhaus">
+										<input
+											id="bauhaus"
+											name="useBauhaus"
+											class="form-checkbox mr-2 rounded-full leading-tight text-primary-500 focus:ring-primary-500 focus:ring-offset-neutral-808"
+											type="checkbox"
+											checked={$useBauhaus}
+											on:blur={handleBlur}
+											on:input={handleInput}
+											disabled={submitting} />
+										<span class="text-sm">Use Buasuah</span>
+									</label>
+									<button
+										type="submit"
+										class="item-center flex w-full justify-center rounded-full bg-primary-500 px-4 py-2 text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 disabled:bg-primary-700 dark:focus:ring-offset-neutral-808"
+										aria-busy={submitting}
+										disabled={!valid || submitting}>
+										<iconify-icon icon="line-md:loading-loop" inline class="{submitting ? 'flex' : 'hidden'} fixed" />
+										Save Settings
+									</button>
+								</Form>
+							</div>
+						</div>
 
-				{#if user}
-					<div class="flex-shrink-0 p-4">
-						<button
-							type="button"
-							class="group flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-500 hover:text-white dark:text-neutral-309"
-							on:click={() => signOut()}>
-							<span
-								aria-hidden="true"
-								class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600">
-								<iconify-icon class="h-6 w-6" icon={logout} height="auto" />
-							</span>
-							<span>Sign Out</span>
-						</button>
-					</div>
-				{/if}
-			</nav>
-		</div>
-	{/if}
+						{#if user}
+							<div class="flex-shrink-0 py-4">
+								<button
+									type="button"
+									class="group flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-500 hover:text-white dark:text-neutral-309"
+									on:click={() => signOut()}>
+									<span
+										aria-hidden="true"
+										class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600">
+										<iconify-icon class="h-6 w-6" icon="tabler:logout" height="auto" flip="vertical" />
+									</span>
+									<span>Sign Out</span>
+								</button>
+							</div>
+						{/if}
+					</nav>
+				</Modal>
+			</div>
+		{/if}
+	</AnimatePresence>
 </aside>
 
-<main class="flex flex-1 flex-col px-6 pb-16 pt-8 md:pl-32 md:pr-32 lg:px-12">
+<main class="flex flex-1 flex-col overflow-hidden px-6 pb-16 pt-8 md:pb-8">
 	<slot />
 </main>
 
-<footer class="fixed bottom-20 right-5 flex items-center space-x-4 sm:bottom-5">
+<footer class="fixed bottom-20 right-5 flex items-center gap-4 md:bottom-5">
 	<a href="https://kit.svelte.dev" class="transform transition-transform hover:scale-125">
 		<span class="sr-only">SvelteKit</span>
 		<img class="h-8 w-8 object-contain" aria-hidden="true" src={logo} alt="SvelteKit" />

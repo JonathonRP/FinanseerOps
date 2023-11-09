@@ -1,21 +1,24 @@
 // import * as Sentry from '@sentry/svelte';
 
 import { api } from '$lib/api';
+import { formatError } from '$lib/utils';
+import type { HandleClientError } from '@sveltejs/kit';
+import { ulid } from 'ulid';
 
 // Sentry.init({
 /* ... */
 // });
 
-export async function handleError({ error, event }) {
-	const errorId = crypto.randomUUID();
+export const handleError = (async ({ error, event }) => {
+	const errorId = ulid();
 	// example integration with https://sentry.io/
 	// Sentry.captureException(error, { event, errorId });
 
 	// TODO - replace with logging collection data service (ex. Sentry).
-	api.logger.error.query({ error, ...{ event, errorId } });
+	api.logger.error.query({
+		issue: (error as Error)?.stack || (error as App.Error).message || 'Oops!',
+		...{ event, errorId, error },
+	});
 
-	return {
-		code: errorId,
-		message: (error as Error).message ?? 'Whoops!',
-	};
-}
+	return formatError(error);
+}) satisfies HandleClientError;

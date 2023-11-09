@@ -2,7 +2,7 @@
 	import { from, filter, reduce, combineLatest, switchMap, of } from 'rxjs';
 	import { addDays, startOfMonth } from 'date-fns';
 	import { api } from '$lib/api';
-	import ScoreCard from './ScoreCard.svelte';
+	import ScoreCard from '../ScoreCard.svelte';
 
 	export let processedDay: Date;
 

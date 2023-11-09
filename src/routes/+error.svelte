@@ -26,9 +26,7 @@
 	.error {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		height: 100vh;
-		max-height: 100dvh;
+		height: 100%;
 		max-width: 32rem;
 		margin: 0 1rem;
 		padding: 3rem 0 3rem 3rem;

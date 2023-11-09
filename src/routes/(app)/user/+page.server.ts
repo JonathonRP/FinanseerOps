@@ -1,16 +1,17 @@
-import { appRouter } from '$lib/server/api';
-import { createContext } from '$lib/server/api/trpc';
+import { createContext } from '$/server/api/context';
 import { validateData } from '$lib/utils';
-import { logger } from '$lib/server/logger';
+import { logger } from '$/server/logger';
 import { fail } from '@sveltejs/kit';
 import { object, string, coerce } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
+import { appRouter } from '$/server/api/root';
 
 export const actions = {
 	update: async (event) => {
-		const formData = await event.request.formData();
-		const { user } = event.locals.session;
+		const { request, locals } = event;
+		const formData = await request.formData();
+		const { user } = locals.session;
 
 		// NOTE - handle formdata checkbox boolean existance and inexistance states for boolean.
 		const expectedUser = object({ useBauhaus: coerce.boolean().default(false), username: string() }).superRefine(
@@ -29,9 +30,7 @@ export const actions = {
 		}
 
 		try {
-			await appRouter
-				.createCaller(await createContext(event))
-				.user.update({ ...user, ...{ ...data, name: data.username } });
+			await appRouter.createCaller(createContext(event)).user.update({ ...user, ...{ ...data, name: data.username } });
 
 			return { success: true };
 		} catch (err) {
@@ -59,7 +58,7 @@ export const actions = {
 		}
 
 		try {
-			await appRouter.createCaller(await createContext(event)).user.invite(data);
+			await appRouter.createCaller(createContext(event)).user.invite(data);
 
 			return { success: true };
 		} catch (err) {

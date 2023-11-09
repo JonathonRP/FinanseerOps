@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { filter, switchMap, reduce, of } from 'rxjs';
-	import { format, isSameMonth, startOfMonth, subMonths } from 'date-fns';
+	import { isSameMonth, startOfMonth, subMonths } from 'date-fns';
 	import { api } from '$lib/api';
-	import { dateFormat } from '$lib/utils';
-	import ScoreCard from './ScoreCard.svelte';
+	import ScoreCard from '../ScoreCard.svelte';
 
 	export let processedDay: Date;
 	export let searchFilter: string;
@@ -53,20 +52,6 @@
 			{ currMonthSpent: 0, prevMonthSpent: 0 }
 		)
 	);
-
-	$: processedDate = format(processedDay, dateFormat);
 </script>
 
-<ScoreCard label="Spent" score={$expenses$.currMonthSpent} swap comparison={{ score: $expenses$.prevMonthSpent }}>
-	<form
-		action="/transactions"
-		method="get"
-		slot="additional"
-		on:formdata={(e) => {
-			Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
-		}}>
-		<input type="hidden" name="processedDate" bind:value={processedDate} />
-		<input type="hidden" name="search" bind:value={searchFilter} />
-		<button>view transactions</button>
-	</form>
-</ScoreCard>
+<ScoreCard label="Spent" score={$expenses$.currMonthSpent} swap comparison={{ score: $expenses$.prevMonthSpent }} />

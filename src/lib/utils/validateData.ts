@@ -1,6 +1,7 @@
 import { api } from '$lib/api';
 import { error } from '@sveltejs/kit';
 import { ZodError, type ZodSchema } from 'zod';
+import { ulid } from 'ulid';
 
 export const validateData = async (formData: FormData, schema: ZodSchema) => {
 	const data = Object.fromEntries(formData);
@@ -23,6 +24,6 @@ export const validateData = async (formData: FormData, schema: ZodSchema) => {
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-throw-literal
-		throw error(500, { code: crypto.randomUUID(), message: 'How did it go so wrong!?' });
+		throw error(500, { code: ulid(), message: 'How did it go so wrong!?' });
 	}
 };

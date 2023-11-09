@@ -2,27 +2,75 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "debug server-side",
-			"type": "node-terminal",
+			"name": "server",
 			"request": "launch",
-			"command": "pnpm debug"
+			"type": "node",
+			"runtimeArgs": ["dev"],
+			"runtimeExecutable": "pnpm",
+			"console": "integratedTerminal",
+			"skipFiles": ["<node_internals>/**"]
 		},
 		{
-			"name": "debug client-side",
-			"type": "chrome",
+			"name": "chrome",
 			"request": "launch",
+			"type": "chrome",
 			"url": "http://localhost:5000"
 		},
 		{
-			"name": "debug full stack",
-			"type": "node-terminal",
+			"name": "edge",
 			"request": "launch",
-			"command": "pnpm dev --open",
+			"type": "msedge",
+			"url": "http://localhost:5000"
+		},
+		{
+			"name": "chrome pwa",
+			"request": "launch",
+			"type": "pwa-chrome",
+			"url": "http://localhost:5000"
+		},
+		{
+			"name": "edge pwa",
+			"request": "launch",
+			"type": "pwa-msedge",
+			"url": "http://localhost:5000"
+		},
+		{
+			"name": "full stack chrome",
+			"request": "launch",
+			"type": "node",
+			"runtimeArgs": ["dev"],
+			"runtimeExecutable": "pnpm",
+			"console": "integratedTerminal",
+			"skipFiles": ["<node_internals>/**"],
 			"serverReadyAction": {
 				"pattern": "Local: .+(http://.+:.+)",
 				"uriFormat": "%s",
 				"action": "debugWithChrome"
 			}
+		},
+		{
+			"name": "full stack edge",
+			"request": "launch",
+			"type": "node",
+			"runtimeArgs": ["dev"],
+			"runtimeExecutable": "pnpm",
+			"console": "integratedTerminal",
+			"skipFiles": ["<node_internals>/**"],
+			"serverReadyAction": {
+				"pattern": "Local: .+(http://.+:.+)",
+				"uriFormat": "%s",
+				"action": "debugWithEdge"
+			}
+		}
+	],
+	"compounds": [
+		{
+			"name": "full chrome",
+			"configurations": ["server", "chrome"]
+		},
+		{
+			"name": "full edge",
+			"configurations": ["server", "edge"]
 		}
 	]
 }

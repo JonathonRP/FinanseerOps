@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { from, filter, reduce } from 'rxjs';
 	import { api } from '$lib/api';
-	import ScoreCard from './ScoreCard.svelte';
+	import ScoreCard from '../ScoreCard.svelte';
 
 	$: accounts = api.buxfer.accounts.query();
 

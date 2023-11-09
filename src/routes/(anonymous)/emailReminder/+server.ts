@@ -1,44 +1,36 @@
-import nodemailer from 'nodemailer';
-import { logger } from '$lib/server/logger';
+import { logger } from '../../../server/logger';
 import { json } from '@sveltejs/kit';
-import { appRouter } from '$lib/server/api';
-import { createContext } from '$lib/server/api/trpc';
-import { BUXFER_EMAIL as SERVER_USER, EMAIL_FROM, SERVER_PASS, VERCEL_DOMAIN } from '$env/static/private';
+import { appRouter } from '../../../server/api/root';
+import { createContext } from '../../../server/api/context';
+import { EMAIL_FROM, VERCEL_DOMAIN } from '$env/static/private';
 import type { RequestHandler } from './$types';
+import { resend } from '$lib/resend.server';
 
 // TODO - evaluate Upstash and Vercel cronjobs alternatives.
 const handle = (async ({ url, ...event }) => {
-	const transporter = nodemailer.createTransport({
-		service: 'gmail',
-		auth: {
-			user: SERVER_USER,
-			pass: SERVER_PASS,
-		},
-		secure: true,
-	});
-
 	const mailOptions = {
-		from: EMAIL_FROM.replace('Finanzen', 'Finanseer'),
-		to: (await appRouter.createCaller(await createContext({ ...event, url })).users.retrieve())
+		from: EMAIL_FROM,
+		to: (await appRouter.createCaller(createContext({ ...event, url })).users.retrieve())
 			.filter((user) => user.emailVerified)
 			.map((user) => user.email ?? ''),
-		subject: 'Reminder to check CashFlow',
-		text: `Go check your finances!`,
+		subject: 'Reminder to check cash flow',
+		text: `Go see your cashflow!`,
 		// eslint-disable-next-line @typescript-eslint/no-use-before-define
 		html: html(new URL(`https://${VERCEL_DOMAIN}`) || url),
 	};
 
 	await new Promise((resolve, reject) => {
-		transporter.sendMail(mailOptions, (error, info) => {
-			// TODO - replace with logging collection data service (ex. Sentry).
-			if (error) {
+		resend
+			.sendEmail(mailOptions)
+			.then((res) => {
+				logger.info(res);
+				resolve(`Email sent: ${res}`);
+			})
+			.catch((error) => {
+				// TODO - replace with logging collection data service (ex. Sentry).
 				logger.error(error);
 				reject(error);
-			} else {
-				logger.info(info);
-				resolve(`Email sent: ${info.response}`);
-			}
-		});
+			});
 	});
 
 	return json({ success: true });

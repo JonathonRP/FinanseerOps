@@ -22,17 +22,20 @@
 		"vscode": {
 			"settings": {
 				"editor.fontLigatures": "'calt', 'ss01'",
+				"editor.formatOnType": false,
+				"editor.formatOnPaste": true,
+				"editor.formatOnSave": true,
+				"editor.codeActionsOnSave": {
+					"source.fixAll.eslint": true
+					// "source.organizeImports": true
+				},
+				"editor.formatOnSaveMode": "file",
+				"files.autoSave": "onFocusChange",
 				"svelte.enable-ts-plugin": true,
 				"svelte.plugin.svelte.defaultScriptLanguage": "ts",
 
 				"explorer.sortOrder": "filesFirst",
 				"workbench.editor.labelFormat": "short",
-
-				"editor.formatOnSave": true,
-				"editor.codeActionsOnSave": {
-					"source.fixAll": true
-					// "source.organizeImports": true
-				},
 
 				"tailwindCSS.emmetCompletions": true,
 				"html.format.enable": false,
@@ -41,15 +44,41 @@
 				"[svelte]": {
 					"editor.defaultFormatter": "svelte.svelte-vscode"
 				},
-				"[prisma]": {
-					"editor.defaultFormatter": "Prisma.prisma"
+				"[javascript][typescript]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode",
+					"prettier.configPath": "./.prettierrc.cjs",
+					"prettier.prettierPath": "./node_modules/prettier"
 				},
 
-				"eslint.validate": ["javascript", "typescript", "svelte"]
+				"eslint.validate": ["javascript", "typescript", "svelte"],
+				"eslint.rules.customizations": [{ "rule": "*", "severity": "warn" }],
 
-				// "dotfiles.repository": "https://github.com/JonathonRP/.dotfiles",
-				// "dotfiles.targetPath": "~/.dotfiles",
-				// "dotfiles.installCommand": "install.sh"
+				"dotfiles.repository": "https://github.com/JonathonRP/.dotfiles",
+				"dotfiles.targetPath": "~/dotfiles",
+				"editor.fontFamily": "'cascadia code', Consolas, 'Courier New', monospace",
+				"terminal.integrated.fontFamily": "'MesloLGM NF'",
+				"terminal.integrated.defaultProfile.linux": "fish",
+				"terminal.integrated.profiles.linux": {
+					"bash": {
+						"path": "bash",
+						"icon": "terminal-bash"
+					},
+					"zsh": {
+						"path": "zsh"
+					},
+					"fish": {
+						"path": "fish",
+						"icon": "terminal-linux"
+					},
+					"tmux": {
+						"path": "tmux",
+						"icon": "terminal-tmux"
+					},
+					"pwsh": {
+						"path": "pwsh",
+						"icon": "terminal-powershell"
+					}
+				}
 			},
 
 			// Add the IDs of extensions you want installed when the container is created.

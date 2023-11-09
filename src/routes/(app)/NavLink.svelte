@@ -1,8 +1,6 @@
 <script lang="ts">
-	import demo from '@iconify-icons/tabler/file-search';
-
 	export let active: boolean;
-	export let icon = demo;
+	export let icon = 'tabler:file-search';
 	export let route: string;
 </script>
 

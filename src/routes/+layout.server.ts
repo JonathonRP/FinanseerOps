@@ -1,8 +1,8 @@
-import { api } from '$lib/api';
+import { trpcServer } from '$lib/api/server';
 
 export async function load(event) {
 	return {
-		session: event.locals.session,
-		api: api.ssr(event),
+		...event.locals,
+		api: trpcServer.hydrateToClient(event),
 	};
 }

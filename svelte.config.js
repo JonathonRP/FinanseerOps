@@ -12,6 +12,10 @@ const config = {
 		adapter: adapter(),
 	},
 
+	compilerOptions: {
+		sourcemap: process.env.NODE_ENV === 'development' ? 'true' : 'false',
+	},
+
 	vitePlugin: {
 		inspector: {
 			showToggleButton: 'always',

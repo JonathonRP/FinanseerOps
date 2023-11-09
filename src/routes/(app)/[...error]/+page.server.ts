@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
+import { ulid } from 'ulid';
 
 export async function load() {
 	// eslint-disable-next-line @typescript-eslint/no-throw-literal
-	throw error(404, { code: crypto.randomUUID(), message: 'Not Found' });
+	throw error(404, { code: ulid(), message: 'Not Found' });
 }
