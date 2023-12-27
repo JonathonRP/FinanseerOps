@@ -13,12 +13,15 @@ import ChartHistogram from '~icons/tabler/chart-histogram';
 import UpTrendIcon from '~icons/tabler/trending-up-3';
 import DownTrendIcon from '~icons/tabler/trending-down-3';
 
+import UpChevron from '~icons/tabler/chevron-up';
+
 export default {
 	PlusUserIcon,
 	SearchIcon,
 	CloseIcon,
 	LeftChevronIcon,
 	RightChevronIcon,
+	UpChevron,
 	DotIcon,
 	LoadingIcon,
 	LogOutIcon,

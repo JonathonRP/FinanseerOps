@@ -1,7 +1,7 @@
-import type { DefaultSession, Account } from '@auth/core/types';
+import type { DefaultSession } from '@auth/core/types';
 import type { SvelteKitAuthConfig as OGSvelteKitAuthConfig } from '@auth/sveltekit';
 import type { AdapterAccount, AdapterSession, VerificationToken } from '@auth/core/adapters';
-import type { Users, Accounts } from '../src/server/db';
+import type { Users } from '../src/server/db';
 
 declare module '@auth/core/types' {
 	export interface Session extends DefaultSession {
@@ -53,13 +53,6 @@ declare module '@auth/core/types' {
 		useVerificationToken?(params: { identifier: string; token: string }): Awaitable<VerificationToken | null>;
 	}
 	type AdapterUser = Users;
-}
-
-declare module '@sveltejs/kit' {
-	interface Redirect extends Error {
-		status: 300 | 301 | 302 | 303 | 304 | 305 | 306 | 307 | 308;
-		location: string;
-	}
 }
 
 declare module '@auth/sveltekit' {

@@ -1,3 +1,4 @@
+<svelte:options runes={true} />
 <script lang="ts">
 	import '../app.css';
 	import './styles.css';
@@ -6,10 +7,10 @@
 
 	import { api } from '$lib/api';
 	import { QueryClientProvider } from '@tanstack/svelte-query';
+	import type { PageData } from './(finanseer)/$types';
 
-	export let data;
-
-	$: queryClient = api.hydrateFromServer(data.api);
+	const { data } = $props<{data: PageData}>();
+	const queryClient = $derived(api.hydrateFromServer(data.api));
 </script>
 
 <Toaster position="top-right" />

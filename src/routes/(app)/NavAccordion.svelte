@@ -1,13 +1,17 @@
+<svelte:options runes={true} />
 <script lang="ts">
-	import { accordion } from '$lib/utils';
+	import { accordion } from '$/lib/utils/index.svelte';
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
 	import NavLink from './NavLink.svelte';
+	import icons from '../icons';
+	import type { ComponentType, SvelteComponent } from 'svelte';
 
-	export let icon = 'tabler:file-search';
-	export let routes: string[];
+	const navIcons = { ...icons.navItemIcons};
 
-	$: [, label] = routes[0].split('/');
+	const { icon = navIcons.FileSearchIcon, routes } = $props<{ icon?: ComponentType<SvelteComponent>; routes: string[] }>();
+
+	const [, label] = $derived(routes[0].split('/'));
 </script>
 
 <details
@@ -20,14 +24,14 @@
 			<span
 				aria-hidden="true"
 				class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600 group-aria-[current=page]:text-white">
-				<iconify-icon class="h-6 w-6" {icon} flip="horizontal" height="auto" />
+				<svelte:component this={icon} class="h-6 w-6" flip="horizontal" height="auto" />
 			</span>
 			<span>{label}</span>
 		</a>
 		<span
 			aria-hidden="true"
 			class="flex items-baseline px-2 text-stone-50 transition-transform group-open/menu:-scale-y-100 dark:text-stone-800">
-			<iconify-icon icon="tabler:chevron-up" flip="vertical" class="h-7 w-7" height="auto" />
+			<svelte:component this={icons.UpChevron} flip="vertical" class="h-7 w-7" height="auto" />
 		</span>
 	</summary>
 	<ul class="mt-2 flex-1 space-y-2 overflow-hidden hover:overflow-auto">

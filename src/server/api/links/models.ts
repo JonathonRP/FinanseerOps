@@ -23,7 +23,7 @@ export interface RefreshTokenLinkOptions {
 	 * Callback on JWT pair is successfully fetched with `fetchJwtPairByRefreshToken`
 	 * @param payload Just fetched `{ access: string; refresh: string }` structure
 	 */
-	onJwtPairFetched: (payload: JwtPair) => void;
+	onJwtPairFetched: (payload: JwtPair, email: string | undefined) => Promise<void>;
 
 	/**
 	 * Callback on JWT refresh request is failed

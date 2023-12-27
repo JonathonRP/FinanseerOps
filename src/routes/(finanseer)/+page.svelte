@@ -1,17 +1,18 @@
+<svelte:options runes={true} />
 <script lang="ts">
-	import type { ComponentType } from 'svelte';
 	import { Motion } from 'svelte-motion';
 	import { staggerChildren, fadeUp } from '$lib/animations';
 	import { defaultWidgets, denseWidgets } from './widgets';
 
-	export let data;
-	$: ({ session, processedDay, searchFilter } = data);
+	const { data } = $props<{data: import('./$types').PageData }>();
+	const {session, processedDay, searchFilter} = $derived(data);
 
-	$: widgets =
-		(session.user?.widgetStyle === 'dense' && new Map<string, ComponentType>(Object.entries(denseWidgets))) ||
-		new Map<string, ComponentType>(Object.entries(defaultWidgets));
+	const widgets = $derived(
+		(session.user?.widgetStyle === 'dense' && new Map(Object.entries(denseWidgets))) ||
+		new Map(Object.entries(defaultWidgets))
+	);
 
-	$: dashboardUserLayout = Array.from(widgets.keys());
+	const dashboardUserLayout = $derived(Array.from(widgets.keys()));
 </script>
 
 <svelte:head>
@@ -29,7 +30,6 @@
 					/// TODO - make components motion components.
 					<svelte:component
 						this={widgets.get(widget)}
-						id={widget}
 						{...{
 							...(widget !== 'balance' && {
 								processedDay,

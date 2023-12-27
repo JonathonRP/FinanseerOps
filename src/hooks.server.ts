@@ -2,12 +2,13 @@ import Email from '@auth/core/providers/email';
 import { SvelteKitAuth, type SvelteKitAuthConfig } from '@auth/sveltekit';
 import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { formatError, sendVerificationRequest } from '$lib/utils';
+import { formatError, sendVerificationRequest } from '$/lib/utils/index.svelte';
 import { parseAcceptLanguage } from 'intl-parse-accept-language';
 import { ulid } from 'ulid';
+import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { logger } from './server/logger';
 import { db } from './server/db';
-import PlanetScaleAdapter from './server/db/auth-adapter';
+// import PlanetScaleAdapter from './server/db/auth-adapter';
 import { EMAIL_FROM } from '$env/static/private';
 
 function loginAndResume(url: URL, loginEndpoint: string, redirectReason?: string) {
@@ -22,11 +23,11 @@ function authorization() {
 		await event.locals.getSession();
 
 		if (!event.locals.session && !event.route.id?.includes('anonymous')) {
-			throw redirect(302, loginAndResume(url, '/auth/signin'));
+			redirect(302, loginAndResume(url, '/auth/signin'));
 		}
 
 		if (event.locals.session && redirectTo) {
-			throw redirect(302, `/${redirectTo.slice(1)}`);
+			redirect(302, `/${redirectTo.slice(1)}`);
 		}
 
 		return resolve(event);
@@ -37,7 +38,7 @@ function authentication() {
 	return (async (...args) => {
 		const [{ event }] = args;
 		const authOptions: SvelteKitAuthConfig = {
-			adapter: PlanetScaleAdapter(db),
+			adapter: DrizzleAdapter(db),
 			// the session override fixes a weird bug in the adapter
 			// src: https://github.com/nextauthjs/next-auth/issues/6076#issuecomment-1354087465
 			session: {

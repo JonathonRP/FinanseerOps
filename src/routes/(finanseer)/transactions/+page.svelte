@@ -1,22 +1,24 @@
+<svelte:options runes={true} />
 <script lang="ts">
 	import { formatDistanceToNow, startOfMonth } from 'date-fns';
 	import { filter, toArray, switchMap, scan, of, startWith } from 'rxjs';
 	import { Motion } from 'svelte-motion';
-	import { api } from '$lib/api';
 	import { slide } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
-	import { numberFormat } from '$lib/utils';
+	import { numberFormat } from '$/lib/utils/index.svelte';
+	import { api } from '$lib/api';
+	import icons from '../../icons';
 
-	export let data;
+	const { data } = $props<{data: import('./$types').PageData }>();
+	const { processedDate, processedDay, searchFilter } = $derived(data);
 
-	$: ({ processedDate, processedDay, searchFilter } = data);
-
-	$: transactions = api.buxfer.transactions.infiniteQuery(
+	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
 		{
 			startDate: startOfMonth(processedDay),
 			endDate: processedDay,
 		},
 		{
+			initialPageParam: 1,
 			getNextPageParam: (lastPage, allPages) => {
 				if (
 					lastPage &&
@@ -29,15 +31,10 @@
 				}
 				return undefined;
 			},
-			onSuccess(infiniteData) {
-				if (infiniteData.pageParams.splice(-1)) {
-					$transactions.fetchNextPage();
-				}
-			},
 		}
-	);
+	));
 
-	$: transactions$ = of($transactions.data).pipe(
+	const transactions$ = $derived(of($transactions.data).pipe(
 		switchMap((transactsData) => transactsData?.pages.flatMap((page) => page.transactions) ?? []),
 		filter(({ type, tags, description }) =>
 			searchFilter
@@ -46,15 +43,21 @@
 				  description.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null
 				: true
 		)
-	);
+	));
 
-	$: transactionsHistory = transactions$.pipe(toArray());
+	const transactionsHistory = $derived(transactions$.pipe(toArray()));
 
-	$: expenses$ = transactions$.pipe(
+	const expenses$ = $derived(transactions$.pipe(
 		filter(({ type }) => type === 'expense'),
 		scan((acc, { amount }) => acc + amount, 0),
 		startWith(0)
-	);
+	));
+
+	$effect(() => {
+		if ($transactions.status === 'success' && $transactions.hasNextPage) {
+			$transactions.fetchNextPage();
+		}
+	});
 </script>
 
 <svelte:head>
@@ -72,9 +75,9 @@
 			}}>
 			<span
 				class="flex border-spacing-0 items-center rounded-full mx-[0.625rem] my-[0.525rem] text-base font-bold text-neutral-808 dark:text-neutral-309">
-				<iconify-icon icon="tabler:search" inline />
+				<svelte:component this={icons.SearchIcon} inline />
 			</span>
-			<input type="hidden" name="processedDate" bind:value={processedDate} />
+			<input type="hidden" name="processedDate" value={processedDate} />
 			<input name="search" class="w-full rounded-full bg-inherit px-3 text-xs autofill:bg-none" value={searchFilter} />
 		</form>
 		<div
@@ -90,7 +93,7 @@
 					<div>
 						<p class="text-base font-semibold text-black dark:text-gray-300">{transaction.description}</p>
 						<p class="text-xs text-neutral-309">
-							{formatDistanceToNow(transaction.date)} ago <span><iconify-icon icon="mdi:dot" inline /></span>
+							{formatDistanceToNow(transaction.date)} ago <span><svelte:component this={icons.DotIcon} inline /></span>
 							{transaction.tags || 'Uncategorized'}
 						</p>
 					</div>

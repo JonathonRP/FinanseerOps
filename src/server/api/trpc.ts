@@ -25,7 +25,7 @@ const loggerMw = api.middleware(async ({ path, type, next }) => {
 });
 
 const enforceUserIsFamilyLead = api.middleware(async ({ ctx, next }) => {
-	if (!ctx.session || !ctx.session.user || !ctx.session.user.leadershipId) {
+	if (!ctx.session || !ctx.user || !ctx.user.leadershipId) {
 		throw new TRPCError({ code: 'UNAUTHORIZED' });
 	}
 	return next({

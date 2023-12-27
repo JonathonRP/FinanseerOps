@@ -1,35 +1,32 @@
+<svelte:options runes={true} />
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { fly, slide } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { api } from '$lib/api';
 	import { formatDistanceToNow, isSameDay, startOfMonth } from 'date-fns';
 	import { filter, of, reduce, startWith, switchMap, take, toArray } from 'rxjs';
-	import { numberFormat } from '$lib/utils';
+	import { numberFormat } from '$/lib/utils/index.svelte';
 	import { AnimateSharedLayout, Motion, AnimatePresence } from 'svelte-motion';
 	import { base } from '$app/paths';
-	import 'iconify-icon';
 	import DateSelect from './DateSelect.svelte';
 	import MainLayout from '../(app)/MainLayout.svelte';
+	import icons from '../icons';
 
-	export let data;
+	const { data, children } = $props<{data: import('./$types').PageData, children: Snippet }>();
+	const {processedDate, processedDay, searchFilter, url: {pathname}} = $derived(data);
 
-	$: ({
-		processedDate,
-		processedDay,
-		searchFilter,
-		url: { pathname },
-	} = data);
+	const preserveState = $derived(processedDate ? `?${new URLSearchParams({ processedDate })}` : undefined);
 
-	$: preserveState = processedDate ? `?${new URLSearchParams({ processedDate })}` : undefined;
+	const links = $derived((processedDate && [{ route: `${base}/${preserveState}` }]) || undefined);
 
-	$: links = (processedDate && [{ route: `${base}/${preserveState}` }]) || undefined;
-
-	$: transactions = api.buxfer.transactions.infiniteQuery(
+	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
 		{
 			startDate: startOfMonth(processedDay),
 			endDate: processedDay,
 		},
 		{
+			initialPageParam: 1,
 			getNextPageParam: (lastPage, allPages) => {
 				if (
 					lastPage &&
@@ -42,15 +39,10 @@
 				}
 				return undefined;
 			},
-			onSuccess(infiniteData) {
-				if (infiniteData.pageParams.splice(-1)) {
-					$transactions.fetchNextPage();
-				}
-			},
 		}
-	);
+	));
 
-	$: transactions$ = of($transactions.data).pipe(
+	const transactions$ = $derived(of($transactions.data).pipe(
 		switchMap((transactsData) => transactsData?.pages.flatMap((page) => page.transactions) ?? []),
 		filter(({ type, tags, description, date }) =>
 			searchFilter
@@ -60,15 +52,21 @@
 				: isSameDay(date, processedDay) || true
 		),
 		take(5)
-	);
+	));
 
-	$: transactionsHistory = transactions$.pipe(toArray());
+	const transactionsHistory = $derived(transactions$.pipe(toArray()));
 
-	$: expenses$ = transactions$.pipe(
+	const expenses$ = $derived(transactions$.pipe(
 		filter(({ type }) => type === 'expense'),
 		reduce((acc, { amount }) => acc + amount, 0),
 		startWith(0)
-	);
+	));
+
+	$effect(() => {
+		if ($transactions.status === 'success' && $transactions.hasNextPage) {
+			$transactions.fetchNextPage();
+		}
+	});
 </script>
 
 <MainLayout name="Finanseer" {links}>
@@ -97,11 +95,11 @@
 								on:formdata={(e) => {
 									Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
 								}}>
-								<input type="hidden" name="processedDate" bind:value={processedDate} />
-								<input type="hidden" name="search" bind:value={searchFilter} />
+								<input type="hidden" name="processedDate" value={processedDate} />
+								<input type="hidden" name="search" value={searchFilter} />
 								<button class="flex flex-row items-center justify-between text-sm">
 									See all
-									<iconify-icon class="h-4 w-6 text-base" height inline icon="tabler:chevron-right" />
+									<svelte:component this={icons.RightChevronIcon} class="h-4 w-6 text-base" height inline />
 								</button>
 							</form>
 						</span>
@@ -120,7 +118,7 @@
 											<p class="text-base font-light text-black dark:text-gray-300">{transaction.description}</p>
 											<p class="text-xs text-neutral-309">
 												{formatDistanceToNow(transaction.date)} ago
-												<span><iconify-icon icon="mdi:dot" inline /></span>
+												<span><svelte:component this={icons.DotIcon} inline /></span>
 												{transaction.tags || 'Uncategorized'}
 											</p>
 										</div>
@@ -164,7 +162,7 @@
 						{#key pathname}
 							<section class="@container">
 								<AnimatePresence list={[{ key: pathname }]} exitBeforeEnter>
-									<slot />
+									{@render children()}
 								</AnimatePresence>
 							</section>
 						{/key}

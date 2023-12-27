@@ -1,18 +1,20 @@
+<svelte:options runes={true} />
 <script lang="ts">
 	import { filter, switchMap, of, reduce, groupBy, combineLatest, map, mergeMap } from 'rxjs';
 	import { startOfMonth } from 'date-fns';
 	import { api } from '$lib/api';
-	import GaugeChart from '../charts/GaugeChart.svelte';
-	import ScoreCard from '../ScoreCard.svelte';
+	import { ScoreCard } from '../ScoreCard';
+	import { GaugeChart } from '../charts';
 
-	export let processedDay: Date;
+	const {processedDay} = $props<{processedDay: Date}>();
 
-	$: transactions = api.buxfer.transactions.infiniteQuery(
+	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
 		{
 			startDate: startOfMonth(processedDay),
 			endDate: processedDay,
 		},
 		{
+			initialPageParam: 1,
 			getNextPageParam: (lastPage, allPages) => {
 				if (
 					lastPage &&
@@ -25,32 +27,40 @@
 				}
 				return undefined;
 			},
-			async onSuccess(infiniteData) {
-				if (infiniteData.pageParams.splice(-1)) {
-					await $transactions.fetchNextPage();
-				}
-			},
 		}
-	);
+	));
 
-	$: expenses$ = of($transactions.data).pipe(
+	const expenses$ = $derived(of($transactions.data).pipe(
 		switchMap((data) => data?.pages.flatMap((page) => page.transactions) ?? []),
 		filter(({ type }) => type === 'expense'),
 		reduce((acc, { amount }) => acc + amount, 0)
-	);
+	));
 
-	$: categories$ = of($transactions.data).pipe(
+	const categories$ = $derived(of($transactions.data).pipe(
 		switchMap((data) => data?.pages.flatMap((page) => page.transactions) ?? []),
 		filter(({ type }) => type === 'expense'),
 		groupBy(({ tags }) => tags),
-		mergeMap((group$) => group$.pipe(reduce((acc, cur) => [...acc, cur], [])))
-	);
+		mergeMap((group$) => group$.pipe(reduce((acc, cur) => acc + cur.amount, 0)))
+	));
 
-	$: percentages$ = combineLatest([categories$, expenses$]).pipe(
-		map(($categories$, $expenses$) => Math.round(($categories$ / $expenses$) * 100))
-	);
+	const percentages$ = $derived(combineLatest([categories$, expenses$]).pipe(
+		map(([$categories$, $expenses$]) => Math.round(($categories$ / $expenses$) * 100))
+	));
+
+	$effect(() => {
+		if ($transactions.status === 'success' && $transactions.hasNextPage) {
+			$transactions.fetchNextPage();
+		}
+	});
 </script>
 
-<ScoreCard label="Categories">
-	<GaugeChart data={percentages$} />
-</ScoreCard>
+<ScoreCard.Root>
+	<ScoreCard.Header>
+		<ScoreCard.Label>
+			Categories
+		</ScoreCard.Label>
+	</ScoreCard.Header>
+	<ScoreCard.Content>
+		<GaugeChart data={[$percentages$]} />
+	</ScoreCard.Content>
+</ScoreCard.Root>

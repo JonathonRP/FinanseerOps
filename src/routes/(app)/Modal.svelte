@@ -1,3 +1,4 @@
+<svelte:options runes={true} />
 <script lang="ts">
 	import { Motion, useDragControls, useAnimation, type Variants } from 'svelte-motion';
 	import { createEventDispatcher, onMount } from 'svelte';
@@ -13,7 +14,7 @@
 		visible: { opacity: 1, scale: 1 },
 	};
 
-	$: panelVariants = {
+	const panelVariants = $derived({
 		hidden: {
 			y: $md ? 1000 : 0,
 			transition: {
@@ -33,7 +34,7 @@
 				stiffness: 300,
 			},
 		},
-	};
+	});
 
 	onMount(() => {
 		animateControls.start('visible');
@@ -50,8 +51,8 @@
 		style:--bg-modal={'rgba(4, 15, 39, 0.8)'}
 		style:--bg-dark-modal={'rgba(251, 240, 216, 0.8)'}
 		class="max-md:fixed max-md:inset-0 max-md:z-10 max-md:bg-[--bg-modal] max-md:backdrop-blur-[0.4rem] max-md:dark:bg-[--bg-dark-modal] max-md:dark:backdrop-blur-[0.4rem]"
-		on:click={(e) => dispatch('close', e)}
-		on:keydown={(e) => dispatch('close', e)} />
+		onClick={(e) => dispatch('close', e)}
+		onKeydown={(e) => dispatch('close', e)} />
 </Motion>
 <Motion
 	let:motion

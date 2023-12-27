@@ -14,12 +14,12 @@ import {
 } from 'drizzle-orm/mysql-core';
 
 export const users = mysqlTable(
-	'users',
+	'user',
 	{
 		id: char('id', { length: 36 }).primaryKey().notNull(),
 		name: varchar('name', { length: 255 }),
 		email: varchar('email', { length: 255 }),
-		emailVerified: timestamp('emailVerified', { mode: 'date' }),
+		emailVerified: timestamp('emailVerified', { mode: 'date', fsp: 3 }).defaultNow(),
 		image: varchar('image', { length: 255 }),
 		widgetStyle: mysqlEnum('widgetStyle', ['simple', 'dense']).default('simple').notNull(),
 		emailNotifications: boolean('emailNotifications').default(false).notNull(),
@@ -36,7 +36,7 @@ export const users = mysqlTable(
 );
 
 export const accounts = mysqlTable(
-	'accounts',
+	'account',
 	{
 		userId: char('userId', { length: 36 }).notNull(),
 		familyId: char('familyId', { length: 36 }),
@@ -59,7 +59,7 @@ export const accounts = mysqlTable(
 );
 
 export const sessions = mysqlTable(
-	'sessions',
+	'session',
 	{
 		sessionToken: varchar('sessionToken', { length: 255 }).notNull().primaryKey(),
 		userId: char('userId', { length: 36 }).notNull(),
@@ -86,7 +86,7 @@ export const family = mysqlTable(
 );
 
 export const verificationTokens = mysqlTable(
-	'verificationTokens',
+	'verificationToken',
 	{
 		identifier: varchar('identifier', { length: 255 }).notNull(),
 		token: varchar('token', { length: 255 }).primaryKey().notNull(),

@@ -16,6 +16,7 @@ declare global {
 		interface PageData {
 			locale: string;
 			timezone: string;
+			session: Session;
 		}
 		interface Error {
 			message: string;

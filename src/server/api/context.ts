@@ -15,7 +15,7 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => ({
 	db,
 	session: opts.session,
 	user: opts.session?.user,
-	accessToken: opts.requestHeaders.get('X-BuxferAuthorization') || undefined,
+	accessToken: opts.requestHeaders.get('Authorization') || undefined,
 	refreshToken: opts.cookies.get('refreshToken'),
 });
 

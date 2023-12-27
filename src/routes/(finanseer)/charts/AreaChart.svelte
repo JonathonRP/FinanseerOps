@@ -1,12 +1,9 @@
+<svelte:options runes={true} />
 <script lang="ts">
 	import * as d3 from 'd3';
 
-	export let data: number[]; // date: Date; expense: number
+	const { data, width = 140, height = undefined || width } = $props<{data: number[], width?: number, height?: number}>();
 	console.log(data);
-
-	// Settings
-	export let width = 148;
-	export let height: number = undefined || width;
 
 	// Create scales
 	const yScale = d3

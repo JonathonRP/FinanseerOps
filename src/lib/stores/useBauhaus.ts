@@ -1,5 +1,5 @@
-import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
 const defaultValue = false;
 const initialValue = browser

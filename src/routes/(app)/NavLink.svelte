@@ -1,21 +1,27 @@
+<svelte:options runes={true} />
 <script lang="ts">
-	export let active: boolean;
-	export let icon = 'tabler:file-search';
-	export let route: string;
+	import type { ComponentType, Snippet, SvelteComponent } from "svelte";
+	import icons from "../icons";
+
+	const navIcons = { ...icons.navItemIcons};
+
+	const { active, icon = navIcons.FileSearchIcon, route, children } = $props<{ active: boolean; icon?: ComponentType<SvelteComponent>; route: string, children?: Snippet }>();
 </script>
 
 <a
-	class="group relative flex w-3 items-center space-x-2 rounded-lg text-primary-600 transition-colors @container hover:bg-primary-500 hover:text-white aria-[current=page]:bg-primary-500 aria-[current=page]:text-white dark:text-neutral-309 md:w-full"
+	class="group relative flex w-3 items-center space-x-2 rounded-lg text-primary-600 transition-colors @container aria-[current=page]:bg-primary-500 aria-[current=page]:text-white hover:bg-primary-500 hover:text-white dark:text-neutral-309 md:w-full"
 	aria-current={active ? 'page' : undefined}
 	href={route}>
 	<span
 		aria-hidden="true"
 		class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600">
-		<iconify-icon class="h-6 w-6" {icon} height="auto" />
+		<svelte:component this={icon} class="h-6 w-6" height="auto" />
 	</span>
-	<span class="invisible @[6rem]:visible">
-		<slot />
-	</span>
+	{#if children}
+		<span class="invisible @[6rem]:visible">
+			{@render children()}
+		</span>
+	{/if}
 </a>
 
 <style lang="postcss">

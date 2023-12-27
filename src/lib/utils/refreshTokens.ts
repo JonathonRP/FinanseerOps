@@ -1,6 +1,6 @@
 import { appRouter } from '$/server/api/root';
 import { createContext } from '$/server/api/context';
-import type { AdapterUser } from '@auth/core/types';
+import type { AdapterUser } from '@auth/core';
 import { sql } from 'drizzle-orm';
 import { addDays, isBefore } from 'date-fns';
 import { accounts } from '$/server/db/schema';

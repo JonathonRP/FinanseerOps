@@ -1,7 +1,7 @@
 // import * as Sentry from '@sentry/svelte';
 
 import { api } from '$lib/api';
-import { formatError } from '$lib/utils';
+import { formatError } from '$/lib/utils/index.svelte';
 import type { HandleClientError } from '@sveltejs/kit';
 import { ulid } from 'ulid';
 

@@ -1,24 +1,26 @@
 import {
 	buxferLogin,
 	buxferTransactionsQuery,
-	buxferToken,
+	buxferTokens,
 	buxferAccounts,
 	BuxferClient,
 	buxferTransactions,
-} from '../../buxfer';
+} from '../../buxfer.svelte';
 import { procedure, router } from '../trpc';
 
 export const buxferRouter = router({
 	login: procedure
 		.input(buxferLogin)
-		.output(buxferToken)
+		.output(buxferTokens)
 		.query(async ({ input }) => BuxferClient('/login', input)),
 
 	accounts: procedure
 		.output(buxferAccounts)
 		.query(async ({ ctx, input }) => {
 			const headers = new Headers();
-			headers.append('Authorization', ctx.accessToken);
+			if (ctx && ctx.accessToken) {
+				headers.append('Authorization', ctx.accessToken);
+			}
 			return BuxferClient('/accounts', input, { headers });
 		}),
 
@@ -27,7 +29,9 @@ export const buxferRouter = router({
 		.output(buxferTransactions)
 		.query(async ({ ctx, input }) => {
 			const headers = new Headers();
-			headers.append('Authorization', ctx.accessToken);
+			if (ctx && ctx.accessToken) {
+				headers.append('Authorization', ctx.accessToken);
+			}
 			return BuxferClient('/transactions', input, {
 				headers,
 			});

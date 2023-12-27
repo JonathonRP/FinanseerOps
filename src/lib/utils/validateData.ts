@@ -24,6 +24,6 @@ export const validateData = async (formData: FormData, schema: ZodSchema) => {
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-throw-literal
-		throw error(500, { code: ulid(), message: 'How did it go so wrong!?' });
+		error(500, { code: ulid(), message: 'How did it go so wrong!?' });
 	}
 };

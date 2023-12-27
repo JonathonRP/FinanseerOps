@@ -1,13 +1,13 @@
+<svelte:options runes={true} />
 <script lang="ts">
+	import type { ClassValue } from 'clsx';
 	import * as d3 from 'd3';
 	import { cubicOut } from 'svelte/easing';
 	import { tweened } from 'svelte/motion';
-	import { derived } from 'svelte/store';
-	import { locale } from '$lib/stores/userLanguage';
+	import { derived, type Readable } from 'svelte/store';
+	import { user } from '$/lib/stores/userLanguage.svelte';
 
-	export let data: number[];
-	export let name: (string | null)[] | undefined;
-	export let isAnimatingInitialRender = true;
+	const {data, name, isAnimatingInitialRender = true, ...restProps} = $props<{data: number[], name?: (string | null)[], isAnimatingInitialRender?: boolean, class?: ClassValue}>()
 
 	// Settings
 	const angle = 0.5 * Math.PI;
@@ -20,7 +20,7 @@
 
 	const remaining = (percentage: number) => 100 - percentage;
 
-	$: series = derived(
+	const series = derived<Readable<unknown>[], {gauge: {path: string | null}, path: string | null, color: string, centroid: [number, number]}[]>(
 		data.map((value, indx) => {
 			const color = d3
 				.scaleOrdinal(d3.schemeTableau10)
@@ -46,9 +46,9 @@
 			const interiorRadius = radius - innerSize * indx - padding;
 			const exteriorRadius = innerRadius + innerSize - padding;
 
-			const comp = derived(valueStore, (valuestore) => pie([valuestore, remaining(valuestore)])[0]);
+			const comp = derived(valueStore, (valuestore: number) => pie([valuestore, remaining(valuestore)])[0]);
 
-			return derived(comp, (compstore) => ({
+			return derived(comp, (compstore: { startAngle: number; endAngle: number; }) => ({
 				gauge: {
 					path: gauge({
 						innerRadius: interiorRadius,
@@ -72,7 +72,7 @@
 				}),
 			}));
 		}),
-		(value) => value
+		(value: {gauge: {path: string | null}, path: string | null, color: string, centroid: [number, number]}) => value
 	);
 </script>
 
@@ -119,14 +119,14 @@
 				<g class="legend">
 					<text
 						y="-5"
-						class="{$$restProps.class} stroke-current text-2xl font-bold"
+						class="{restProps.class} stroke-current text-2xl font-bold"
 						paint-order="stroke"
 						stroke-width="0.2"
 						stroke-opacity="0.5"
 						alignment-baseline="after-edge"
 						text-anchor="middle"
 						fill="currentColor">
-						{(data[0] / 100).toLocaleString($locale, {
+						{(data[0] / 100).toLocaleString(user.locale, {
 							style: 'percent',
 							minimumFractionDigits: 0,
 						})}

@@ -1,9 +1,8 @@
 import { TRPCClientError } from '@trpc/client';
 import { TRPCError } from '@trpc/server';
 import { ZodError } from 'zod';
-import { get } from 'svelte/store';
 import { dev } from '$app/environment';
-import { locale as userLocale } from '../stores/userLanguage';
+import { user } from '../stores/userLanguage.svelte';
 
 export { default as accordion } from './accordion';
 export { default as form } from './form';
@@ -20,7 +19,7 @@ export { cn } from './cn';
 export const dateFormat = 'MM/dd/yyyy';
 
 export const numberFormat = (
-	locale: string | string[] | undefined = get(userLocale),
+	locale: string | string[] | undefined = user.locale,
 	currency: Intl.NumberFormatOptions['currency'] = 'USD'
 ) => Intl.NumberFormat(locale, { style: 'currency', currency, notation: 'compact' });
 

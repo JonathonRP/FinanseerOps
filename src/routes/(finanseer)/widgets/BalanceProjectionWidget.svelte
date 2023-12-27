@@ -1,24 +1,26 @@
+<svelte:options runes={true} />
 <script lang="ts">
 	import { from, filter, reduce, combineLatest, switchMap, of } from 'rxjs';
 	import { addDays, startOfMonth } from 'date-fns';
 	import { api } from '$lib/api';
-	import ScoreCard from '../ScoreCard.svelte';
+	import { ScoreCard } from '../ScoreCard';
 
-	export let processedDay: Date;
+	const {processedDay} = $props<{processedDay: Date}>();
 
-	$: accounts = api.buxfer.accounts.query();
+	const accounts = $derived(api.buxfer.accounts.query());
 
-	$: balance$ = from($accounts.data ?? []).pipe(
+	const balance$ = $derived(from($accounts.data ?? []).pipe(
 		filter(({ name }) => name.includes('1880') || name.includes('1334')),
 		reduce((sum, { balance }) => sum + balance, 0)
-	);
+	));
 
-	$: transactions = api.buxfer.transactions.infiniteQuery(
+	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
 		{
 			startDate: addDays(startOfMonth(processedDay), 1),
 			endDate: addDays(processedDay, 1),
 		},
 		{
+			initialPageParam: 1,
 			getNextPageParam: (lastPage, allPages) => {
 				if (
 					lastPage &&
@@ -27,25 +29,34 @@
 					typeof lastPage.totalTransactionsCount === 'number' &&
 					allPages.length < Math.ceil(lastPage.totalTransactionsCount / 100)
 				) {
+
 					return allPages.length + 1;
 				}
 				return undefined;
-			},
-			onSuccess(infiniteData) {
-				if (infiniteData.pageParams.splice(-1)) {
-					$transactions.fetchNextPage();
-				}
-			},
+			}
 		}
-	);
+	));
 
-	$: expenses$ = of($transactions.data).pipe(
+	const expenses$ = $derived(of($transactions.data).pipe(
 		switchMap((data) => from(data?.pages.flatMap((page) => page.transactions) ?? [])),
 		filter(({ type }) => type === 'expense'),
 		reduce((acc, { amount }) => acc + amount, 0)
-	);
+	));
 
-	$: forcast$ = combineLatest([balance$, expenses$]).pipe(reduce((acc, [bal, exp]) => bal - exp, 0));
+	const forcast$ = $derived(combineLatest([balance$, expenses$]).pipe(reduce((acc, [bal, exp]) => bal - exp, 0)));
+
+	$effect(() => {
+		if ($transactions.status === 'success' && $transactions.hasNextPage) {
+			$transactions.fetchNextPage();
+		}
+	});
 </script>
 
-<ScoreCard label="Forecast" score={$forcast$} />
+<ScoreCard.Root>
+	<ScoreCard.Header>
+		<ScoreCard.Label>Forecast</ScoreCard.Label>
+	</ScoreCard.Header>
+	<ScoreCard.Content>
+		<ScoreCard.Score value={$forcast$} />
+	</ScoreCard.Content>
+</ScoreCard.Root>

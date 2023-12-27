@@ -1,19 +1,20 @@
+<svelte:options runes={true} />
 <script lang="ts">
 	import { filter, switchMap, reduce, of } from 'rxjs';
 	import { isSameMonth, startOfMonth, subMonths } from 'date-fns';
 	import { api } from '$lib/api';
-	import ScoreCard from '../ScoreCard.svelte';
+	import { ScoreCard } from '../ScoreCard';
 
-	export let processedDay: Date;
-	export let searchFilter: string;
+	const {processedDay, searchFilter} = $props<{processedDay: Date, searchFilter: string}>();
 
-	$: prevMonth = subMonths(processedDay, 1);
-	$: transactions = api.buxfer.transactions.infiniteQuery(
+	const prevMonth = $derived(subMonths(processedDay, 1));
+	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
 		{
 			startDate: startOfMonth(prevMonth),
 			endDate: processedDay,
 		},
 		{
+			initialPageParam: 1,
 			getNextPageParam: (lastPage, allPages) => {
 				if (
 					lastPage &&
@@ -26,15 +27,10 @@
 				}
 				return undefined;
 			},
-			onSuccess(infiniteData) {
-				if (infiniteData.pageParams.splice(-1)) {
-					$transactions.fetchNextPage();
-				}
-			},
 		}
-	);
+	));
 
-	$: expenses$ = of($transactions.data).pipe(
+	const expenses$ = $derived(of($transactions.data).pipe(
 		switchMap((data) => data?.pages.flatMap((page) => page.transactions) ?? []),
 		filter(({ type, tags, description }) =>
 			searchFilter
@@ -51,7 +47,22 @@
 			}),
 			{ currMonthIncome: 0, prevMonthIncome: 0 }
 		)
-	);
+	));
+
+	$effect(() => {
+		if ($transactions.status === 'success' && $transactions.hasNextPage) {
+			$transactions.fetchNextPage();
+		}
+	});
 </script>
 
-<ScoreCard label="Income" score={$expenses$.currMonthIncome} swap comparison={{ score: $expenses$.prevMonthIncome }} />
+<ScoreCard.Root class='px-5 pb-12 pt-5'>
+	<ScoreCard.Header>
+		<ScoreCard.Label>
+			Income
+		</ScoreCard.Label>
+	</ScoreCard.Header>
+	<ScoreCard.Content>
+		<ScoreCard.Score value={$expenses$.currMonthIncome} swap comparison={{ value: $expenses$.prevMonthIncome }} />
+	</ScoreCard.Content>
+</ScoreCard.Root>

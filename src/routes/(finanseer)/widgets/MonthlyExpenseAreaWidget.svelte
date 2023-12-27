@@ -1,20 +1,22 @@
+<svelte:options runes={true} />
 <script lang="ts">
 	import { filter, switchMap, reduce, of } from 'rxjs';
 	import { addDays, format, isSameMonth, startOfMonth, subMonths } from 'date-fns';
 	import { api } from '$lib/api';
-	import { dateFormat } from '$lib/utils';
-	import ScoreCard from '../ScoreCard.svelte';
-	import AreaChart from '../charts/AreaChart.svelte';
+	import { dateFormat } from '$/lib/utils/index.svelte';
+	import { ScoreCard } from '../ScoreCard';
+	import {AreaChart} from '../charts';
 
-	export let processedDay: Date;
+	let {processedDay} = $props<{processedDay: Date}>();
 
-	$: prevMonth = subMonths(processedDay, 1);
-	$: transactions = api.buxfer.transactions.infiniteQuery(
+	const prevMonth = $derived(subMonths(processedDay, 1));
+	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
 		{
 			startDate: startOfMonth(prevMonth),
 			endDate: addDays(processedDay, 1),
 		},
 		{
+			initialPageParam: 1,
 			getNextPageParam: (lastPage, allPages) => {
 				if (
 					lastPage &&
@@ -27,15 +29,10 @@
 				}
 				return undefined;
 			},
-			onSuccess(infiniteData) {
-				if (infiniteData.pageParams.splice(-1)) {
-					$transactions.fetchNextPage();
-				}
-			},
 		}
-	);
+	));
 
-	$: expenses$ = of($transactions.data).pipe(
+	const expenses$ = $derived(of($transactions.data).pipe(
 		switchMap((data) => data?.pages.flatMap((page) => page.transactions) ?? []),
 		filter(({ type }) => type === 'expense'),
 		reduce(
@@ -45,9 +42,9 @@
 			}),
 			{ currMonthSpent: 0, prevMonthSpent: 0 }
 		)
-	);
+	));
 
-	$: processedDate = format(processedDay, dateFormat);
+	const processedDate = $derived(format(processedDay, dateFormat));
 
 	const data = [
 		{
@@ -79,8 +76,22 @@
 			popularity: 420,
 		},
 	];
+
+	$effect(() => {
+		if ($transactions.status === 'success' && $transactions.hasNextPage) {
+			$transactions.fetchNextPage();
+		}
+	});
 </script>
 
-<ScoreCard label="Spent" score={$expenses$.currMonthSpent} swap comparison={{ score: $expenses$.prevMonthSpent }}>
-	<AreaChart data={data.flatMap(Object.values)} />
-</ScoreCard>
+<ScoreCard.Root class='px-5 pb-12 pt-5'>
+	<ScoreCard.Header>
+		<ScoreCard.Label>
+			Spent
+		</ScoreCard.Label>
+	</ScoreCard.Header>
+	<ScoreCard.Content>
+		<ScoreCard.Score value={$expenses$.currMonthSpent} swap comparison={{ value: $expenses$.prevMonthSpent }} />
+		<AreaChart data={data.flatMap(Object.values)} />
+	</ScoreCard.Content>
+</ScoreCard.Root>

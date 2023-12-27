@@ -1,10 +1,10 @@
-import { logger } from '../../../server/logger';
 import { json } from '@sveltejs/kit';
+import { resend } from '$lib/resend.server';
+import type { RequestHandler } from './$types';
+import { logger } from '../../../server/logger';
 import { appRouter } from '../../../server/api/root';
 import { createContext } from '../../../server/api/context';
 import { EMAIL_FROM, VERCEL_DOMAIN } from '$env/static/private';
-import type { RequestHandler } from './$types';
-import { resend } from '$lib/resend.server';
 
 // TODO - evaluate Upstash and Vercel cronjobs alternatives.
 const handle = (async ({ url, ...event }) => {

@@ -1,57 +1,66 @@
+<svelte:options runes={true} />
 <script lang="ts">
 	import classes from 'svelte-transition-classes';
-	import { derived } from 'svelte/store';
 
-	import { merge } from '$lib/utils';
-	import { session } from '$lib/stores/session';
+	import { merge } from '$/lib/utils/index.svelte';
 	import useBauhaus from '$lib/stores/useBauhaus';
 	import { signOut } from '@auth/sveltekit/client';
 
-	import { api } from '$lib/api';
 	import toast from 'svelte-french-toast';
 	import { AnimatePresence } from 'svelte-motion';
 
 	import logo from '$lib/images/svelte-logo.svg';
 	// import dashboard from '@iconify/icons-tabler/chart-infographic';
 
-	import { mediaQuery } from '$lib/stores/mediaQuery';
+	import type { ComponentType, Snippet, SvelteComponent } from 'svelte';
 	import Form from '$lib/components/Form.svelte';
+	import { session } from '$/lib/stores/userSession.svelte';
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
 	import NavLink from './NavLink.svelte';
 	import Modal from './Modal.svelte';
+	import { api } from '$lib/api';
+	import icons from '../icons';
 
-	const state = {
-		closed: false,
+	type ModalState = {
+		status: 'closed',
+		closed: true,
+	} | {
+		status: 'open',
 		open: true,
 	};
 
-	let userInvitation: HTMLDialogElement;
+	const openModal: ModalState = {
+		status: 'open',
+		open: true
+	}
 
-	export let name = 'Finanzen';
-	export let links: { route: string }[] = [];
+	const closeModal: ModalState = {
+		status: 'closed',
+		closed: true
+	}
 
-	$: routes = merge(
-		[{ icon: 'tabler:chart-histogram', label: 'dashboard' }],
+	const {name = 'Finanzen', links, children} = $props<{ name?: string, links?: { route: string}[], children: Snippet }>();
+
+	const navIcons = $derived({ ...icons.navItemIcons});
+
+	const routes = $derived(merge(
+		[{ icon: navIcons.ChartHistogram, label: 'dashboard' }],
 		Object.assign([], [{ route: `${base}/` }], links)
-	);
+	));
 
-	let menuOpen: boolean = state.closed;
-	let accountOpen: boolean = state.closed;
-	let invitationOpen: boolean = state.closed;
+	let menuState: ModalState = $state(closeModal);
+	let accountState: ModalState = $state(closeModal);
+	let invitationState: ModalState = $state(closeModal);
 
-	const session$ = derived(
-		[session, derived(api.user.retrieve.query(), ($user) => $user.data)],
-		([$session, $user]) => ({
-			...$session,
-			user: $user || undefined,
-		})
-	);
-	$: ({ user } = $session$);
-	$: sm = mediaQuery('(max-width: 768px)');
+	let { user } = $state(session || { user: undefined });
+	
+	api.user.retrieve.query().subscribe(($user) => user = Object.assign(session?.user || {}, $user.data ));
 
-	const toggleAccount = (definedState?: boolean | undefined) => (event: MouseEvent | KeyboardEvent | Event) => {
+	const toggleAccount = (definedState?: ModalState | undefined) => (event: MouseEvent | KeyboardEvent | Event) => {
 		const prevs = document.querySelectorAll('[aria-current="location"]');
+		const stateToggle = 'open' in accountState ? closeModal : openModal;
+
 		prevs?.forEach((prev) => {
 			prev.ariaCurrent = null;
 		});
@@ -59,55 +68,53 @@
 		switch (event.type) {
 			case 'keydown':
 				if ((event as KeyboardEvent).key === 'Escape') {
-					accountOpen = definedState ?? !accountOpen;
+					accountState = definedState ?? stateToggle;
 				}
 				break;
 			case 'click':
-				accountOpen = definedState ?? !accountOpen;
+				accountState = definedState ?? stateToggle;
 				break;
 			default:
-				accountOpen = definedState ?? !accountOpen;
+				accountState = definedState ?? stateToggle;
 				break;
 		}
-		if (accountOpen) {
+		if (accountState) {
 			(event.currentTarget as HTMLButtonElement).ariaCurrent = 'location';
 		}
 	};
 
-	const toggleMenuWidth = (definedState?: boolean | undefined) => (event: MouseEvent | KeyboardEvent) => {
+	const toggleMenuWidth = (definedState?: ModalState | undefined) => (event: MouseEvent | KeyboardEvent) => {
+		const stateToggle = 'open' in menuState ? closeModal : openModal;
+
 		switch (event.type) {
 			case 'keydown':
 				if ((event as KeyboardEvent).key === 'Escape') {
-					menuOpen = definedState ?? !menuOpen;
+					menuState = definedState ?? stateToggle;
 				}
 				break;
 			case 'click':
-				menuOpen = definedState ?? !menuOpen;
+				menuState = definedState ?? stateToggle;
 				break;
 			default:
 				break;
 		}
 	};
 
-	const toggleInvitation = (definedState?: boolean | undefined) => (event: MouseEvent | KeyboardEvent) => {
+	const toggleInvitation = (definedState?: ModalState | undefined) => (event: MouseEvent | KeyboardEvent) => {
+		const stateToggle = 'open' in invitationState ? closeModal : openModal;
+
 		switch (event.type) {
 			case 'keydown':
 				if ((event as KeyboardEvent).key === 'Escape') {
-					invitationOpen = definedState ?? !invitationOpen;
+					invitationState = definedState ?? stateToggle;
 				}
 				break;
 			case 'click':
-				invitationOpen = definedState ?? !invitationOpen;
+				invitationState = definedState ?? stateToggle;
 				break;
 			default:
-				invitationOpen = definedState ?? !invitationOpen;
+				invitationState = definedState ?? stateToggle;
 				break;
-		}
-
-		if (invitationOpen) {
-			userInvitation.showModal();
-		} else {
-			userInvitation.close();
 		}
 	};
 
@@ -116,25 +123,25 @@
 			.toString(16)
 			.slice(0, 6);
 
-	$: userImage =
+	const userImage = $derived(
 		user?.image ||
 		`https://source.boringavatars.com/${($useBauhaus && 'bauhaus') || 'beam'}/120/${encodeURIComponent(
 			user?.name ?? ''
-		)}?colors=000000,ff3e00,CDCDCD,4075a6,${randomColor()}`;
+		)}?colors=000000,ff3e00,CDCDCD,4075a6,${randomColor()}`);
 </script>
 
 <svelte:window
 	on:keydown={(e) => {
-		toggleAccount(state.closed)(e);
-		toggleMenuWidth(state.closed)(e);
-		toggleInvitation(state.closed)(e);
+		toggleAccount(closeModal)(e);
+		toggleMenuWidth(closeModal)(e);
+		toggleInvitation(closeModal)(e);
 	}} />
 {#if user?.role === 'admin'}
 	<dialog
 		id="inviteUser"
-		bind:this={userInvitation}
-		on:click={toggleInvitation(state.closed)}
-		on:keydown={toggleInvitation(state.closed)}
+		on:click={toggleInvitation(closeModal)}
+		on:keydown={toggleInvitation(closeModal)}
+		open={invitationState.status === 'open'}
 		class="rounded-2xl bg-white text-neutral-808 open:relative dark:bg-neutral-800 dark:text-neutral-309">
 		<Form
 			method="post"
@@ -145,11 +152,11 @@
 			let:handleBlur
 			let:handleInput
 			on:success={(e) => {
-				toggleInvitation(state.closed);
+				toggleInvitation(closeModal);
 				toast.success(`Sent invitation to ${e?.detail?.data.get('email')}.`);
 			}}
 			class="flex w-full items-center border-b py-2 transition-colors focus-within:border-primary-500 hover:border-primary-400">
-			<iconify-icon icon="tabler:user-plus" inline class="mr-2 flex h-6 w-12 items-center" height="auto" />
+			<svelte:component this={icons.PlusUserIcon} class="mr-2 flex h-6 w-12 items-center" height="auto" inline />
 			<input
 				id="email"
 				name="email"
@@ -164,7 +171,7 @@
 				disabled={submitting} />
 			<button type="button" formmethod="dialog" value="cancel" class="absolute right-0 top-0">
 				<span class="flex items-center justify-center">
-					<iconify-icon class="h-6 w-6" icon="tabler:x" inline height="auto" />
+					<svelte:component this={icons.CloseIcon} class="h-6 w-6" height="auto" inline />
 				</span>
 			</button>
 			<button
@@ -172,7 +179,7 @@
 				class="item-center flex flex-shrink-0 justify-center rounded-full border-4 border-primary-500 bg-primary-500 px-2 py-1 text-sm text-white transition-colors hover:border-primary-600 hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 disabled:border-primary-700 disabled:bg-primary-700 dark:focus:ring-offset-neutral-808"
 				aria-busy={submitting}
 				disabled={!valid || submitting}>
-				<iconify-icon icon="line-md:loading-loop" inline class="{submitting ? 'flex' : 'hidden'} fixed" />
+				<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
 				Invite
 			</button>
 		</Form>
@@ -180,7 +187,7 @@
 {/if}
 <!-- side-bar -->
 <aside class="flex flex-shrink-0 transition-all">
-	<div class="fixed inset-0 z-10 hidden w-16 md:flex" class:sm:hidden={!accountOpen} />
+	<div class="fixed inset-0 z-10 hidden w-16 md:flex" class:sm:hidden={accountState.status === 'closed'} />
 	<!-- Mobile bottom bar -->
 	<nav
 		aria-label="Options"
@@ -203,7 +210,7 @@
 						on:click={toggleInvitation()}
 						class="rounded-lg opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-neutral-808">
 						<span class="flex items-center justify-center rounded-lg p-1 shadow-md">
-							<iconify-icon class="h-6 w-6" icon="tabler:user-plus" inline height="auto" />
+							<svelte:component this={icons.PlusUserIcon} class="h-6 w-6" height="auto" inline />
 						</span>
 						<span class="sr-only">expand invitation</span>
 					</button>
@@ -223,8 +230,8 @@
 	<nav
 		aria-label="Options"
 		class="fixed inset-0 z-20 hidden w-16 flex-shrink-0 flex-col items-center py-4 transition-[width] duration-300 @container dark:shadow-neutral-309/20 md:static md:flex"
-		class:w-64={menuOpen}
-		class:sm:w-72={menuOpen}
+		class:w-64={menuState.status === 'open'}
+		class:sm:w-72={menuState.status === 'open'}
 		class:rounded-none={false}
 		class:border-r-0={false}
 		class:shadow-none={false}>
@@ -266,7 +273,7 @@
 					on:click={toggleInvitation()}
 					class="relative rounded-lg opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 focus:ring-offset-white @[12rem]:flex @[12rem]:w-full @[12rem]:items-center @[12rem]:space-x-2 @[12rem]:px-4 dark:focus:ring-offset-neutral-808">
 					<span class="flex items-center rounded-lg p-1 shadow-md">
-						<iconify-icon class="h-6 w-6" icon="tabler:user-plus" inline height="auto" />
+						<svelte:component this={icons.PlusUserIcon} class="h-6 w-6" height="auto" inline />
 					</span>
 					<span class="invisible @[6rem]:visible">invintation</span>
 					<span class="sr-only">expand invitation</span>
@@ -286,15 +293,15 @@
 			</button>
 			<button type="button" class="relative" on:click={toggleMenuWidth()}>
 				<span class="flex items-center transition-transform @[6rem]:-rotate-180">
-					<iconify-icon class="h-6 w-1" icon="tabler:chevron-right" inline height="auto" />
+					<svelte:component this={icons.RightChevronIcon} class="h-6 w-1" height="auto" inline />
 				</span>
 				<span class="sr-only">expand menu</span>
 			</button>
 		</div>
 	</nav>
 
-	<AnimatePresence show={accountOpen}>
-		{#if accountOpen}
+	<AnimatePresence show={accountState.status === 'open'}>
+		{#if accountState.status === 'open'}
 			<div
 				in:classes={{
 					duration: 300,
@@ -311,7 +318,7 @@
 				class="md:static md:inset-y-0 md:left-16 md:mx-0 md:h-auto md:w-72 md:bg-inherit md:shadow-none md:dark:bg-inherit">
 				<Modal
 					on:close={(e) => {
-						toggleAccount(state.closed)(e);
+						toggleAccount(closeModal)(e);
 					}}>
 					<nav aria-label="User Account Settings" class="flex h-full flex-col md:px-4">
 						<div class="flex flex-1 flex-col py-10">
@@ -386,7 +393,7 @@
 										class="item-center flex w-full justify-center rounded-full bg-primary-500 px-4 py-2 text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 disabled:bg-primary-700 dark:focus:ring-offset-neutral-808"
 										aria-busy={submitting}
 										disabled={!valid || submitting}>
-										<iconify-icon icon="line-md:loading-loop" inline class="{submitting ? 'flex' : 'hidden'} fixed" />
+										<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
 										Save Settings
 									</button>
 								</Form>
@@ -402,7 +409,7 @@
 									<span
 										aria-hidden="true"
 										class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600">
-										<iconify-icon class="h-6 w-6" icon="tabler:logout" height="auto" flip="vertical" />
+										<svelte:component this={icons.LogOutIcon} class="h-6 w-6" height="auto" flip="vertical" />
 									</span>
 									<span>Sign Out</span>
 								</button>
@@ -416,7 +423,7 @@
 </aside>
 
 <main class="flex flex-1 flex-col overflow-hidden px-6 pb-16 pt-8 md:pb-8">
-	<slot />
+	{@render children()}
 </main>
 
 <footer class="fixed bottom-20 right-5 flex items-center gap-4 md:bottom-5">

@@ -1,3 +1,4 @@
+<svelte:options runes={true} />
 <script lang="ts">
 	import {
 		addMonths,
@@ -15,7 +16,7 @@
 		startOfWeek,
 		subMonths,
 	} from 'date-fns';
-	import { dateFormat } from '$lib/utils';
+	import { cn, dateFormat } from '$/lib/utils/index.svelte';
 	import { fly } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { api } from '$lib/api';
@@ -24,27 +25,25 @@
 	import { AnimatePresence } from 'svelte-motion';
 	import ResizePanel from '$lib/components/ResizePanel.svelte';
 	import { page } from '$app/stores';
+	import icons from '../icons';
+
+	const {processedDay, searchFilter} = $props<{processedDay: Date, searchFilter: string | null}>()
 
 	const today = startOfToday();
+	const {url: {searchParams, pathname}} = $derived($page);
 
-	$: ({
-		url: { searchParams, pathname },
-	} = $page);
 
-	export let processedDay: Date;
-	export let searchFilter: string | null;
+	let width: number = $state(0);
+	let direction: number = $state(0);
 
-	let width: number;
-	let direction: number;
+	let currentDay = $state(today);
+	const prevPeriod = $derived(subMonths(currentDay, 1));
+	const nextPeriod = $derived(addMonths(currentDay, 1));
 
-	let currentDay = today;
-	$: prevPeriod = subMonths(currentDay, 1);
-	$: nextPeriod = addMonths(currentDay, 1);
-
-	$: daysOfPeriod = eachDayOfInterval({
+	const daysOfPeriod = $derived(eachDayOfInterval({
 		start: startOfWeek(startOfMonth(currentDay), { weekStartsOn: 1 }),
 		end: endOfWeek(endOfMonth(currentDay), { weekStartsOn: 1 }),
-	});
+	}));
 
 	const next = async () => {
 		direction = 1;
@@ -58,12 +57,13 @@
 		currentDay = prevPeriod;
 	};
 
-	$: transactions = api.buxfer.transactions.infiniteQuery(
+	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
 		{
 			startDate: startOfWeek(startOfMonth(currentDay), { weekStartsOn: 1 }),
 			endDate: endOfWeek(endOfMonth(currentDay), { weekStartsOn: 1 }),
 		},
 		{
+			initialPageParam: 1,
 			getNextPageParam: (lastPage, allPages) => {
 				if (
 					lastPage &&
@@ -75,16 +75,11 @@
 					return allPages.length + 1;
 				}
 				return undefined;
-			},
-			onSuccess(infiniteData) {
-				if (infiniteData.pageParams.splice(-1)) {
-					$transactions.fetchNextPage();
-				}
-			},
+			}
 		}
-	);
+	));
 
-	$: transactions$ = of($transactions.data).pipe(
+	const transactions$ = $derived(of($transactions.data).pipe(
 		switchMap((transactsData) => transactsData?.pages.flatMap((data_page) => data_page.transactions) ?? []),
 		filter(({ type, tags, description }) =>
 			searchFilter
@@ -94,7 +89,13 @@
 				: true
 		),
 		toArray()
-	);
+	));
+
+	$effect(() => {
+		if ($transactions.status === 'success' && $transactions.hasNextPage) {
+			$transactions.fetchNextPage();
+		}
+	});
 </script>
 
 <div
@@ -115,7 +116,7 @@
 				on:click={previous}
 				class="-my-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309">
 				<span class="sr-only">Previous month</span>
-				<iconify-icon icon="tabler:chevron-left" class="h-5 w-5" aria-hidden />
+				<svelte:component this={icons.LeftChevronIcon} class="h-5 w-5" aria-hidden />
 			</button>
 			<button
 				id="next"
@@ -123,7 +124,7 @@
 				on:click={next}
 				class="-my-1.5 -mr-1.5 ml-1 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309">
 				<span class="sr-only">Next month</span>
-				<iconify-icon icon="tabler:chevron-right" class="h-5 w-5" aria-hidden />
+				<svelte:component this={icons.RightChevronIcon} class="h-5 w-5" aria-hidden />
 			</button>
 		</div>
 		<div class="mt-5 grid grid-cols-7 text-center text-xs leading-6 text-gray-500 dark:text-neutral-309">
@@ -152,9 +153,7 @@
 								isPartOfMonth: isSameMonth(day, currentDay),
 							}}
 							<div
-								class="py-1 {dayIdx > 6
-									? 'border-t border-stone-200 border-opacity-75 dark:border-stone-600 dark:border-opacity-25'
-									: ''}">
+								class={cn("py-1", {'border-t border-stone-200 border-opacity-75 dark:border-stone-600 dark:border-opacity-25': dayIdx > 6})}>
 								<span
 									class="mx-auto flex h-full w-full items-center justify-center {isSameMonth(
 										day,
@@ -174,15 +173,15 @@
 													...(searchParams.has('search') && { search: searchParams.get('search') || '' }),
 												})}`) ||
 											''
-										}
-					`}
-										class="mx-auto flex h-8 w-8 items-center justify-center rounded-full
-							{isSelected ? 'ring-1 ring-inset ring-primary-400 dark:ring-primary-500' : ''}
-							{isSelected || dayIsToday ? 'font-semibold' : ''}
-							{!isSelected && dayIsToday ? 'text-primary-500' : ''}
-							{!isSelected ? 'hover:bg-primary-400/20' : ''}
-							{!isSelected && !dayIsToday && !isPartOfMonth ? 'text-gray-400 dark:text-gray-600' : ''}
-							{!isSelected && !dayIsToday && isPartOfMonth ? 'text-gray-900 dark:text-gray-200' : ''}">
+										}`}
+										class={cn("mx-auto flex h-8 w-8 items-center justify-center rounded-full", {
+											'text-gray-400 dark:text-gray-600': !isSelected && !dayIsToday && !isPartOfMonth,
+											'text-gray-900 dark:text-gray-200': !isSelected && !dayIsToday && isPartOfMonth,
+											'ring-1 ring-inset ring-primary-400 dark:ring-primary-500 font-semibold': isSelected,
+											'font-semibold': dayIsToday,
+											'hover:bg-primary-400/20': !isSelected,
+											'text-primary-500': dayIsToday && !isSelected,
+										})}>
 										<time class="relative flex" datetime={day.toLocaleString()}>
 											{format(day, 'd')}
 											{#if $transactions$
