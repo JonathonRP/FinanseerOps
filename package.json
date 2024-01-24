@@ -95,5 +95,9 @@
 		"unplugin-icons": "^0.18.2",
 		"vite": "5.0.11"
 	},
-	"type": "module"
+	"type": "module",
+	"engines": {
+		"node": "18"
+	},
+	"packageManager": "pnpm@8.14.3"
 }
