@@ -16,7 +16,7 @@
 		startOfWeek,
 		subMonths,
 	} from 'date-fns';
-	import { cn, dateFormat } from '$/lib/utils/index.svelte';
+	import { cn, dateFormat } from '$lib/utils/index.svelte';
 	import { fly } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { api } from '$lib/api';
@@ -25,7 +25,7 @@
 	import { AnimatePresence } from 'svelte-motion';
 	import ResizePanel from '$lib/components/ResizePanel.svelte';
 	import { page } from '$app/stores';
-	import icons from '../icons';
+	import { icons } from '$/icons';
 
 	const {processedDay, searchFilter} = $props<{processedDay: Date, searchFilter: string | null}>()
 
@@ -113,7 +113,7 @@
 			<button
 				id="prev"
 				type="button"
-				on:click={previous}
+				onclick={previous}
 				class="-my-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309">
 				<span class="sr-only">Previous month</span>
 				<svelte:component this={icons.LeftChevronIcon} class="h-5 w-5" aria-hidden />
@@ -121,7 +121,7 @@
 			<button
 				id="next"
 				type="button"
-				on:click={next}
+				onclick={next}
 				class="-my-1.5 -mr-1.5 ml-1 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309">
 				<span class="sr-only">Next month</span>
 				<svelte:component this={icons.RightChevronIcon} class="h-5 w-5" aria-hidden />

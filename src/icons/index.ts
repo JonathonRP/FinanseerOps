@@ -15,7 +15,12 @@ import DownTrendIcon from '~icons/tabler/trending-down-3';
 
 import UpChevron from '~icons/tabler/chevron-up';
 
-export default {
+import Email from '~icons/tabler/mail';
+import Password from '~icons/tabler/password-user';
+
+export const icons = {
+	Email,
+	Password,
 	PlusUserIcon,
 	SearchIcon,
 	CloseIcon,
@@ -24,13 +29,15 @@ export default {
 	UpChevron,
 	DotIcon,
 	LoadingIcon,
-	LogOutIcon,
-	navItemIcons: {
-		FileSearchIcon,
-		ChartHistogram,
-	},
-	scoreCardIcons: {
-		UpTrendIcon,
-		DownTrendIcon,
-	},
+	LogOutIcon
 };
+
+export const navItemIcons = {
+	FileSearchIcon,
+	ChartHistogram,
+} as const;
+
+export const scoreCardIcons = {
+	UpTrendIcon,
+	DownTrendIcon,
+}

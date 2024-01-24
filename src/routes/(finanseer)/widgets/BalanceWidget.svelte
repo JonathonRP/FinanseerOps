@@ -1,8 +1,12 @@
 <svelte:options runes={true} />
 <script lang="ts">
+	import type { ForwardMotionProps } from '$lib/animations';
 	import { from, filter, reduce } from 'rxjs';
 	import { api } from '$lib/api';
-	import { ScoreCard } from '../ScoreCard';
+	import { Score } from '../score';
+	import DashboardWidget from '../DashboardWidget.svelte';
+
+	const { ...motion } = $props<ForwardMotionProps>();
 
 	const accounts = $derived(api.buxfer.accounts.query());
 
@@ -12,13 +16,15 @@
 	));
 </script>
 
-<ScoreCard.Root>
-	<ScoreCard.Header>
-		<ScoreCard.Label>
-			Balance
-		</ScoreCard.Label>
-	</ScoreCard.Header>
-	<ScoreCard.Content>
-		<ScoreCard.Score value={$balance$} />
-	</ScoreCard.Content>
-</ScoreCard.Root>
+<DashboardWidget {motion}>
+	<Score.Root>
+		<Score.Header>
+			<Score.Label>
+				Balance
+			</Score.Label>
+		</Score.Header>
+		<Score.Content>
+			<Score.Metric value={$balance$} />
+		</Score.Content>
+	</Score.Root>
+</DashboardWidget>

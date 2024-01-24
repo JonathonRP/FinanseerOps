@@ -1,4 +1,4 @@
-import type { AdapterAccount } from '@auth/core/adapters';
+import type { Account } from '@auth/sveltekit';
 import {
 	mysqlTable,
 	uniqueIndex,
@@ -40,7 +40,7 @@ export const accounts = mysqlTable(
 	{
 		userId: char('userId', { length: 36 }).notNull(),
 		familyId: char('familyId', { length: 36 }),
-		type: varchar('type', { length: 255 }).$type<AdapterAccount['type']>().notNull(),
+		type: varchar('type', { length: 255 }).$type<Account['type']>().notNull(),
 		provider: varchar('provider', { length: 255 }).notNull(),
 		providerAccountId: varchar('providerAccountId', { length: 255 }).notNull(),
 		refresh_token: text('refresh_token'),

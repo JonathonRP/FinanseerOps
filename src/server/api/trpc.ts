@@ -1,7 +1,6 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 
 import { transformer } from '$lib/api/transformer';
-import { logger } from '../logger';
 import type { Context } from './context';
 
 const api = initTRPC.context<Context>().create({
@@ -13,16 +12,16 @@ const api = initTRPC.context<Context>().create({
 
 export const { router } = api;
 
-const loggerMw = api.middleware(async ({ path, type, next }) => {
-	const start = Date.now();
-	const result = await next();
-	const ms = Date.now() - start;
+// const loggerMw = api.middleware(async ({ path, type, next }) => {
+// 	const start = Date.now();
+// 	const result = await next();
+// 	const ms = Date.now() - start;
 
-	// TODO - replace with logging collection data service (ex. Sentry).
-	logger.info(`${result.ok ? 'OK' : 'ERR'} ${type} ${path} - ${ms}ms`);
+// 	// TODO - replace with logging collection data service (ex. Sentry).
+// 	console.info(`${result.ok ? 'OK' : 'ERR'} ${type} ${path} - ${ms}ms`);
 
-	return result;
-});
+// 	return result;
+// });
 
 const enforceUserIsFamilyLead = api.middleware(async ({ ctx, next }) => {
 	if (!ctx.session || !ctx.user || !ctx.user.leadershipId) {
@@ -35,6 +34,6 @@ const enforceUserIsFamilyLead = api.middleware(async ({ ctx, next }) => {
 	});
 });
 
-export const procedure = api.procedure.use(loggerMw);
-export const familyLeaderProcedure = api.procedure.use(enforceUserIsFamilyLead).use(loggerMw);
+export const { procedure } = api;
+export const familyLeaderProcedure = api.procedure.use(enforceUserIsFamilyLead);
 export const { mergeRouters } = api;

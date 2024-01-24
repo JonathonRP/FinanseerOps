@@ -1,11 +1,13 @@
 <svelte:options runes={true} />
 <script lang="ts">
+	import type { ForwardMotionProps } from '$lib/animations';
 	import { filter, switchMap, reduce, of } from 'rxjs';
 	import { isSameMonth, startOfMonth, subMonths } from 'date-fns';
 	import { api } from '$lib/api';
-	import { ScoreCard } from '../ScoreCard';
+	import { Score } from '../score';
+	import DashboardWidget from '../DashboardWidget.svelte';
 
-	const {processedDay, searchFilter} = $props<{processedDay: Date, searchFilter: string}>();
+	const {processedDay, searchFilter, ...motion} = $props<{processedDay: Date, searchFilter: string} & ForwardMotionProps>();
 
 	const prevMonth = $derived(subMonths(processedDay, 1));
 	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
@@ -56,13 +58,15 @@
 	});
 </script>
 
-<ScoreCard.Root class='px-5 pb-12 pt-5'>
-	<ScoreCard.Header>
-		<ScoreCard.Label>
-			Spent
-		</ScoreCard.Label>
-	</ScoreCard.Header>
-	<ScoreCard.Content>
-		<ScoreCard.Score value={$expenses$.currMonthSpent} swap comparison={{ value: $expenses$.prevMonthSpent }} />
-	</ScoreCard.Content>
-</ScoreCard.Root>
+<DashboardWidget class='px-5 pb-12 pt-5' {motion}>
+	<Score.Root>
+		<Score.Header>
+			<Score.Label>
+				Spent
+			</Score.Label>
+		</Score.Header>
+		<Score.Content>
+			<Score.Metric value={$expenses$.currMonthSpent} swap comparison={{ value: $expenses$.prevMonthSpent }} />
+		</Score.Content>
+	</Score.Root>
+</DashboardWidget>

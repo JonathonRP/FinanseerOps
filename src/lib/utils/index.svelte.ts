@@ -2,24 +2,21 @@ import { TRPCClientError } from '@trpc/client';
 import { TRPCError } from '@trpc/server';
 import { ZodError } from 'zod';
 import { dev } from '$app/environment';
-import { user } from '../stores/userLanguage.svelte';
+import { userSettings } from '../stores/userSettings.svelte';
 
 export { default as accordion } from './accordion';
 export { default as form } from './form';
 
 export type { Color } from './Color';
-export { sendVerificationRequest } from './sendVerificationRequest';
-export { validateData } from './validateData';
 export { merge } from './merge';
 export { SvelteSubject } from './svelteSubject';
-export { refreshTokens } from './refreshTokens';
 export { cubicBezier as cubic_bezier } from './cubic-bezier';
 export { cn } from './cn';
 
 export const dateFormat = 'MM/dd/yyyy';
 
 export const numberFormat = (
-	locale: string | string[] | undefined = user.locale,
+	locale: string | string[] | undefined = userSettings.locale,
 	currency: Intl.NumberFormatOptions['currency'] = 'USD'
 ) => Intl.NumberFormat(locale, { style: 'currency', currency, notation: 'compact' });
 

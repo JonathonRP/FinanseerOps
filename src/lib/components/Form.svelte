@@ -1,9 +1,10 @@
 <script lang="ts">
+	import type { SubmitFunction } from '@sveltejs/kit';
 	import { BehaviorSubject } from 'rxjs';
 	import { createEventDispatcher, onMount, setContext } from 'svelte';
-	import { type SubmitFunction, enhance } from '$app/forms';
 	import toast from 'svelte-french-toast';
 	import { writable } from 'svelte/store';
+	import { applyAction, enhance } from '$app/forms';
 
 	let form: HTMLFormElement;
 
@@ -39,15 +40,15 @@
 
 	const dispatch = createEventDispatcher();
 
-	const submit: SubmitFunction = ({ data }) => {
+	const submit: SubmitFunction = ({ formData }) => {
 		formSubmitting.next(true);
-		dispatch('submit', { data });
+		dispatch('submit', { data: formData });
 
 		return async ({ result, update }) => {
 			switch (result.type) {
 				case 'success':
 					await update({ reset });
-					dispatch('success', { data });
+					dispatch('success', { data: formData });
 					break;
 				case 'failure': {
 					const [firstError] = Object.keys(result.data?.errors);
@@ -62,6 +63,7 @@
 			}
 			handleValidation();
 			formSubmitting.next(false);
+			await applyAction(result)
 		};
 	};
 

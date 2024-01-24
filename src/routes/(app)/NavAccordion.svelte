@@ -1,13 +1,13 @@
 <svelte:options runes={true} />
 <script lang="ts">
-	import { accordion } from '$/lib/utils/index.svelte';
+	import { accordion } from '$lib/utils/index.svelte';
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
 	import NavLink from './NavLink.svelte';
-	import icons from '../icons';
+	import { icons, navItemIcons} from '$/icons';
 	import type { ComponentType, SvelteComponent } from 'svelte';
 
-	const navIcons = { ...icons.navItemIcons};
+	const navIcons = { ...navItemIcons};
 
 	const { icon = navIcons.FileSearchIcon, routes } = $props<{ icon?: ComponentType<SvelteComponent>; routes: string[] }>();
 

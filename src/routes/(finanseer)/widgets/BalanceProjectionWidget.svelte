@@ -1,11 +1,13 @@
 <svelte:options runes={true} />
 <script lang="ts">
+	import type { ForwardMotionProps } from '$lib/animations';
 	import { from, filter, reduce, combineLatest, switchMap, of } from 'rxjs';
 	import { addDays, startOfMonth } from 'date-fns';
 	import { api } from '$lib/api';
-	import { ScoreCard } from '../ScoreCard';
+	import { Score } from '../score';
+	import DashboardWidget from '../DashboardWidget.svelte';
 
-	const {processedDay} = $props<{processedDay: Date}>();
+	const { processedDay, ...motion } = $props<{processedDay: Date} & ForwardMotionProps>();
 
 	const accounts = $derived(api.buxfer.accounts.query());
 
@@ -52,11 +54,13 @@
 	});
 </script>
 
-<ScoreCard.Root>
-	<ScoreCard.Header>
-		<ScoreCard.Label>Forecast</ScoreCard.Label>
-	</ScoreCard.Header>
-	<ScoreCard.Content>
-		<ScoreCard.Score value={$forcast$} />
-	</ScoreCard.Content>
-</ScoreCard.Root>
+<DashboardWidget {motion}>
+	<Score.Root>
+		<Score.Header>
+			<Score.Label>Forecast</Score.Label>
+		</Score.Header>
+		<Score.Content>
+			<Score.Metric value={$forcast$} />
+		</Score.Content>
+	</Score.Root>
+</DashboardWidget>

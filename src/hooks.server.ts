@@ -1,46 +1,58 @@
-import Email from '@auth/core/providers/email';
+import * as Sentry from '@sentry/sveltekit';
+import Email from '@auth/sveltekit/providers/email';
 import { SvelteKitAuth, type SvelteKitAuthConfig } from '@auth/sveltekit';
 import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { formatError, sendVerificationRequest } from '$/lib/utils/index.svelte';
+import { formatError } from '$lib/utils/index.svelte';
+import { sendVerificationRequest } from '$/server';
 import { parseAcceptLanguage } from 'intl-parse-accept-language';
 import { ulid } from 'ulid';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
-import { logger } from './server/logger';
+import { userSettings } from '$/lib/stores/userSettings.svelte';
+import { setupSidecar } from '@spotlightjs/spotlight/sidecar';
 import { db } from './server/db';
-// import PlanetScaleAdapter from './server/db/auth-adapter';
 import { EMAIL_FROM } from '$env/static/private';
+import { dev } from '$app/environment';
+
+Sentry.init({
+    dsn: "https://997785fc8294fedf8043d05970029853@o4506588389900288.ingest.sentry.io/4506588421095424",
+    tracesSampleRate: 1.0,
+	spotlight: dev
+})
 
 function loginAndResume(url: URL, loginEndpoint: string, redirectReason?: string) {
-	const { pathname, searchParams } = url;
-	return `${loginEndpoint}?redirectTo=${pathname + searchParams}${redirectReason && `&reason=${redirectReason}`}`;
+	const { pathname, search } = url;
+	return `${loginEndpoint}${pathname.slice(1, -1) ? `?redirectTo=${pathname.slice(1, -1)}${search}${redirectReason ? `&reason=${redirectReason}` : ''}` : ''}`;
 }
 
 function authorization() {
 	return (async ({ event, resolve }) => {
-		const { url } = event;
-		const redirectTo = url.searchParams.get('redirectTo');
-		await event.locals.getSession();
+		const { url, request: { headers }, route } = event;
+		const session = await event.locals.auth();
+		
 
-		if (!event.locals.session && !event.route.id?.includes('anonymous')) {
-			redirect(302, loginAndResume(url, '/auth/signin'));
+		if (!session && !route.id?.includes('anonymous')) {
+			console.log('redirect', route.id);
+			return redirect(302, loginAndResume(url, '/auth'));
 		}
 
-		if (event.locals.session && redirectTo) {
-			redirect(302, `/${redirectTo.slice(1)}`);
+		if (!headers.get('Authorization') && route.id?.includes('finanseer')) {
+			return redirect(302, `/user/linkBuxferAccount${url.search.slice(1)}`)
 		}
 
+		// REVIEW - is this needed?
+		// if (session && redirectTo) {
+		// 	return redirect(302, `/${redirectTo.slice(1)}`);
+		// }
+		
 		return resolve(event);
 	}) satisfies Handle;
 }
 
 function authentication() {
 	return (async (...args) => {
-		const [{ event }] = args;
 		const authOptions: SvelteKitAuthConfig = {
 			adapter: DrizzleAdapter(db),
-			// the session override fixes a weird bug in the adapter
-			// src: https://github.com/nextauthjs/next-auth/issues/6076#issuecomment-1354087465
 			session: {
 				strategy: 'database',
 				generateSessionToken: () => ulid(),
@@ -48,22 +60,20 @@ function authentication() {
 			providers: [
 				Email({
 					type: 'email',
-					id: 'email',
-					name: 'Email',
 					from: EMAIL_FROM,
 					sendVerificationRequest,
 				}),
 			],
 			callbacks: {
-				async session({ session, user }) {
-					event.locals.session = {
+				async session(context) {
+					const { session, user } = 'user' in context ? context : {...context, user: { undefined }};
+					return {
 						...session,
 						user: {
 							...session.user,
 							...user,
 						},
 					};
-					return event.locals.session;
 				},
 			},
 			trustHost: true,
@@ -75,30 +85,27 @@ function authentication() {
 
 function setup() {
 	return (async ({ event, resolve }) => {
-		const { locals, request } = event;
-		const locales = parseAcceptLanguage(request.headers.get('accept-language') || '');
-		locals.locale = locales.length ? locales[0] : 'en-US';
-		locals.timezone = request.headers.get('x-vercel-ip-timezone') ?? '';
+		const { request: { headers } } = event;
+		const locales = parseAcceptLanguage(headers.get('accept-language') || '');
+
+		userSettings.locale = locales.length ? locales[0] : 'en-US';
+		userSettings.timezone = headers.get('x-vercel-ip-timezone') ?? '';
 
 		return resolve(event);
 	}) satisfies Handle;
 }
 
-export const handle = sequence(authentication(), authorization(), setup());
+export const handle = sequence(Sentry.sentryHandle(), sequence(authentication(), authorization(), setup()));
 
-// import * as Sentry from '@sentry/node';
-
-// Sentry.init({
-/* ... */
-// });
-
-export const handleError = (async ({ error, event }) => {
-	const errorId = ulid();
-	// example integration with https://sentry.io/
-	// Sentry.captureException(error, { event });
+export const handleError = Sentry.handleErrorWithSentry((async ({ error, event }) => 
+	// const errorId = ulid();
 
 	// TODO - replace with logging collection data service (ex. Sentry).
-	logger.error((error as Error)?.stack || (error as App.Error).message || 'Oops!', { event, errorId, error });
+	// logger.error((error as Error)?.stack || (error as App.Error).message || 'Oops!', { event, errorId, error });
 
-	return formatError(error);
-}) satisfies HandleServerError;
+	 formatError(error)
+) satisfies HandleServerError);
+
+if (dev) {
+	setupSidecar();
+}

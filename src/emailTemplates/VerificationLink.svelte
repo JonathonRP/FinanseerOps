@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Container, Head, Heading, Hr, Html, Img, Preview, Section, Text } from 'svelte-email';
+	import { Body, Button, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text } from 'svelte-email';
 
 	const main = {
 		backgroundColor: '#ffffff',

@@ -2,10 +2,10 @@
 <script lang="ts">
 	import type { ComponentType, Snippet, SvelteComponent } from "svelte";
 	import type { ClassValue } from "clsx";
-	import { cn, numberFormat, type Color } from "$/lib/utils/index.svelte";
+	import { cn, numberFormat, type Color } from "$lib/utils/index.svelte";
 	import { spring, tweened } from "svelte/motion";
 	import { fade } from "svelte/transition";
-	import icons from '../../icons';
+	import { scoreCardIcons } from '$/icons';
 
     const {value, swap, comparison, children, ...restProps} = $props<{
 		value?: number,
@@ -28,7 +28,7 @@
 	});
 
 	const scoreIcons = $derived(new Map<boolean, ComponentType<SvelteComponent>>(
-		Object.values(icons.scoreCardIcons).map((icon, indx) => [indx === 1, icon])
+		Object.values(scoreCardIcons).map((icon, indx) => [indx === 1, icon])
 	));
 </script>
 <div class="flex items-center">

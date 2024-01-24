@@ -5,6 +5,9 @@
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/typescript-node:0-18",
 	"features": {
+		"ghcr.io/meaningful-ooo/devcontainer-features/fish:1": {
+			"fisher": false
+		},
 		"ghcr.io/devcontainers-contrib/features/typescript:1": {}
 	},
 

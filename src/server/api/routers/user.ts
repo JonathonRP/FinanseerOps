@@ -18,7 +18,8 @@ export const userRouter = router({
 		const existing = await ctx.db
 			.select()
 			.from(users)
-			.where(sql`${users.id} = ${id || ctx.user?.id}`);
+			.where(sql`${users.id} = ${id || ctx.user?.id}`)
+			.then(res => res[0]);
 		await ctx.db
 			.update(users)
 			.set(Object.assign(existing, data))

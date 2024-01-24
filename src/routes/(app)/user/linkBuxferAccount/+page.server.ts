@@ -1,13 +1,11 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { appRouter } from '$/server/api/root';
 import { createContext } from '$/server/api/context';
+import { validateData } from '$/server';
 import { object, string } from 'zod';
-import { decrypt } from '$/lib/utils/cryption';
-import { validateData } from '$lib/utils/index.svelte';
-import { logger } from '$/server/logger';
+import { decrypt } from '$lib/utils/cryption';
 import { TRPCError } from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
-import { dev } from '$app/environment';
 
 export const actions = {
 	default: async (event) => {
@@ -26,20 +24,22 @@ export const actions = {
 
 		try {
 			const { email, password: secret } = data;
-			const {access, refresh} = await appRouter
-				.createCaller(createContext(event))
+			const token = await appRouter
+				.createCaller(await createContext(event))
 				.buxfer.login({ email, password: decrypt(secret) });
 
-			setHeaders({Authorization: `Bearer: ${access}`});
-			event.cookies.set('refresh', refresh, {
-				path: '/api/trpc/',
-				httpOnly: true,
-				maxAge: 60 * 60 * 24 * 120,
-				sameSite: 'strict',
-				secure: !dev,
-			});
+			// setHeaders({Authorization: `Bearer: ${access}`});
+			// event.cookies.set('refresh', refresh, {
+			// 	path: '/api/trpc/',
+			// 	httpOnly: true,
+			// 	maxAge: 60 * 60 * 24 * 120,
+			// 	sameSite: 'strict',
+			// 	secure: !dev,
+			// });
+
+			setHeaders({Authorization: `Bearer: ${token}`});
+
 		} catch (err) {
-			logger.error(err);
 			if (err instanceof TRPCError) {
 				errors = { user: [err.message] };
 				return fail(getHTTPStatusCodeFromError(err), { errors });
@@ -48,8 +48,8 @@ export const actions = {
 		}
 
 		if (redirectTo) {
-			redirect(302, `/${redirectTo.slice(1)}`);
+			return redirect(302, `/${redirectTo.slice(1)}`);
 		}
-		redirect(302, '/');
+		return redirect(302, '/');
 	},
 };

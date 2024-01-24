@@ -1,11 +1,11 @@
-import type { SendVerificationRequestParams } from '@auth/core/providers';
-import { resend } from '../resend.server';
+import type { SendVerificationRequestParams } from '@auth/sveltekit/providers';
+import { resend } from './resend';
 
 export const sendVerificationRequest = async (params: SendVerificationRequestParams) => {
 	try {
 		const { identifier, url, provider, theme } = params;
 		const { host } = new URL(url);
-		await resend.sendEmail({
+		await resend.emails.send({
 			to: identifier,
 			from: provider.from ?? '',
 			subject: `Sign in to ${host}`,

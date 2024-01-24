@@ -5,7 +5,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { tweened } from 'svelte/motion';
 	import { derived, type Readable } from 'svelte/store';
-	import { user } from '$/lib/stores/userLanguage.svelte';
+	import { userSettings } from '$/lib/stores/userSettings.svelte';
 
 	const {data, name, isAnimatingInitialRender = true, ...restProps} = $props<{data: number[], name?: (string | null)[], isAnimatingInitialRender?: boolean, class?: ClassValue}>()
 
@@ -126,7 +126,7 @@
 						alignment-baseline="after-edge"
 						text-anchor="middle"
 						fill="currentColor">
-						{(data[0] / 100).toLocaleString(user.locale, {
+						{(data[0] / 100).toLocaleString(userSettings.locale, {
 							style: 'percent',
 							minimumFractionDigits: 0,
 						})}

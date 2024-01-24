@@ -1,16 +1,15 @@
-import { json } from '@sveltejs/kit';
-import { resend } from '$lib/resend.server';
+import { resend } from '$/server';
+import { appRouter } from '$/server/api/root';
+import { createContext } from '$/server/api/context';
+import * as Sentry from '@sentry/sveltekit';
 import type { RequestHandler } from './$types';
-import { logger } from '../../../server/logger';
-import { appRouter } from '../../../server/api/root';
-import { createContext } from '../../../server/api/context';
 import { EMAIL_FROM, VERCEL_DOMAIN } from '$env/static/private';
 
 // TODO - evaluate Upstash and Vercel cronjobs alternatives.
 const handle = (async ({ url, ...event }) => {
 	const mailOptions = {
 		from: EMAIL_FROM,
-		to: (await appRouter.createCaller(createContext({ ...event, url })).users.retrieve())
+		to: (await appRouter.createCaller(await createContext({ ...event, url })).users.retrieve())
 			.filter((user) => user.emailVerified)
 			.map((user) => user.email ?? ''),
 		subject: 'Reminder to check cash flow',
@@ -23,17 +22,15 @@ const handle = (async ({ url, ...event }) => {
 		resend
 			.sendEmail(mailOptions)
 			.then((res) => {
-				logger.info(res);
 				resolve(`Email sent: ${res}`);
 			})
 			.catch((error) => {
-				// TODO - replace with logging collection data service (ex. Sentry).
-				logger.error(error);
+				Sentry.captureException(error);
 				reject(error);
 			});
 	});
 
-	return json({ success: true });
+	return Response.json({ success: true });
 
 	function html(site: URL) {
 		const escapedHost = site.host.replace(/\./g, '&#8203;.');

@@ -1,6 +1,6 @@
-export async function load(event) {
+export async function load({ url }) {
+
 	return {
-		...event.data,
-		url: event.url,
+        url
 	};
 }

@@ -1,5 +1,8 @@
-import { trpcServer } from '$lib/api/server';
+import { apiServer } from '$/server/api';
 
 export async function load(event) {
-	await trpcServer.buxfer.accounts.ssr(event);
+	return {
+		...await event.parent(),
+		api: apiServer.hydrateToClient(event),
+	}
 }

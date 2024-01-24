@@ -1,4 +1,4 @@
-import { trpcServer } from '$lib/api/server';
+import { apiServer } from '$/server/api';
 
-export const GET = trpcServer.handler;
-export const POST = trpcServer.handler;
+export const GET = apiServer.handler;
+export const POST = apiServer.handler;

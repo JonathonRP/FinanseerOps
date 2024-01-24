@@ -4,12 +4,12 @@
 	import type { ClassValue } from 'clsx';
 
 	import { cn } from '$lib/utils/cn';
-	import { Motion } from 'svelte-motion';
+	import { Motion, type MotionProps } from 'svelte-motion';
 
-	const { children,...restProps } = $props<{ children: Snippet, class?: ClassValue }>();
+	const { children,...restProps } = $props<{ children: Snippet, class?: ClassValue, motion?: MotionProps }>();
 </script>
 
-<Motion {...restProps} let:motion let:props>
+<Motion {...restProps.motion} let:motion let:props>
 	<div
 		{...props}
 		use:motion

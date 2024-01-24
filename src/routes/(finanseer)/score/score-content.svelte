@@ -3,7 +3,7 @@
 	import { getContext, type Snippet } from "svelte";
 	import type { ClassValue } from "clsx";
 	import type { Readable } from "svelte/store";
-	import { cn, numberFormat, type Color } from "$/lib/utils/index.svelte";
+	import { cn, numberFormat, type Color } from "$lib/utils/index.svelte";
 	import { tweened } from "svelte/motion";
 
     const {value, data, children, ...restProps} = $props<{

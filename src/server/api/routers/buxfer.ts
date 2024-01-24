@@ -1,38 +1,38 @@
 import {
-	buxferLogin,
-	buxferTransactionsQuery,
-	buxferTokens,
-	buxferAccounts,
-	BuxferClient,
-	buxferTransactions,
+	login,
+	transactionsWindow,
+	token,
+	accounts,
+	client,
+	transactions,
 } from '../../buxfer.svelte';
 import { procedure, router } from '../trpc';
 
 export const buxferRouter = router({
 	login: procedure
-		.input(buxferLogin)
-		.output(buxferTokens)
-		.query(async ({ input }) => BuxferClient('/login', input)),
+		.input(login)
+		.output(token)
+		.query(async ({ input }) => client('/login', input)),
 
 	accounts: procedure
-		.output(buxferAccounts)
+		.output(accounts)
 		.query(async ({ ctx, input }) => {
 			const headers = new Headers();
 			if (ctx && ctx.accessToken) {
 				headers.append('Authorization', ctx.accessToken);
 			}
-			return BuxferClient('/accounts', input, { headers });
+			return client('/accounts', input, { headers });
 		}),
 
 	transactions: procedure
-		.input(buxferTransactionsQuery)
-		.output(buxferTransactions)
+		.input(transactionsWindow)
+		.output(transactions)
 		.query(async ({ ctx, input }) => {
 			const headers = new Headers();
 			if (ctx && ctx.accessToken) {
 				headers.append('Authorization', ctx.accessToken);
 			}
-			return BuxferClient('/transactions', input, {
+			return client('/transactions', input, {
 				headers,
 			});
 		}),

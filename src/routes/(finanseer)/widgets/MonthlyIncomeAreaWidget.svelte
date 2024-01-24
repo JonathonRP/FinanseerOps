@@ -1,13 +1,15 @@
 <svelte:options runes={true} />
 <script lang="ts">
+	import type { ForwardMotionProps } from '$lib/animations';
 	import { filter, switchMap, reduce, of } from 'rxjs';
 	import { addDays, format, isSameMonth, startOfMonth, subMonths } from 'date-fns';
 	import { api } from '$lib/api';
-	import { dateFormat } from '$/lib/utils/index.svelte';
-	import { ScoreCard } from '../ScoreCard';
+	import { dateFormat } from '$lib/utils/index.svelte';
+	import { Score } from '../score';
 	import {AreaChart} from '../charts';
+	import DashboardWidget from '../DashboardWidget.svelte';
 
-	const {processedDay} = $props<{processedDay: Date}>();
+	const { processedDay, ...motion } = $props<{processedDay: Date} & ForwardMotionProps>();
 
 	const prevMonth = $derived(subMonths(processedDay, 1));
 	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
@@ -84,14 +86,16 @@
 	});
 </script>
 
-<ScoreCard.Root class='px-5 pb-12 pt-5'>
-	<ScoreCard.Header>
-		<ScoreCard.Label>
-			Income
-		</ScoreCard.Label>
-	</ScoreCard.Header>
-	<ScoreCard.Content>
-		<ScoreCard.Score value={$expenses$.currMonthIncome} swap comparison={{ value: $expenses$.prevMonthIncome }} />
-		<AreaChart data={data.flatMap(Object.values)} />
-	</ScoreCard.Content>
-</ScoreCard.Root>
+<DashboardWidget class='px-5 pb-12 pt-5' {motion}>
+	<Score.Root>
+		<Score.Header>
+			<Score.Label>
+				Income
+			</Score.Label>
+		</Score.Header>
+		<Score.Content>
+			<Score.Metric value={$expenses$.currMonthIncome} swap comparison={{ value: $expenses$.prevMonthIncome }} />
+			<AreaChart data={data.flatMap(Object.values)} />
+		</Score.Content>
+	</Score.Root>
+</DashboardWidget>

@@ -1,12 +1,14 @@
 <svelte:options runes={true} />
 <script lang="ts">
+	import type { ForwardMotionProps } from '$lib/animations';
 	import { filter, switchMap, of, reduce, groupBy, combineLatest, map, mergeMap } from 'rxjs';
 	import { startOfMonth } from 'date-fns';
 	import { api } from '$lib/api';
-	import { ScoreCard } from '../ScoreCard';
+	import { Score } from '../score';
 	import { GaugeChart } from '../charts';
+	import DashboardWidget from '../DashboardWidget.svelte';
 
-	const {processedDay} = $props<{processedDay: Date}>();
+	const { processedDay, ...motion } = $props<{processedDay: Date} & ForwardMotionProps>();
 
 	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
 		{
@@ -54,13 +56,15 @@
 	});
 </script>
 
-<ScoreCard.Root>
-	<ScoreCard.Header>
-		<ScoreCard.Label>
-			Categories
-		</ScoreCard.Label>
-	</ScoreCard.Header>
-	<ScoreCard.Content>
-		<GaugeChart data={[$percentages$]} />
-	</ScoreCard.Content>
-</ScoreCard.Root>
+<DashboardWidget {motion}>
+	<Score.Root>
+		<Score.Header>
+			<Score.Label>
+				Categories
+			</Score.Label>
+		</Score.Header>
+		<Score.Content>
+			<GaugeChart data={[$percentages$]} />
+		</Score.Content>
+	</Score.Root>
+</DashboardWidget>

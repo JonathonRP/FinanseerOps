@@ -27,13 +27,13 @@ export const refreshTokenLink = (opts: RefreshTokenLinkOptions): TRPCLink<AnyRou
 								onUnauthorized?.();
 
 								// Try to get a new jwt pair if the refresh token is stored
-								const refreshed = getRefreshToken(op.context);
+								const refreshed = await getRefreshToken(op.context);
 								if (refreshed) {
 									refreshState.promise = (async () => {
 										try {
 											// Fetch and store a new jwt pair
 											const jwtPair = await fetchJwtPairByRefreshToken(refreshed);
-											await onJwtPairFetched?.(jwtPair, op.context?.user?.email as string | undefined);
+											await onJwtPairFetched?.(op.context, jwtPair, op.context?.user?.email as string | undefined);
 										} catch (e) {
 											onRefreshFailed?.(e);
 											throw e;

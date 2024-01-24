@@ -1,15 +1,13 @@
 <svelte:options runes={true} />
 <script lang="ts">
-	import type { ComponentType, Snippet, SvelteComponent } from "svelte";
-	import icons from "../icons";
+	import type { Snippet, SvelteComponent, ComponentType } from "svelte";
+	import { navItemIcons } from "$/icons";
 
-	const navIcons = { ...icons.navItemIcons};
-
-	const { active, icon = navIcons.FileSearchIcon, route, children } = $props<{ active: boolean; icon?: ComponentType<SvelteComponent>; route: string, children?: Snippet }>();
+	const { active, icon = navItemIcons.FileSearchIcon, route, children } = $props<{ active: boolean; icon?: ComponentType<SvelteComponent>; route: string, children?: Snippet }>();
 </script>
 
 <a
-	class="group relative flex w-3 items-center space-x-2 rounded-lg text-primary-600 transition-colors @container aria-[current=page]:bg-primary-500 aria-[current=page]:text-white hover:bg-primary-500 hover:text-white dark:text-neutral-309 md:w-full"
+	class="group relative flex w-3 items-center space-x-2 rounded-lg text-primary-600 transition-colors aria-[current=page]:bg-primary-500 aria-[current=page]:text-white hover:bg-primary-500 hover:text-white dark:text-neutral-309 md:w-full"
 	aria-current={active ? 'page' : undefined}
 	href={route}>
 	<span
@@ -18,7 +16,7 @@
 		<svelte:component this={icon} class="h-6 w-6" height="auto" />
 	</span>
 	{#if children}
-		<span class="invisible @[6rem]:visible">
+		<span class="invisible @[12rem]:visible">
 			{@render children()}
 		</span>
 	{/if}
@@ -26,7 +24,7 @@
 
 <style lang="postcss">
 	@media (min-width: 768px) {
-		@container (max-width: 3rem) {
+		@container (max-width: 4rem) {
 			.group:hover > span:last-of-type {
 				left: 50px;
 				opacity: 1;
@@ -41,7 +39,7 @@
 				top: 50%;
 				transform: translateY(-50%);
 				padding: 10px;
-				border-radius: 4px;
+				border-radius: 8px;
 				opacity: 0;
 				visibility: hidden;
 				transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -54,7 +52,7 @@
 					top: 20%;
 					width: 20px;
 					height: 20px;
-					border-radius: 2px;
+					border-radius: 4px;
 					transform: rotate(45deg);
 					z-index: -1;
 				}

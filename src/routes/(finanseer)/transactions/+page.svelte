@@ -5,9 +5,9 @@
 	import { Motion } from 'svelte-motion';
 	import { slide } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
-	import { numberFormat } from '$/lib/utils/index.svelte';
+	import { numberFormat } from '$lib/utils/index.svelte';
 	import { api } from '$lib/api';
-	import icons from '../../icons';
+	import { icons } from '$/icons';
 
 	const { data } = $props<{data: import('./$types').PageData }>();
 	const { processedDate, processedDay, searchFilter } = $derived(data);

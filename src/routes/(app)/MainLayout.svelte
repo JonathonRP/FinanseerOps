@@ -2,8 +2,7 @@
 <script lang="ts">
 	import classes from 'svelte-transition-classes';
 
-	import { merge } from '$/lib/utils/index.svelte';
-	import useBauhaus from '$lib/stores/useBauhaus';
+	import { merge } from '$lib/utils/index.svelte';
 	import { signOut } from '@auth/sveltekit/client';
 
 	import toast from 'svelte-french-toast';
@@ -12,15 +11,14 @@
 	import logo from '$lib/images/svelte-logo.svg';
 	// import dashboard from '@iconify/icons-tabler/chart-infographic';
 
-	import type { ComponentType, Snippet, SvelteComponent } from 'svelte';
+	import type { Snippet } from 'svelte';
 	import Form from '$lib/components/Form.svelte';
-	import { session } from '$/lib/stores/userSession.svelte';
+	import { icons, navItemIcons } from '$/icons';
+	import { userSettings } from '$/lib/stores/userSettings.svelte';
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
 	import NavLink from './NavLink.svelte';
 	import Modal from './Modal.svelte';
-	import { api } from '$lib/api';
-	import icons from '../icons';
 
 	type ModalState = {
 		status: 'closed',
@@ -42,7 +40,7 @@
 
 	const {name = 'Finanzen', links, children} = $props<{ name?: string, links?: { route: string}[], children: Snippet }>();
 
-	const navIcons = $derived({ ...icons.navItemIcons});
+	const navIcons = $derived({ ...navItemIcons });
 
 	const routes = $derived(merge(
 		[{ icon: navIcons.ChartHistogram, label: 'dashboard' }],
@@ -53,9 +51,7 @@
 	let accountState: ModalState = $state(closeModal);
 	let invitationState: ModalState = $state(closeModal);
 
-	let { user } = $state(session || { user: undefined });
-	
-	api.user.retrieve.query().subscribe(($user) => user = Object.assign(session?.user || {}, $user.data ));
+	const { user } = $state($page.data.session || { user: undefined });
 
 	const toggleAccount = (definedState?: ModalState | undefined) => (event: MouseEvent | KeyboardEvent | Event) => {
 		const prevs = document.querySelectorAll('[aria-current="location"]');
@@ -118,16 +114,9 @@
 		}
 	};
 
-	const randomColor = () =>
-		Math.floor(Math.random() * 0xffffff * 1000000)
-			.toString(16)
-			.slice(0, 6);
+	let useBauhaus = $state(userSettings.useBauhaus);
 
-	const userImage = $derived(
-		user?.image ||
-		`https://source.boringavatars.com/${($useBauhaus && 'bauhaus') || 'beam'}/120/${encodeURIComponent(
-			user?.name ?? ''
-		)}?colors=000000,ff3e00,CDCDCD,4075a6,${randomColor()}`);
+	const userImage = $derived(userSettings.genertateImage(user));
 </script>
 
 <svelte:window
@@ -139,8 +128,8 @@
 {#if user?.role === 'admin'}
 	<dialog
 		id="inviteUser"
-		on:click={toggleInvitation(closeModal)}
-		on:keydown={toggleInvitation(closeModal)}
+		onclick={toggleInvitation(closeModal)}
+		onkeydown={toggleInvitation(closeModal)}
 		open={invitationState.status === 'open'}
 		class="rounded-2xl bg-white text-neutral-808 open:relative dark:bg-neutral-800 dark:text-neutral-309">
 		<Form
@@ -207,7 +196,7 @@
 				{#if user?.role === 'admin'}
 					<button
 						type="button"
-						on:click={toggleInvitation()}
+						onclick={toggleInvitation()}
 						class="rounded-lg opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-neutral-808">
 						<span class="flex items-center justify-center rounded-lg p-1 shadow-md">
 							<svelte:component this={icons.PlusUserIcon} class="h-6 w-6" height="auto" inline />
@@ -218,7 +207,7 @@
 			</div>
 			<button
 				type="button"
-				on:click={toggleAccount()}
+				onclick={toggleAccount()}
 				class="rounded-lg opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-neutral-808">
 				<img class="h-8 w-8 rounded-lg shadow-md" src={userImage} alt="user profile" />
 				<span class="sr-only">User menu</span>
@@ -244,7 +233,8 @@
 			<!-- Menu button -->
 
 			<!-- <button
-				class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:bg-primary-600 focus:text-white focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white dark:bg-gray-800 dark:shadow-neutral-309/20 dark:focus:ring-offset-neutral-808">
+				class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:bg-primary-600 focus:text-white focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 aria-[current=location]:bg-primary-600 aria-[current=location]:text-white dark:bg-gray-800 dark:shadow-neutral-309/20 dark:focus:ring-offset-neutral-808"
+				onclick={toggleMenuWidth()}>
 				<span class="sr-only">Toggle sidebar</span>
 				<svg
 					aria-hidden="true"
@@ -270,7 +260,7 @@
 			{#if user?.role === 'admin'}
 				<button
 					type="button"
-					on:click={toggleInvitation()}
+					onclick={toggleInvitation()}
 					class="relative rounded-lg opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 focus:ring-offset-white @[12rem]:flex @[12rem]:w-full @[12rem]:items-center @[12rem]:space-x-2 @[12rem]:px-4 dark:focus:ring-offset-neutral-808">
 					<span class="flex items-center rounded-lg p-1 shadow-md">
 						<svelte:component this={icons.PlusUserIcon} class="h-6 w-6" height="auto" inline />
@@ -283,20 +273,23 @@
 		<div class="flex flex-shrink-0 items-center justify-between px-2 @[12rem]:w-full">
 			<button
 				type="button"
-				on:click={toggleAccount()}
-				class="relative flex w-full flex-1 items-center rounded-lg opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 focus:ring-offset-white @[5rem]:space-x-2 @[5rem]:px-4 dark:focus:ring-offset-neutral-808">
-				<span class="flex items-center rounded-lg shadow-md">
+				onclick={toggleAccount()}
+				class="flex items-center rounded-lg opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 focus:ring-offset-white @[5rem]:w-11/12 @[5rem]:space-x-2 @[5rem]:mx-4 dark:focus:ring-offset-neutral-808">
+				<span class="flex flex-shrink-0 items-center rounded-lg shadow-md">
 					<img class="h-10 w-10" src={userImage} alt="user profile" />
 				</span>
-				<p class="hidden @[6rem]:flex">{user?.name}</p>
+				<p class="hidden @[12rem]:flex">{user?.name}</p>
 				<span class="sr-only">user menu</span>
 			</button>
-			<button type="button" class="relative" on:click={toggleMenuWidth()}>
-				<span class="flex items-center transition-transform @[6rem]:-rotate-180">
-					<svelte:component this={icons.RightChevronIcon} class="h-6 w-1" height="auto" inline />
+			<!-- <span class="relative flex w-full h-10 flex-shrink-0 items-center justify-center @[6rem]:justify-between">
+				
+			</span> -->
+			<!-- <button type="button" class="relative -left-2 bg-slate-300 rounded-full dark:bg-opacity-25" onclick={toggleMenuWidth()}>
+				<span class="flex items-center justify-center transition-transform @[6rem]:-rotate-180">
+					<svelte:component this={icons.RightChevronIcon} class="h-6 w-6" height="auto" inline />
 				</span>
 				<span class="sr-only">expand menu</span>
-			</button>
+			</button> -->
 		</div>
 	</nav>
 
@@ -305,15 +298,15 @@
 			<div
 				in:classes={{
 					duration: 300,
-					base: 'md:transform md:transition-transform md:duration-300',
-					from: 'md:-translate-x-full',
-					to: 'md:translate-x-0',
+					base: 'md:transition md:duration-250',
+					from: 'md:-translate-x-1/2 md:opacity-0',
+					to: 'md:translate-x-0 md:opacity-100',
 				}}
 				out:classes={{
-					duration: 300,
-					base: 'md:transform md:transition-transform md:duration-300',
-					from: 'md:translate-x-0',
-					to: 'md:-translate-x-full',
+					duration: 250,
+					base: 'md:transition md:duration-150',
+					from: 'md:translate-x-0 md:opacity-100',
+					to: 'md:-translate-x-1/2 md:opacity-0',
 				}}
 				class="md:static md:inset-y-0 md:left-16 md:mx-0 md:h-auto md:w-72 md:bg-inherit md:shadow-none md:dark:bg-inherit">
 				<Modal
@@ -341,7 +334,7 @@
 									validate={(values) => {
 										const errors = { username: '', useBauhaus: '' };
 
-										if (values.username === user?.name && Boolean(values.useBauhaus) === $useBauhaus) {
+										if (values.username === user?.name && Boolean(values.useBauhaus) === useBauhaus) {
 											errors.username = 'No changes to submit.';
 										}
 
@@ -350,9 +343,9 @@
 									on:submit={(e) => {
 										const form = Object.fromEntries(e.detail.data);
 
-										if (Boolean(form.useBauhaus) !== $useBauhaus) {
-											useBauhaus.set(Boolean(form.useBauhaus));
-											toast.success(`Now using ${$useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
+										if (Boolean(form.useBauhaus) !== useBauhaus) {
+											useBauhaus = Boolean(form.useBauhaus);
+											toast.success(`Now using ${useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
 										}
 
 										if (user) {
@@ -382,7 +375,7 @@
 											name="useBauhaus"
 											class="form-checkbox mr-2 rounded-full leading-tight text-primary-500 focus:ring-primary-500 focus:ring-offset-neutral-808"
 											type="checkbox"
-											checked={$useBauhaus}
+											checked={useBauhaus}
 											on:blur={handleBlur}
 											on:input={handleInput}
 											disabled={submitting} />
@@ -405,7 +398,7 @@
 								<button
 									type="button"
 									class="group flex w-full items-center space-x-2 rounded-lg text-primary-600 transition-colors hover:bg-primary-500 hover:text-white dark:text-neutral-309"
-									on:click={() => signOut()}>
+									onclick={() => signOut()}>
 									<span
 										aria-hidden="true"
 										class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600">
@@ -422,8 +415,26 @@
 	</AnimatePresence>
 </aside>
 
-<main class="flex flex-1 flex-col overflow-hidden px-6 pb-16 pt-8 md:pb-8">
-	{@render children()}
+<main class="flex flex-1 flex-col overflow-hidden pb-16 pt-8 md:pt-4 md:pb-16 px-6 md:px-0 md:pr-8">
+	<nav class="hidden md:pt-2.5 md:block md:h-16">
+		<button
+			class="fixed z-20 rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-primary-600 hover:text-white focus:bg-primary-600 focus:text-white focus:outline-none focus:ring focus:ring-primary-600 focus:ring-offset-2 dark:bg-gray-800 dark:shadow-neutral-309/20 dark:focus:ring-offset-neutral-808"
+			onclick={toggleMenuWidth()}>
+			<span class="sr-only">Toggle sidebar</span>
+			<svg
+				aria-hidden="true"
+				class="h-6 w-6"
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+			</svg>
+		</button>
+	</nav>
+	<div class="h-full grid md:flex md:rounded-2xl mt-2 md:bg-slate-200 md:overflow-hidden md:dark:bg-neutral-808">
+		{@render children()}
+	</div>
 </main>
 
 <footer class="fixed bottom-20 right-5 flex items-center gap-4 md:bottom-5">

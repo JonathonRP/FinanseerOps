@@ -10,7 +10,7 @@ export interface RefreshTokenLinkOptions {
 	 * Get locally stored refresh token
 	 * @returns Refresh token string or undefined
 	 */
-	getRefreshToken: (options: OperationContext) => string | undefined;
+	getRefreshToken: (options: OperationContext) => Promise<string | undefined>;
 
 	/**
 	 * Fetch a new JWT pair by refresh token from your API
@@ -23,7 +23,7 @@ export interface RefreshTokenLinkOptions {
 	 * Callback on JWT pair is successfully fetched with `fetchJwtPairByRefreshToken`
 	 * @param payload Just fetched `{ access: string; refresh: string }` structure
 	 */
-	onJwtPairFetched: (payload: JwtPair, email: string | undefined) => Promise<void>;
+	onJwtPairFetched: (options: OperationContext, payload: JwtPair, email: string | undefined) => Promise<void>;
 
 	/**
 	 * Callback on JWT refresh request is failed
