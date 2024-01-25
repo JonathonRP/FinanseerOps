@@ -32,7 +32,6 @@ function authorization() {
 		
 
 		if (!session && !route.id?.includes('anonymous')) {
-			console.log('redirect', route.id);
 			return redirect(302, loginAndResume(url, '/auth'));
 		}
 

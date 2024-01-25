@@ -3,12 +3,15 @@
 {
 	"name": "Finanzen",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/typescript-node:0-18",
+	"image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
 	"features": {
 		"ghcr.io/meaningful-ooo/devcontainer-features/fish:1": {
 			"fisher": false
 		},
-		"ghcr.io/devcontainers-contrib/features/typescript:1": {}
+		"ghcr.io/devcontainers/features/node:1": {
+			"nodeGypDependencies": false,
+			"version": "18.18.0"
+		}
 	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.

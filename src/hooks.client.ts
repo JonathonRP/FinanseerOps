@@ -1,3 +1,4 @@
+import { handleErrorWithSentry, replayIntegration } from '@sentry/sveltekit';
 import * as Sentry from '@sentry/sveltekit';
 
 import type { HandleClientError } from '@sveltejs/kit';
@@ -9,13 +10,13 @@ import { dev } from '$app/environment';
 // `replaysSessionSampleRate` and `replaysOnErrorSampleRate` options.
 Sentry.init({
     dsn: "https://997785fc8294fedf8043d05970029853@o4506588389900288.ingest.sentry.io/4506588421095424",
-    tracesSampleRate: 1.0,
+    tracesSampleRate: 1,
     replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-    integrations: [new Sentry.Replay()]
+    replaysOnErrorSampleRate: 1,
+    integrations: [replayIntegration()]
 })
 
-export const handleError = Sentry.handleErrorWithSentry((async ({ error, event }) => 
+export const handleError = handleErrorWithSentry((async ({ error, event }) => 
 	// const errorId = ulid();
 
 	// TODO - replace with logging collection data service (ex. Sentry).
