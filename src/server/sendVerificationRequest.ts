@@ -1,11 +1,33 @@
-import type { SendVerificationRequestParams } from '@auth/sveltekit/providers';
+import type { EmailConfig } from '@auth/sveltekit/providers';
 import { resend } from './resend';
 
-export const sendVerificationRequest = async (params: SendVerificationRequestParams) => {
+/**
+ * Change the theme of the built-in pages.
+ *
+ * [Documentation](https://authjs.dev/reference/core#authconfig#theme) |
+ * [Pages](https://authjs.dev/guides/basics/pages)
+ */
+export interface Theme {
+	colorScheme?: 'auto' | 'dark' | 'light';
+	logo?: string;
+	brandColor?: string;
+	buttonText?: string;
+}
+
+export const sendVerificationRequest = async (params: {
+	identifier: string;
+	url: string;
+	expires: Date;
+	provider: EmailConfig;
+	token: string;
+	theme: Theme;
+	request: Request;
+}) => {
+	let res = null;
 	try {
 		const { identifier, url, provider, theme } = params;
 		const { host } = new URL(url);
-		await resend.emails.send({
+		res = await resend.emails.send({
 			to: identifier,
 			from: provider.from ?? '',
 			subject: `Sign in to ${host}`,
@@ -13,7 +35,7 @@ export const sendVerificationRequest = async (params: SendVerificationRequestPar
 			text: text({ url, host }),
 		});
 	} catch (error) {
-		console.log({ error });
+		throw Error('resend error: ' + res?.error?.message);
 	}
 };
 

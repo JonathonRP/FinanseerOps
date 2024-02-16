@@ -1,15 +1,23 @@
 <svelte:options runes={true} />
+
 <script lang="ts">
-	import { accordion } from '$lib/utils/index.svelte';
-	import { page } from '$app/stores';
+	import { accordion } from '$/lib/utils';
+	import { icons, navItemIcons } from '$/icons';
+	import type { ComponentType, SvelteComponent } from 'svelte';
 	import { base } from '$app/paths';
 	import NavLink from './NavLink.svelte';
-	import { icons, navItemIcons} from '$/icons';
-	import type { ComponentType, SvelteComponent } from 'svelte';
 
-	const navIcons = { ...navItemIcons};
+	const navIcons = { ...navItemIcons };
 
-	const { icon = navIcons.FileSearchIcon, routes } = $props<{ icon?: ComponentType<SvelteComponent>; routes: string[] }>();
+	const {
+		icon = navIcons.FileSearchIcon,
+		routes,
+		active,
+	} = $props<{
+		icon?: ComponentType<SvelteComponent>;
+		routes: string[];
+		active: (route: string) => boolean;
+	}>();
 
 	const [, label] = $derived(routes[0].split('/'));
 </script>
@@ -19,7 +27,7 @@
 	use:accordion>
 	<summary
 		class="group flex items-center justify-between divide-x-2 divide-primary-400 rounded-lg text-primary-600 transition-colors aria-[current=page]:bg-primary-500 aria-[current=page]:text-white hover:bg-primary-500 hover:text-white dark:text-neutral-309"
-		aria-current={$page.url.pathname === `${base}${routes[0]}` ? 'page' : undefined}>
+		aria-current={active(`${base}${routes[0]}`) ? 'page' : undefined}>
 		<a href={routes[0]} class="flex w-full items-center space-x-2">
 			<span
 				aria-hidden="true"
@@ -37,7 +45,7 @@
 	<ul class="mt-2 flex-1 space-y-2 overflow-hidden hover:overflow-auto">
 		{#each routes.slice(1, -1) as route, i (i)}
 			<li>
-				<NavLink active={$page.url.pathname === `${base}${route}`} {route} />
+				<NavLink active={active(`${base}${route}`)} {route} />
 			</li>
 		{/each}
 	</ul>

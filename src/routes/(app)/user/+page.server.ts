@@ -1,5 +1,5 @@
 import { createContext } from '$/server/api/context';
-import { appRouter } from '$/server/api/root';
+import { appRouter, createCallerFactory } from '$/server/api/root';
 import { validateData } from '$/server';
 import { fail } from '@sveltejs/kit';
 import { object, string, coerce } from 'zod';
@@ -8,32 +8,44 @@ import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 
 export const actions = {
 	update: async (event) => {
-		const { request, locals } = event;
+		const {
+			request,
+			locals: { session },
+		} = event;
 		const formData = await request.formData();
-		const { user: sessionUser } = await locals.auth() || { user: undefined };
+		const { user: sessionUser } = (await session) || { user: undefined };
 
-		const { data: user, errors: userErrors } = await validateData(sessionUser, object({ id: string(), email: string().nullable().optional(), emailVerified: coerce.date().nullable().optional(), name: string().nullable().optional() }).partial())
+		const { data: user, errors: userErrors } = await validateData(
+			sessionUser,
+			object({
+				id: string(),
+				email: string().nullable().optional(),
+				emailVerified: coerce.date().nullable().optional(),
+				name: string().nullable().optional(),
+			}).partial()
+		);
 
 		if (userErrors) {
 			return fail(400, { errors: userErrors });
 		}
 
 		// NOTE - handle formdata checkbox boolean existance and inexistance states for boolean.
-		const expectedUserSettings = object({ useBauhaus: coerce.boolean().default(false), username: string() }).superRefine(
-			({ username }, ctx) => {
-				if (username === user?.name) {
-					ctx.addIssue({ code: 'custom', message: 'No changes to save.', path: ['name', 'useBauhaus'] });
-				}
+		const expectedUserSettings = object({
+			useBauhaus: coerce.boolean().default(false),
+			username: string(),
+		}).superRefine(({ username }, ctx) => {
+			if (username === user?.name) {
+				ctx.addIssue({ code: 'custom', message: 'No changes to save.', path: ['name', 'useBauhaus'] });
 			}
-		);
-		let {data, errors} = await validateData(formData, expectedUserSettings);
+		});
+		let { data, errors } = await validateData(formData, expectedUserSettings);
 
 		if (errors) {
 			return fail(400, { formData: data, errors });
 		}
 
 		try {
-			await appRouter.createCaller(await createContext(event)).user.update({ ...user, ...{ name: data.username } });
+			await createCallerFactory(appRouter)(createContext(event)).user.update({ ...user, ...{ name: data.username } });
 
 			return { success: true };
 		} catch (err) {
@@ -60,7 +72,7 @@ export const actions = {
 		}
 
 		try {
-			await appRouter.createCaller(await createContext(event)).user.invite(data);
+			await createCallerFactory(appRouter)(createContext(event)).user.invite(data);
 
 			return { success: true };
 		} catch (err) {

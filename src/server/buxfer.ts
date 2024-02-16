@@ -1,10 +1,10 @@
-import { error, type HttpError } from '@sveltejs/kit';
-import { format } from 'date-fns';
-import { zonedTimeToUtc } from 'date-fns-tz';
+import { error } from '@sveltejs/kit';
+import { format, formatISO, parseISO } from 'date-fns';
 import path from 'path';
 import { array, number, object, string, union, z, never, coerce, date, discriminatedUnion, literal } from 'zod';
-import { userSettings } from '$lib/stores/userSettings.svelte';
 import { ulid } from 'ulid';
+import { fromFetch } from 'rxjs/fetch';
+import { switchMap, type Observable, map, catchError, expand, EMPTY, reduce } from 'rxjs';
 
 const DateFormat = 'yyyy-MM-dd';
 
@@ -17,7 +17,7 @@ export const accounts = array(
 	})
 );
 
-export const transactions = object({
+const transactionsPage = object({
 	totalTransactionsCount: coerce
 		.number()
 		.default(0)
@@ -29,14 +29,38 @@ export const transactions = object({
 			description: string(),
 			date: string()
 				.or(date())
-				.transform((arg) => zonedTimeToUtc(arg, userSettings.timezone || 'UTC')),
+				.transform((arg) => parseISO(formatISO(new Date(arg)).replace('Z', ''))),
 			type: string(),
 			amount: number(),
 			accountId: number(),
 			tags: string(),
 		})
 	),
-});
+	totalRecords: number().default(0),
+	totalPages: number().default(0),
+	next: number().optional(),
+	current: number(),
+	previous: number().optional(),
+}).transform(({ totalTransactionsCount, current, totalRecords, totalPages, transactions }) => ({
+	transactions,
+	totalRecords: transactions.length,
+	totalPages: Math.ceil(totalTransactionsCount / totalRecords),
+	previous: current > 1 ? current - 1 : undefined,
+	current,
+	next: current <= totalPages ? current + 1 : undefined,
+}));
+
+export const transactions = array(
+	object({
+		id: number(),
+		description: string(),
+		date: date(),
+		type: string(),
+		amount: number(),
+		accountId: number(),
+		tags: string(),
+	})
+);
 
 export const token = string();
 
@@ -48,7 +72,7 @@ export const token = string();
 // });
 
 const tokenResponse = object({
-	token
+	token,
 });
 
 const accountsResponse = object({
@@ -79,13 +103,10 @@ const accessToken = tokenResponse;
 const buxferResponse = union([tokenResponse, accountsResponse, transactionsResponse]);
 const buxferError = object({
 	type: string(),
-	message: string()
-})
+	message: string(),
+});
 
-const buxferApiResponse = union([
-	object({ response: buxferResponse }),
-	object({ error: buxferError }),
-]);
+const buxferApiResponse = union([object({ response: buxferResponse }), object({ error: buxferError })]);
 
 export const login = object({
 	email: string(),
@@ -129,30 +150,33 @@ type BuxferProxyRequest =
 	| { url: typeof api.accounts; body: z.infer<typeof accessToken> }
 	| { url: typeof api.transactions; body: z.infer<typeof transactionsWindow> & z.infer<typeof accessToken> };
 
-type BuxferProxyResponse<T extends BuxferProxyRequest> = Promise<
-	T['url'] extends typeof api.login /* | typeof api.refresh */ ? z.infer<typeof tokenResponse>
-	: T['url'] extends typeof api.accounts ? z.infer<typeof accountsResponse>
-	: T['url'] extends typeof api.transactions ? z.infer<typeof transactionsResponse>
-	: never
->
+type BuxferProxyResponse<T extends BuxferProxyRequest> = Observable<
+	T['url'] extends typeof api.login /* | typeof api.refresh */
+		? z.infer<typeof tokenResponse>
+		: T['url'] extends typeof api.accounts
+			? z.infer<typeof accountsResponse>
+			: T['url'] extends typeof api.transactions
+				? z.infer<typeof transactionsResponse>
+				: never
+>;
 
-async function buxferProxy<T extends Extract<BuxferProxyRequest, { url: typeof api.login }>>(
+function buxferProxy<T extends Extract<BuxferProxyRequest, { url: typeof api.login }>>(
 	endpoint: T['url'],
-	body: T['body'],
+	body: T['body']
 ): BuxferProxyResponse<T>;
 // async function buxferProxy<T extends Extract<BuxferProxyRequest, { url: typeof api.refresh }>>(
 // 	endpoint: T['url'],
 // 	body: T['body'],
 // ): BuxferProxyResponse<T>;
-async function buxferProxy<T extends Extract<BuxferProxyRequest, { url: typeof api.accounts }>>(
+function buxferProxy<T extends Extract<BuxferProxyRequest, { url: typeof api.accounts }>>(
 	endpoint: T['url'],
-	body: T['body'],
+	body: T['body']
 ): BuxferProxyResponse<T>;
-async function buxferProxy<T extends Extract<BuxferProxyRequest, { url: typeof api.transactions }>>(
+function buxferProxy<T extends Extract<BuxferProxyRequest, { url: typeof api.transactions }>>(
 	endpoint: T['url'],
-	body: T['body'],
+	body: T['body']
 ): BuxferProxyResponse<T>;
-async function buxferProxy (
+function buxferProxy(
 	endpoint: (typeof api)[keyof typeof api],
 	body:
 		| z.infer<typeof login>
@@ -170,70 +194,70 @@ async function buxferProxy (
 	const rerouteURL = new URL(routes.get(endpoint) ?? <never>null, BuxferDomain);
 	const request = new Request(rerouteURL, buxferConfig);
 
-	try {
-		const result = await fetch(request);
-		const resp = buxferApiResponse.parse(await result.json());
+	return fromFetch(request, {
+		selector: (resp) => resp.json(),
+	}).pipe(
+		map((data) => {
+			const result = buxferApiResponse.parse(data);
+			if ('error' in result) {
+				const { error: buxferErr } = result;
 
-		if ('error' in resp) {
-			const { error: buxferErr } = resp;
+				error(data.status, {
+					code: ulid(),
+					message: buxferErr.message,
+				});
+			}
 
-			// @ts-expect-error error for dynamic number supplied but is intended use.
-			error(result.status, {
-            				code: ulid(),
-            				message: buxferErr.message,
-            			});
-		}
+			const { response } = result;
 
-		const { response } = resp;
+			switch (true) {
+				// case 'tokens' in response:
+				// 	return tokenResponse.parse(response);
 
-		switch(true) {
-			// case 'tokens' in response:
-			// 	return tokenResponse.parse(response);
+				case 'token' in response:
+					return tokenResponse.parse(response);
 
-			case 'token' in response:
-				return tokenResponse.parse(response);
-			
-			case 'accounts' in response:
-				return accountsResponse.parse(response);
-			
-			case 'transactions' in response:
-				return transactionsResponse.parse(response);
-			
-			default:
-				assertCannotReach(response);
-		}
+				case 'accounts' in response:
+					return accountsResponse.parse(response);
 
-		return <never>null;
-	} catch (e) {
-		const err = e as HttpError;
-		// TODO - replace with logging collection data service (ex. Sentry).
-		// logger.error('fetchError: ', err);
+				case 'transactions' in response:
+					return transactionsResponse.parse(response);
 
-		if (err.status === 400 && err.body.message === 'Access denied. Please login first.')
-			return error(401, 'Unauthorized');
+				default:
+					assertCannotReach(response);
+			}
 
-		// @ts-expect-error error for dynamic number supplied but is intended use.
-		return error(err.status || 500, err.body);
-	}
-};
+			return <never>null;
+		}),
+		catchError((err) => {
+			// TODO - replace with logging collection data service (ex. Sentry).
+			// logger.error('fetchError: ', err);
+
+			if (err.status === 400 && err.body.message === 'Access denied. Please login first.')
+				return error(401, 'Unauthorized');
+
+			return error(err.status || 500, err.body);
+		})
+	);
+}
 
 type BuxferRequest =
 	| { url: typeof api.login; body: z.infer<typeof login> }
 	// | { url: typeof api.refresh; body: z.infer<typeof buxferRefresh> }
-	| { url: typeof api.accounts; body?: (null | undefined) }
+	| { url: typeof api.accounts; body?: null | undefined }
 	| { url: typeof api.transactions; body: z.infer<typeof transactionsWindow> };
 
-type BuxferResponse<T extends BuxferRequest> = Promise<
+type BuxferResponse<T extends BuxferRequest> = Observable<
 	T['url'] extends typeof api.login /* | typeof api.refresh */
 		? z.infer<typeof token>
 		: T['url'] extends typeof api.accounts
-		? z.infer<typeof accounts>
-		: T['url'] extends typeof api.transactions
-		? z.infer<typeof transactions>
-		: never
->
+			? z.infer<typeof accounts>
+			: T['url'] extends typeof api.transactions
+				? z.infer<typeof transactions>
+				: never
+>;
 
-export async function client<T extends Extract<BuxferRequest, { url: typeof api.login }>>(
+export function client<T extends Extract<BuxferRequest, { url: typeof api.login }>>(
 	url: T['url'],
 	body: T['body'],
 	options?: { headers: Headers } | null | undefined
@@ -243,17 +267,17 @@ export async function client<T extends Extract<BuxferRequest, { url: typeof api.
 // 	body: T['body'],
 // 	options?: { headers: Headers } | null | undefined
 // ): BuxferResponse<T>;
-export async function client<T extends Extract<BuxferRequest, { url: typeof api.accounts }>>(
+export function client<T extends Extract<BuxferRequest, { url: typeof api.accounts }>>(
 	url: T['url'],
 	body: T['body'],
 	options?: { headers: Headers } | null | undefined
 ): BuxferResponse<T>;
-export async function client<T extends Extract<BuxferRequest, { url: typeof api.transactions }>>(
+export function client<T extends Extract<BuxferRequest, { url: typeof api.transactions }>>(
 	url: T['url'],
 	body: T['body'],
 	options?: { headers: Headers } | null | undefined
 ): BuxferResponse<T>;
-export async function client<T extends BuxferRequest>(
+export function client<T extends BuxferRequest>(
 	url: T['url'],
 	body: T['body'],
 	options?: { headers: Headers } | null | undefined
@@ -270,8 +294,7 @@ export async function client<T extends BuxferRequest>(
 		// }
 
 		case api.login: {
-			const { token: tokenData } = await buxferProxy(url, login.parse(body));
-			return token.parse(tokenData);
+			return buxferProxy(url, login.parse(body)).pipe(map(({ token: tokenData }) => token.parse(tokenData)));
 		}
 
 		case api.accounts: {
@@ -279,8 +302,9 @@ export async function client<T extends BuxferRequest>(
 			if (!access) {
 				error(401, 'Unathorized');
 			}
-			const { accounts: accountsData } = await buxferProxy(url, { token: token.parse(access) });
-			return accounts.parse(accountsData);
+			return buxferProxy(url, { token: token.parse(access) }).pipe(
+				map(({ accounts: accountsData }) => accounts.parse(accountsData))
+			);
 		}
 
 		case api.transactions: {
@@ -288,14 +312,37 @@ export async function client<T extends BuxferRequest>(
 			if (!access) {
 				error(401, 'Unathorized');
 			}
-			const { numTransactions: totalTransactionsCount, transactions: transactionsData } = await buxferProxy(url, {
-				...transactionsWindow.parse({
-					...body,
-				}),
+			const parsedBody = transactionsWindow.parse({ ...body });
+			return buxferProxy(url, {
+				...parsedBody,
 				token: token.parse(access),
-			});
-
-			return transactions.parse({ transactionsData, totalTransactionsCount });
+			}).pipe(
+				map(({ numTransactions: totalTransactionsCount, transactions: transactionsData }) =>
+					transactionsPage.parse({
+						transactionsData,
+						totalTransactionsCount,
+						current: parsedBody.page,
+					})
+				),
+				expand(({ next }) =>
+					next
+						? buxferProxy(url, {
+								...transactionsWindow.parse({ ...body, cursor: next }),
+								token: token.parse(access),
+							}).pipe(
+								map(({ numTransactions: totalTransactionsCount, transactions: transactionsData }) =>
+									transactionsPage.parse({
+										transactionsData,
+										totalTransactionsCount,
+										current: parsedBody.page,
+									})
+								)
+							)
+						: EMPTY
+				),
+				map((page) => page.transactions),
+				reduce((acc, curr) => acc.concat(curr))
+			);
 		}
 		default:
 			assertCannotReach(url);
@@ -304,5 +351,5 @@ export async function client<T extends BuxferRequest>(
 }
 
 function assertCannotReach(x: never) {
-	throw new Error('cannot reach this place in the code', {cause: x});
+	throw new Error('cannot reach this place in the code', { cause: x });
 }

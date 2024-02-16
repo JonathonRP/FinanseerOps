@@ -6,6 +6,9 @@ import RightChevronIcon from '~icons/tabler/chevron-right';
 import DotIcon from '~icons/mdi/dot';
 import LoadingIcon from '~icons/line-md/loading-loop';
 import LogOutIcon from '~icons/tabler/logout';
+import BellIcon from '~icons/tabler/bell';
+import MoneyIcon from '~icons/tabler/report-money';
+import InviteIcon from '~icons/tabler/users-plus';
 
 import FileSearchIcon from '~icons/tabler/file-search';
 import ChartHistogram from '~icons/tabler/chart-histogram';
@@ -18,6 +21,8 @@ import UpChevron from '~icons/tabler/chevron-up';
 import Email from '~icons/tabler/mail';
 import Password from '~icons/tabler/password-user';
 
+import InfoIcon from '~icons/tabler/info-circle';
+
 export const icons = {
 	Email,
 	Password,
@@ -29,7 +34,11 @@ export const icons = {
 	UpChevron,
 	DotIcon,
 	LoadingIcon,
-	LogOutIcon
+	LogOutIcon,
+	BellIcon,
+	MoneyIcon,
+	InviteIcon,
+	InfoIcon
 };
 
 export const navItemIcons = {
@@ -40,4 +49,4 @@ export const navItemIcons = {
 export const scoreCardIcons = {
 	UpTrendIcon,
 	DownTrendIcon,
-}
+};

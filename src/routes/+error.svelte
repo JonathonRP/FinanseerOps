@@ -7,20 +7,22 @@
 	<title>{$page.error?.message}</title>
 </svelte:head>
 
-<div class="error">
-	<span class="status">{$page.status}</span>
-	<div class="message">
-		<h1>
-			<b>Oops!</b>
-		</h1>
-		<div>
-			<em>{$page.error?.message}</em>
-			{#if dev}
-				<pre>{JSON.stringify($page.error, null, 2)}</pre>
-			{/if}
+<main class="grid w-full">
+	<div class="error">
+		<span class="status">{$page.status}</span>
+		<div class="message">
+			<h1>
+				<b>Oops!</b>
+			</h1>
+			<div>
+				<em>{$page.error?.message}</em>
+				{#if dev}
+					<pre>{JSON.stringify($page.error, null, 2)}</pre>
+				{/if}
+			</div>
 		</div>
 	</div>
-</div>
+</main>
 
 <style>
 	.error {
@@ -30,6 +32,8 @@
 		max-width: 32rem;
 		margin: 0 1rem;
 		padding: 3rem 0 3rem 3rem;
+		align-self: center;
+		justify-self: center;
 	}
 
 	.status {

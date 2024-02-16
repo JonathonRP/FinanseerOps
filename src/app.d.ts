@@ -5,10 +5,16 @@
 // and what to do when importing types
 
 import type { ZodIssue } from 'zod';
+import type { Session } from '@auth/sveltekit';
+import type { AdapterUser } from '@auth/sveltekit/adapters';
 
 declare global {
 	namespace App {
 		interface Locals {
+			session: Session;
+			user: AdapterUser;
+			// locale: string;
+			// timezone: string;
 		}
 		interface Error {
 			message: string;

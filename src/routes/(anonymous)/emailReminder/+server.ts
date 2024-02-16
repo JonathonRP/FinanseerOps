@@ -1,5 +1,5 @@
 import { resend } from '$/server';
-import { appRouter } from '$/server/api/root';
+import { appRouter, createCallerFactory } from '$/server/api/root';
 import { createContext } from '$/server/api/context';
 import * as Sentry from '@sentry/sveltekit';
 import type { RequestHandler } from './$types';
@@ -9,7 +9,7 @@ import { EMAIL_FROM, VERCEL_DOMAIN } from '$env/static/private';
 const handle = (async ({ url, ...event }) => {
 	const mailOptions = {
 		from: EMAIL_FROM,
-		to: (await appRouter.createCaller(await createContext({ ...event, url })).users.retrieve())
+		to: (await createCallerFactory(appRouter)(createContext({ ...event, url })).users.retrieve())
 			.filter((user) => user.emailVerified)
 			.map((user) => user.email ?? ''),
 		subject: 'Reminder to check cash flow',
@@ -19,8 +19,8 @@ const handle = (async ({ url, ...event }) => {
 	};
 
 	await new Promise((resolve, reject) => {
-		resend
-			.sendEmail(mailOptions)
+		resend.emails
+			.send(mailOptions)
 			.then((res) => {
 				resolve(`Email sent: ${res}`);
 			})

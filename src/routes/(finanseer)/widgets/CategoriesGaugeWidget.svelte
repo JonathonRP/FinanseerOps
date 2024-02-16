@@ -1,67 +1,49 @@
 <svelte:options runes={true} />
+
 <script lang="ts">
 	import type { ForwardMotionProps } from '$lib/animations';
-	import { filter, switchMap, of, reduce, groupBy, combineLatest, map, mergeMap } from 'rxjs';
+	import { from, filter, reduce, groupBy, combineLatest, switchMap, map, mergeMap } from 'rxjs';
 	import { startOfMonth } from 'date-fns';
 	import { api } from '$lib/api';
 	import { Score } from '../score';
 	import { GaugeChart } from '../charts';
 	import DashboardWidget from '../DashboardWidget.svelte';
+	import { page } from '$app/stores';
 
-	const { processedDay, ...motion } = $props<{processedDay: Date} & ForwardMotionProps>();
+	const { ...motion } = $props<ForwardMotionProps>();
+	const { processedDay } = $state($page.data);
 
-	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
-		{
-			startDate: startOfMonth(processedDay),
-			endDate: processedDay,
-		},
-		{
-			initialPageParam: 1,
-			getNextPageParam: (lastPage, allPages) => {
-				if (
-					lastPage &&
-					typeof lastPage === 'object' &&
-					'totalTransactionsCount' in lastPage &&
-					typeof lastPage.totalTransactionsCount === 'number' &&
-					allPages.length < Math.ceil(lastPage.totalTransactionsCount / 100)
-				) {
-					return allPages.length + 1;
-				}
-				return undefined;
-			},
-		}
-	));
+	const expenses = $derived(
+		from(
+			api.buxfer.transactions.query({
+				startDate: startOfMonth(processedDay),
+				endDate: processedDay,
+			})
+		).pipe(
+			switchMap((transactData) => transactData),
+			filter(([{ type }]) => type === 'expense')
+		)
+	);
+	const monthExpenseTotal = $derived(expenses.pipe(reduce((acc, [{ amount }]) => acc + amount, 0)));
 
-	const expenses$ = $derived(of($transactions.data).pipe(
-		switchMap((data) => data?.pages.flatMap((page) => page.transactions) ?? []),
-		filter(({ type }) => type === 'expense'),
-		reduce((acc, { amount }) => acc + amount, 0)
-	));
+	const categories = $derived(
+		expenses.pipe(
+			groupBy(([{ tags }]) => tags),
+			mergeMap((group$) => group$.pipe(reduce((acc, [cur]) => acc + cur.amount, 0)))
+		)
+	);
 
-	const categories$ = $derived(of($transactions.data).pipe(
-		switchMap((data) => data?.pages.flatMap((page) => page.transactions) ?? []),
-		filter(({ type }) => type === 'expense'),
-		groupBy(({ tags }) => tags),
-		mergeMap((group$) => group$.pipe(reduce((acc, cur) => acc + cur.amount, 0)))
-	));
-
-	const percentages$ = $derived(combineLatest([categories$, expenses$]).pipe(
-		map(([$categories$, $expenses$]) => Math.round(($categories$ / $expenses$) * 100))
-	));
-
-	$effect(() => {
-		if ($transactions.status === 'success' && $transactions.hasNextPage) {
-			$transactions.fetchNextPage();
-		}
-	});
+	const percentages$ = $derived(
+		combineLatest([categories, monthExpenseTotal]).pipe(
+			map(([categories$, monthExpenseTotal$]) => Math.round((categories$ / monthExpenseTotal$) * 100))
+		)
+	);
 </script>
 
 <DashboardWidget {motion}>
 	<Score.Root>
 		<Score.Header>
-			<Score.Label>
-				Categories
-			</Score.Label>
+			<Score.Label>Categories</Score.Label>
 		</Score.Header>
 		<Score.Content>
 			<GaugeChart data={[$percentages$]} />

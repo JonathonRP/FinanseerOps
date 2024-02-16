@@ -1,36 +1,40 @@
 <svelte:options runes={true} />
+
 <script lang="ts">
-	import type { ComponentType, Snippet, SvelteComponent } from "svelte";
-	import type { ClassValue } from "clsx";
-	import { cn, numberFormat, type Color } from "$lib/utils/index.svelte";
-	import { spring, tweened } from "svelte/motion";
-	import { fade } from "svelte/transition";
+	import type { ComponentType, Snippet, SvelteComponent } from 'svelte';
+	import type { ClassValue } from 'clsx';
+	import { cn, numberFormat, type Color } from '$/lib/utils';
+	import { spring, tweened } from 'svelte/motion';
+	import { fade } from 'svelte/transition';
 	import { scoreCardIcons } from '$/icons';
 
-    const {value, swap, comparison, children, ...restProps} = $props<{
-		value?: number,
-		swap?: boolean,
-		comparison?: Partial<{ value: number; positiveColor: Color; negativeColor: Color; swap: boolean}>,
-		children?: Snippet<number[] | undefined>, 
-		class?: ClassValue
+	const { value, swap, comparison, children, ...restProps } = $props<{
+		value?: number;
+		swap?: boolean;
+		comparison?: Partial<{ value: number; positiveColor: Color; negativeColor: Color; swap: boolean }>;
+		children?: Snippet<[number[] | undefined]>;
+		class?: ClassValue;
 	}>();
 
-    const score$ = tweened(0, {duration: 300});
+	const score$ = tweened(0, { duration: 300 });
 
 	$effect(() => {
-		$score$ = value ?? 0
+		$score$ = value ?? 0;
 	});
 
 	const comparisonScore$ = spring(0, { damping: 0.5, stiffness: 0.5 });
 
 	$effect(() => {
-		$comparisonScore$ = comparison?.value ?? 0
+		$comparisonScore$ = comparison?.value ?? 0;
 	});
 
-	const scoreIcons = $derived(new Map<boolean, ComponentType<SvelteComponent>>(
-		Object.values(scoreCardIcons).map((icon, indx) => [indx === 1, icon])
-	));
+	const scoreIcons = $derived(
+		new Map<boolean, ComponentType<SvelteComponent>>(
+			Object.values(scoreCardIcons).map((icon, indx) => [indx === 1, icon])
+		)
+	);
 </script>
+
 <div class="flex items-center">
 	{#if value !== null && value !== undefined}
 		<p

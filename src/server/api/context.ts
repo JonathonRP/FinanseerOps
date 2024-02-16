@@ -1,4 +1,3 @@
-import type { Session } from '@auth/sveltekit';
 import type { RequestEvent, Cookies } from '@sveltejs/kit';
 import type { inferAsyncReturnType } from '@trpc/server';
 
@@ -6,26 +5,30 @@ import type { inferAsyncReturnType } from '@trpc/server';
 import { db } from '../db';
 
 type CreateContextOptions = {
-	session: Session | null;
+	locals: App.Locals;
 	requestHeaders: Headers;
 	cookies: Cookies;
 };
 
-const createInnerTRPCContext = (opts: CreateContextOptions) => ({
-	db,
-	session: opts.session,
-	user: opts.session?.user,
-	accessToken: opts.requestHeaders.get('Authorization') || undefined,
-	refreshToken: opts.cookies.get('refreshToken'),
-});
+const createInnerTRPCContext = (opts: CreateContextOptions) => {
+	const {locals, requestHeaders, cookies} = opts;
+	const {session, user} = locals;
+	return {
+		db,
+		session,
+		user,
+		accessToken: requestHeaders.get('Authorization') || undefined,
+		refreshToken: cookies.get('refreshToken')
+	}
+};
 
-export const createContext = async (event: RequestEvent) => {
+export const createContext = (event: RequestEvent) => {
 	const {
 		cookies,
 		request: { headers: requestHeaders },
-		locals: { auth }
+		locals
 	} = event;
-	return createInnerTRPCContext({ session: await auth(), requestHeaders, cookies });
+	return createInnerTRPCContext({ locals, requestHeaders, cookies });
 };
 
 export type Context = inferAsyncReturnType<typeof createContext>;

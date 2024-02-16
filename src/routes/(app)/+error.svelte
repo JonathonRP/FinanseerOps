@@ -26,9 +26,11 @@
 	.error {
 		display: flex;
 		align-items: center;
-		height: 100vh;
-		max-height: 100dvh;
-		max-width: 32rem;
+		justify-content: center;
+		height: 100%;
+		/* max-height: 100dvh; */
+		/* max-width: 32rem; */
+		width: 100%;
 		margin: 0 1rem;
 		padding: 3rem 0 3rem 3rem;
 	}

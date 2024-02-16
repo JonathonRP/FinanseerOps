@@ -2,7 +2,6 @@ import { TRPCClientError } from '@trpc/client';
 import { TRPCError } from '@trpc/server';
 import { ZodError } from 'zod';
 import { dev } from '$app/environment';
-import { userSettings } from '../stores/userSettings.svelte';
 
 export { default as accordion } from './accordion';
 export { default as form } from './form';
@@ -16,7 +15,7 @@ export { cn } from './cn';
 export const dateFormat = 'MM/dd/yyyy';
 
 export const numberFormat = (
-	locale: string | string[] | undefined = userSettings.locale,
+	locale: string | string[] | undefined = undefined,
 	currency: Intl.NumberFormatOptions['currency'] = 'USD'
 ) => Intl.NumberFormat(locale, { style: 'currency', currency, notation: 'compact' });
 
@@ -36,7 +35,7 @@ export const formatError = (error: unknown): App.Error => {
 								...fields.map((field) => ({
 									[field]: (cause.format() as unknown as { [x: string]: { _errors: string[] } })[field],
 								})),
-						  ]
+							]
 						: [...cause.issues],
 				},
 				message: fields.length
@@ -53,3 +52,16 @@ export const formatError = (error: unknown): App.Error => {
 
 	return error as App.Error;
 };
+
+export function rebound(url: URL, redirect: `/${string}`, redirectReason?: string) {
+	const match = /^\/.*$/.exec(redirect);
+	if (!match)
+		throw new TypeError('must redirect to current origin path');
+	const { pathname, search } = url;
+	return `${redirect}${pathname ? `?redirectTo=${pathname}${search}${redirectReason ? `&reason=${redirectReason}` : ''}` : ''}`;
+}
+
+export function reboundAfterLogin(url: URL, redirectReason?: string) {
+	const loginEndpoint = '/auth';
+	return rebound(url, loginEndpoint, redirectReason);
+}

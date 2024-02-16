@@ -1,4 +1,5 @@
 <svelte:options runes={true} />
+
 <script lang="ts">
 	import {
 		addMonths,
@@ -16,22 +17,22 @@
 		startOfWeek,
 		subMonths,
 	} from 'date-fns';
-	import { cn, dateFormat } from '$lib/utils/index.svelte';
+	import { cn, dateFormat } from '$/lib/utils';
 	import { fly } from 'svelte/transition';
 	import { cubicInOut } from 'svelte/easing';
 	import { api } from '$lib/api';
-	import { filter, of, switchMap, toArray } from 'rxjs';
+	import { filter, from, switchMap } from 'rxjs';
 	import { tick } from 'svelte';
 	import { AnimatePresence } from 'svelte-motion';
 	import ResizePanel from '$lib/components/ResizePanel.svelte';
-	import { page } from '$app/stores';
 	import { icons } from '$/icons';
+	import { page } from '$app/stores';
 
-	const {processedDay, searchFilter} = $props<{processedDay: Date, searchFilter: string | null}>()
+	const { processedDay, searchFilter } = $state($page.data);
+	const { pathname, origin } = $state($page.url);
+	const current = $derived({ pathname, origin });
 
 	const today = startOfToday();
-	const {url: {searchParams, pathname}} = $derived($page);
-
 
 	let width: number = $state(0);
 	let direction: number = $state(0);
@@ -40,10 +41,12 @@
 	const prevPeriod = $derived(subMonths(currentDay, 1));
 	const nextPeriod = $derived(addMonths(currentDay, 1));
 
-	const daysOfPeriod = $derived(eachDayOfInterval({
-		start: startOfWeek(startOfMonth(currentDay), { weekStartsOn: 1 }),
-		end: endOfWeek(endOfMonth(currentDay), { weekStartsOn: 1 }),
-	}));
+	const daysOfPeriod = $derived(
+		eachDayOfInterval({
+			start: startOfWeek(startOfMonth(currentDay), { weekStartsOn: 1 }),
+			end: endOfWeek(endOfMonth(currentDay), { weekStartsOn: 1 }),
+		})
+	);
 
 	const next = async () => {
 		direction = 1;
@@ -57,49 +60,27 @@
 		currentDay = prevPeriod;
 	};
 
-	const transactions = $derived(api.buxfer.transactions.infiniteQuery(
-		{
-			startDate: startOfWeek(startOfMonth(currentDay), { weekStartsOn: 1 }),
-			endDate: endOfWeek(endOfMonth(currentDay), { weekStartsOn: 1 }),
-		},
-		{
-			initialPageParam: 1,
-			getNextPageParam: (lastPage, allPages) => {
-				if (
-					lastPage &&
-					typeof lastPage === 'object' &&
-					'totalTransactionsCount' in lastPage &&
-					typeof lastPage.totalTransactionsCount === 'number' &&
-					allPages.length < Math.ceil(lastPage.totalTransactionsCount / 100)
-				) {
-					return allPages.length + 1;
-				}
-				return undefined;
-			}
-		}
-	));
-
-	const transactions$ = $derived(of($transactions.data).pipe(
-		switchMap((transactsData) => transactsData?.pages.flatMap((data_page) => data_page.transactions) ?? []),
-		filter(({ type, tags, description }) =>
-			searchFilter
-				? type.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null ||
-				  tags.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null ||
-				  description.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null
-				: true
-		),
-		toArray()
-	));
-
-	$effect(() => {
-		if ($transactions.status === 'success' && $transactions.hasNextPage) {
-			$transactions.fetchNextPage();
-		}
-	});
+	const transactions = $derived(
+		from(
+			api.buxfer.transactions.query({
+				startDate: startOfWeek(startOfMonth(currentDay), { weekStartsOn: 1 }),
+				endDate: endOfWeek(endOfMonth(currentDay), { weekStartsOn: 1 }),
+			})
+		).pipe(
+			switchMap((transactData) => transactData),
+			filter(([{ type, tags, description }]) =>
+				searchFilter
+					? type.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null ||
+						tags.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null ||
+						description.match(new RegExp(`${searchFilter}\\b`, 'i')) !== null
+					: true
+			)
+		)
+	);
 </script>
 
 <div
-	class="mx-auto mb-3 min-w-[17rem] max-w-[17rem] flex-shrink-0 overflow-hidden px-3 py-3 border dark:border-slate-600 border-slate-50 rounded-xl">
+	class="mx-auto mb-3 min-w-[17rem] max-w-[17rem] flex-shrink-0 overflow-hidden rounded-xl border border-slate-50 px-3 py-3 dark:border-slate-600">
 	<div bind:clientWidth={width}>
 		<div class="flex items-center">
 			{#key currentDay}
@@ -153,7 +134,10 @@
 								isPartOfMonth: isSameMonth(day, currentDay),
 							}}
 							<div
-								class={cn("py-1", {'border-t border-stone-200 border-opacity-75 dark:border-stone-600 dark:border-opacity-25': dayIdx > 6})}>
+								class={cn('py-1', {
+									'border-t border-stone-200 border-opacity-75 dark:border-stone-600 dark:border-opacity-25':
+										dayIdx > 6,
+								})}>
 								<span
 									class="mx-auto flex h-full w-full items-center justify-center {isSameMonth(
 										day,
@@ -166,25 +150,25 @@
 												'rounded-s-full')
 										}`} {(isSameDay(day, processedDay || today) && 'rounded-e-full bg-primary-400/20') || ''}">
 									<a
-										href={`${pathname}${
-											((isBefore(day, today) || searchParams.has('search')) &&
+										href={`${current.pathname}${
+											((isBefore(day, today) || searchFilter) &&
 												`?${new URLSearchParams({
 													...(isBefore(day, today) && { processedDate: format(day, dateFormat) }),
-													...(searchParams.has('search') && { search: searchParams.get('search') || '' }),
+													...(searchFilter && { searchFilter }),
 												})}`) ||
 											''
 										}`}
-										class={cn("mx-auto flex h-8 w-8 items-center justify-center rounded-full", {
+										class={cn('mx-auto flex h-8 w-8 items-center justify-center rounded-full', {
 											'text-gray-400 dark:text-gray-600': !isSelected && !dayIsToday && !isPartOfMonth,
 											'text-gray-900 dark:text-gray-200': !isSelected && !dayIsToday && isPartOfMonth,
-											'ring-1 ring-inset ring-primary-400 dark:ring-primary-500 font-semibold': isSelected,
+											'font-semibold ring-1 ring-inset ring-primary-400 dark:ring-primary-500': isSelected,
 											'font-semibold': dayIsToday,
 											'hover:bg-primary-400/20': !isSelected,
 											'text-primary-500': dayIsToday && !isSelected,
 										})}>
 										<time class="relative flex" datetime={day.toLocaleString()}>
 											{format(day, 'd')}
-											{#if $transactions$
+											{#if $transactions
 												.filter(({ type }) => type === 'expense')
 												.some(({ date }) => isSameDay(date, day))}
 												<div

@@ -2,19 +2,13 @@ import { writable } from 'svelte/store';
 import type { Session } from '@auth/sveltekit';
 import { browser } from '$app/environment';
 
-const defaultValue = false;
-const initialValue = browser
-	? Boolean(JSON.parse(window.localStorage.getItem('useBauhaus') ?? 'null')) ?? defaultValue
-	: defaultValue;
+const initialValue = browser ? Boolean(JSON.parse(window.localStorage.getItem('useBauhaus') ?? 'null')) : null;
 
-const useBauhaus = writable<boolean>(initialValue);
+const useBauhaus = writable(initialValue ?? false);
 
 class UserSettings {
-    locale = $state<string>();
 
-    timezone = $state<string>();
-
-	useBauhaus = $state<boolean>();
+	useBauhaus = $state(initialValue);
 
 	// eslint-disable-next-line class-methods-use-this
 	genertateImage = (user: Session['user'] | undefined) => user?.image || `https://source.boringavatars.com/${(useBauhaus && 'bauhaus') || 'beam'}/120/${encodeURIComponent(

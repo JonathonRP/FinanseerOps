@@ -31,7 +31,7 @@
 				"editor.formatOnPaste": true,
 				"editor.formatOnSave": true,
 				"editor.codeActionsOnSave": {
-					"source.fixAll.eslint": true
+					"source.fixAll.eslint": "always"
 					// "source.organizeImports": true
 				},
 				"editor.formatOnSaveMode": "file",

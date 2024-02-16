@@ -2,7 +2,7 @@ import { handleErrorWithSentry, replayIntegration } from '@sentry/sveltekit';
 import * as Sentry from '@sentry/sveltekit';
 
 import type { HandleClientError } from '@sveltejs/kit';
-import { formatError } from '$lib/utils/index.svelte';
+import { formatError } from '$lib/utils';
 import * as Spotlight from '@spotlightjs/spotlight';
 import { dev } from '$app/environment';
 
@@ -31,5 +31,6 @@ export const handleError = handleErrorWithSentry((async ({ error, event }) =>
 if (dev) {
   await Spotlight.init({
     injectImmediately: true,
+    anchor: 'topRight'
   });
 }

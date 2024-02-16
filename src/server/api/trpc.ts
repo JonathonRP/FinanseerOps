@@ -34,6 +34,5 @@ const enforceUserIsFamilyLead = api.middleware(async ({ ctx, next }) => {
 	});
 });
 
-export const { procedure } = api;
+export const { procedure, mergeRouters, createCallerFactory } = api;
 export const familyLeaderProcedure = api.procedure.use(enforceUserIsFamilyLead);
-export const { mergeRouters } = api;

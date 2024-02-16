@@ -11,15 +11,11 @@ const config = {
 		// { runtime: 'edge', regions: 'all' }
 		adapter: adapter(),
 		alias: {
-			"$": "./src",
-			"$/*": "./src/*",
-			"$lib": "./src/lib",
-			"$lib/*": "./src/lib/*",
-		}
-	},
-
-	compilerOptions: {
-		sourcemap: process.env.NODE_ENV === 'development' ? 'true' : 'false',
+			$: './src',
+			'$/*': './src/*',
+			$lib: './src/lib',
+			'$lib/*': './src/lib/*',
+		},
 	},
 
 	vitePlugin: {
