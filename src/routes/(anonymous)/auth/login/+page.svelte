@@ -3,19 +3,14 @@
 <script lang="ts">
 	import { icons } from '$/icons';
 	import { SignIn } from '@auth/sveltekit/components';
-	import toast from 'svelte-french-toast';
+	import Banner from '$lib/components/Banner.svelte';
 
 	const { data } = $props<{ data: import('./$types').PageData }>();
 	const { redirectTo, redirectReason } = $derived(data);
-
-	$effect(() => {
-		if (redirectReason) {
-			toast(redirectReason, { icon: icons.InfoIcon, iconTheme: { primary: '#3d85c6', secondary: '#ffffff' } });
-		}
-	});
 </script>
 
 <main class="flex flex-1 flex-col items-center justify-center overflow-hidden">
+	<Banner {redirectReason} />
 	<div
 		class="grid w-[368px] overflow-hidden rounded-2xl bg-slate-200 pt-1 md:flex dark:bg-neutral-808 dark:text-neutral-309">
 		<div class="flex h-full w-full items-center justify-center p-4">

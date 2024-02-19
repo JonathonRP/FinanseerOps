@@ -5,7 +5,7 @@ export const validateData = async (formData: FormData | unknown, schema: ZodSche
 	const data = formData instanceof FormData ? Object.fromEntries(formData) : formData;
 
 	try {
-		const validData = schema.parse(data);
+		const validData = await schema.parseAsync(data);
 		return {
 			data: validData,
 			errors: null,

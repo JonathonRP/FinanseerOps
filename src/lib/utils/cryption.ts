@@ -1,4 +1,4 @@
-import * as crypto from 'node:crypto';
+const { subtle } = globalThis.crypto;
 
 const algorithm = {
 	/**
@@ -6,11 +6,12 @@ const algorithm = {
 	 * not only provides confidentiality but also
 	 * provides integrity in a secured way
 	 */
-	blockCipher: 'aes-256-gcm',
+	blockCipher: 'aes-gcm',
+	blockCipherLeng: 256,
 	/**
 	 * 128 bit auth tag is recommended for GCM
 	 */
-	authTagByteLeng: 16,
+	authTagByteLeng: 128,
 	/**
 	 * NIST recommends 96 bits or 12 bytes IV for GCM
 	 * to promote interoperability, efficiency, and
@@ -27,26 +28,35 @@ const algorithm = {
 	 * */
 	saltByteLeng: 16,
 } as const;
-const salt = crypto.randomBytes(algorithm.saltByteLeng);
 
-const encrypt = (text: string) => {
-	const key = crypto.randomBytes(algorithm.keyByteLeng);
-	const iv = crypto.randomBytes(algorithm.ivByteLeng);
-	const cipher = crypto.createCipheriv(algorithm.blockCipher, key, iv);
-	const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
-	return Buffer.concat([key, iv, encrypted, cipher.getAuthTag()]).toString('hex');
+const encrypt = async (text: string) => {
+	const key = crypto.getRandomValues(new Uint8Array(algorithm.keyByteLeng));
+	const iv = globalThis.crypto.getRandomValues(new Uint8Array(algorithm.ivByteLeng));
+	const encrypted = await crypto.subtle.encrypt(
+		{ name: algorithm.blockCipher, iv },
+		await subtle.importKey('raw', key, { name: algorithm.blockCipher, length: algorithm.blockCipherLeng }, false, [
+			'encrypt',
+		]),
+		new TextEncoder().encode(text)
+	);
+	return Buffer.concat([key, iv, new Uint8Array(encrypted)]).toString('hex');
 };
 
-const decrypt = (text: string) => {
+const decrypt = async (text: string) => {
 	const data = Buffer.from(text, 'hex');
 	const key = data.subarray(0, algorithm.keyByteLeng);
 	const iv = data.subarray(algorithm.keyByteLeng, algorithm.keyByteLeng + algorithm.ivByteLeng);
-	const encryptedText = data.subarray(algorithm.keyByteLeng + algorithm.ivByteLeng, -algorithm.authTagByteLeng);
-	const authTag = data.subarray(-algorithm.authTagByteLeng);
-	const decipher = crypto.createDecipheriv(algorithm.blockCipher, key, iv);
-	decipher.setAuthTag(authTag);
-	const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
-	return decrypted.toString('utf-8');
+	const encryptedText = data.subarray(algorithm.keyByteLeng + algorithm.ivByteLeng);
+
+	return new TextDecoder().decode(
+		await subtle.decrypt(
+			{ name: algorithm.blockCipher, iv },
+			await subtle.importKey('raw', key, { name: algorithm.blockCipher, length: algorithm.blockCipherLeng }, false, [
+				'decrypt',
+			]),
+			encryptedText
+		)
+	);
 };
 
 export { encrypt, decrypt };

@@ -251,7 +251,7 @@
 					<svelte:component this={icons.BellIcon} class="h-8 w-6" height="auto" inline />
 					{#if Number($count) > 0}
 						<span
-							class="absolute right-1 top-2 flex items-center justify-center rounded-lg bg-primary-400 px-1 text-[8px] ring-2 ring-neutral-309 ring-offset-1 ring-offset-neutral-808 dark:ring-neutral-808"
+							class="absolute right-1 top-2 flex items-center justify-center rounded-lg bg-primary-400 px-1 text-xs ring-2 ring-neutral-309 ring-offset-1 ring-offset-neutral-808 dark:ring-neutral-808"
 							>{$count}</span>
 					{/if}
 				</span>

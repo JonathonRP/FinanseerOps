@@ -1,4 +1,5 @@
 <svelte:options runes={true} />
+
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import '../app.css';
@@ -6,7 +7,7 @@
 	import 'sweetalert2/src/sweetalert2.scss';
 	import { Toaster } from 'svelte-french-toast';
 
-	const { children } = $props<{children: Snippet }>();
+	const { children } = $props<{ children: Snippet }>();
 </script>
 
 <Toaster position="top-right" />

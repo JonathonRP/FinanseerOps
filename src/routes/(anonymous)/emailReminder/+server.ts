@@ -6,6 +6,7 @@ import type { RequestHandler } from './$types';
 import { EMAIL_FROM, VERCEL_DOMAIN } from '$env/static/private';
 
 // TODO - evaluate Upstash and Vercel cronjobs alternatives.
+// TODO - use supabase postgres cron.
 const handle = (async ({ url, ...event }) => {
 	const mailOptions = {
 		from: EMAIL_FROM,

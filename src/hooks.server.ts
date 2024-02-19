@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/sveltekit';
 import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { rebound, formatError, reboundAfterLogin } from '$lib/utils';
+import { returnTo, formatError, ensureLoggedIn } from '$lib/utils';
 
 import { setupSidecar } from '@spotlightjs/spotlight/sidecar';
 import { auth } from './server';
@@ -23,11 +23,11 @@ function authorization() {
 		} = event;
 
 		if (!route.id?.includes('anonymous') && !(await auth())) {
-			return redirect(302, reboundAfterLogin(url, 'you were not logged in.'));
+			return redirect(302, ensureLoggedIn(url, 'you were not logged in.'));
 		}
 
 		if (!headers.get('Authorization') && route.id?.includes('finanseer')) {
-			return redirect(302, rebound(url, '/user/linkBuxferAccount', 'your Buxfer Account was not linked.'));
+			return redirect(302, returnTo(url, '/user/linkBuxferAccount', 'your Buxfer Account was not linked.'));
 		}
 
 		// REVIEW - is this needed?
