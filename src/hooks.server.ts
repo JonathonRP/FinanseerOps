@@ -4,7 +4,7 @@ import { sequence } from '@sveltejs/kit/hooks';
 import { returnTo, formatError, ensureLoggedIn } from '$lib/utils';
 
 import { setupSidecar } from '@spotlightjs/spotlight/sidecar';
-import { auth } from './server';
+import { auth as authjs } from './server';
 import { dev } from '$app/environment';
 
 Sentry.init({
@@ -40,7 +40,7 @@ function authorization() {
 }
 
 function authentication() {
-	return (async (...args) => auth.handle(...args)) satisfies Handle;
+	return authjs.handle;
 }
 
 // function setup() {

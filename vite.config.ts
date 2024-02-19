@@ -4,11 +4,11 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import Icons from 'unplugin-icons/vite';
 import { sentrySvelteKit } from '@sentry/sveltekit';
 
-export default defineConfig(({command, mode}) => {
+export default defineConfig(({ command, mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
 	return {
 		define: {
-			'process.env': env
+			'process.env': env,
 		},
 		server: {
 			port: 5000,
@@ -29,11 +29,11 @@ export default defineConfig(({command, mode}) => {
 				sourceMapsUploadOptions: {
 					org: 'self-qw6',
 					project: 'finanzen',
-				}
+				},
 			}),
 			sveltekit(),
 			Icons({ compiler: 'svelte', autoInstall: true }),
-			nodePolyfills({include: ['crypto', 'stream']})
+			nodePolyfills({ include: ['stream'] }),
 		],
-	}
+	};
 });

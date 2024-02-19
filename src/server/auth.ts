@@ -6,29 +6,29 @@ import { sendVerificationRequest } from './sendVerificationRequest';
 import { EMAIL_FROM } from '$env/static/private';
 import { db } from './db';
 
-export const { handle, signIn, signOut } = SvelteKitAuth(async (event) => {
-	const authOptions = {
-		adapter: DrizzleAdapter(db),
-		session: {
-			strategy: 'database',
-			generateSessionToken: () => ulid(),
-		},
-		providers: [
-			Resend({
-				from: EMAIL_FROM,
-				sendVerificationRequest,
-			}),
-		],
-		callbacks: {
-			async session({ session, user }) {
-				event.locals.session = session;
-				event.locals.user = user;
-				return {
-					...session,
-				};
+export const { handle, signIn, signOut } = SvelteKitAuth(
+	async (event) =>
+		({
+			adapter: DrizzleAdapter(db),
+			session: {
+				strategy: 'database',
+				generateSessionToken: () => ulid(),
 			},
-		},
-		trustHost: true,
-	} satisfies SvelteKitAuthConfig;
-	return authOptions;
-});
+			providers: [
+				Resend({
+					from: EMAIL_FROM,
+					sendVerificationRequest,
+				}),
+			],
+			callbacks: {
+				session({ session, user }) {
+					event.locals.session = session;
+					event.locals.user = user;
+					return {
+						...session,
+					};
+				},
+			},
+			trustHost: true,
+		}) satisfies SvelteKitAuthConfig
+);
