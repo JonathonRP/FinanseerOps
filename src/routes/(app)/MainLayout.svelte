@@ -459,8 +459,8 @@
 								<fieldset>
 									<legend class="mb-4 text-lg font-medium">App Preferences</legend>
 									<div class="space-y-4">
+										<input type="hidden" name="widgetStyle" value={formData.widgetStyle} onblur={handleBlur} oninput={handleInput}/>
 										<Select.Root name="widgetStyle" selected={{ label: user?.widgetStyle, value: user?.widgetStyle }} onSelectedChange={(v) => formData.widgetStyle = v?.value}>
-											<input type="hidden" name="widgetStyle" bind:value={formData.widgetStyle} onblur={handleBlur} oninput={handleInput}/>
 											<Select.Trigger class="w-full">
 												<Select.Value placeholder="Select a widget style" />
 											</Select.Trigger>
