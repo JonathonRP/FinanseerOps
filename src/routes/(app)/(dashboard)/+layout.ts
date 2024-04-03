@@ -8,6 +8,7 @@ export async function load({ data }) {
 				.pipe(
 					map((transacts) =>
 						transacts
+							.filter(t => !t.isPending)
 							.map((t) => ({
 								...t,
 								date: new Date(

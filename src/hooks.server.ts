@@ -27,7 +27,7 @@ function authorization() {
 
 		const token = [event.cookies.get('x-account_accessToken'), event.cookies.get('x-family_accessToken')];
 
-		if (route.id?.includes('finanseer') && !(token[0] || token[1])) {
+		if (route.id?.includes('dashboard') && !(token[0] || token[1])) {
 			return redirect(302, returnTo(url, '/user/linkBuxferAccount', 'your Buxfer Account was not linked.'));
 		}
 

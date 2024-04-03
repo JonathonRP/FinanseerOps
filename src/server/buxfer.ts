@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { format, formatISO, parse, parseISO } from 'date-fns';
 import path from 'path';
-import { array, number, object, string, union, z, coerce, date, lazy } from 'zod';
+import { array, number, object, string, union, z, coerce, date, lazy, boolean } from 'zod';
 import { fromFetch } from 'rxjs/fetch';
 import {
 	type Observable,
@@ -42,6 +42,7 @@ const transactionsPage = object({
 		object({
 			id: number(),
 			description: string(),
+			isPending: boolean(),
 			date: string()
 				.or(date())
 				.transform((arg) => new Date(arg)),
@@ -69,6 +70,7 @@ export const transactions = array(
 	object({
 		id: number(),
 		description: string(),
+		isPending: boolean(),
 		date: date(),
 		type: string(),
 		amount: number(),
@@ -100,6 +102,7 @@ const transactionsResponse = object({
 		object({
 			id: number(),
 			description: string(),
+			isPending: boolean(),
 			date: string(),
 			type: string(),
 			amount: number(),

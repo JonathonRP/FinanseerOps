@@ -24,6 +24,7 @@
 	import { ease } from '$/lib/animations';
 	import * as Select from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
+	import { widgetStyles } from '$/server/db/schema';
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import NavLink from './NavLink.svelte';
@@ -398,6 +399,7 @@
 							<Form
 								method="post"
 								action="/user?/update"
+								let:formData
 								let:submitting
 								let:valid
 								let:handleBlur
@@ -437,8 +439,8 @@
 									class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
 									type="text"
 									value={user?.name}
-									on:blur={handleBlur}
-									on:input={handleInput}
+									onblur={handleBlur}
+									oninput={handleInput}
 									disabled={submitting} />
 								<label class="flex flex-row items-center justify-between rounded-lg border p-4 bg-slate-200 dark:bg-neutral-808" for="bauhaus">
 									<div class="space-y-0.5">
@@ -452,21 +454,18 @@
 										name="useBauhaus"
 										includeInput
 										bind:checked={useBauhaus}
-										on:blur={handleBlur}
-										on:input={handleInput}
 										disabled={submitting} />
 								</label>
 								<fieldset>
 									<legend class="mb-4 text-lg font-medium">App Preferences</legend>
 									<div class="space-y-4">
-										<Select.Root name="widgetStyle" selected={{ value: user?.widgetStyle }}>
+										<Select.Root name="widgetStyle" selected={{ label: user?.widgetStyle, value: user?.widgetStyle }} onSelectedChange={(v) => formData.widgetStyle = v?.value}>
+											<input type="hidden" name="widgetStyle" bind:value={formData.widgetStyle} onblur={handleBlur} oninput={handleInput}/>
 											<Select.Trigger class="w-full">
 												<Select.Value placeholder="Select a widget style" />
 											</Select.Trigger>
 											<Select.Content>
-												{#each ['Simple', 'Dense'] as widgetStyle}
-													<!-- on:blur={handleBlur}
-												on:input={handleInput} -->
+												{#each ['simple', 'dense'] as widgetStyle}
 													<Select.Item value={widgetStyle.toLowerCase()} label={widgetStyle} disabled={submitting} />
 												{/each}
 											</Select.Content>
@@ -504,29 +503,29 @@
 												id="notifications"
 												name="enableNotifications"
 												includeInput
-												checked={user?.enableNotifications}
+												checked={user?.enableNotifications ?? undefined}
 												on:blur={handleBlur}
 												on:input={handleInput}
 												disabled={submitting} />
 										</label>
-										<Select.Root name="emailRate" selected={{ value: user?.emailRate }}>
+										<Select.Root name="emailRate" selected={{ label: user?.emailRate, value: user?.emailRate }}>
 											<Select.Trigger class="w-full">
 												<Select.Value placeholder="Select an email rate" />
 											</Select.Trigger>
 											<Select.Content>
-												{#each ['Daily', 'Weekly', 'Bi-Weekly', 'Monthly', 'Bi-Monthly'] as emailRate}
+												{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as emailRate}
 													<!-- on:blur={handleBlur}
 												on:input={handleInput} -->
 													<Select.Item value={emailRate.toLowerCase()} label={emailRate} disabled={submitting} />
 												{/each}
 											</Select.Content>
 										</Select.Root>
-										<Select.Root name="inAppRate" selected={{ value: user?.inAppRate }}>
+										<Select.Root name="inAppRate" selected={{ label: user?.inAppRate, value: user?.inAppRate }}>
 											<Select.Trigger class="w-full">
 												<Select.Value placeholder="Select an in-app rate" />
 											</Select.Trigger>
 											<Select.Content>
-												{#each ['Daily', 'Weekly', 'Bi-Weekly', 'Monthly', 'Bi-Monthly'] as inAppRate}
+												{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as inAppRate}
 													<!-- on:blur={handleBlur}
 												on:input={handleInput} -->
 													<Select.Item value={inAppRate.toLowerCase()} label={inAppRate} disabled={submitting} />
@@ -537,7 +536,7 @@
 								</fieldset>
 								<button
 									type="submit"
-									class="item-center flex w-full justify-center rounded-full bg-primary text-primary-foreground px-4 py-2 transition-colors hover:bg-accent-500/90 focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus:ring-accent-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none dark:focus:ring-offset-neutral-808"
+									class="item-center flex w-full justify-center rounded-full bg-primary text-accent-400 font-medium hover:text-white px-4 py-2 transition-colors hover:bg-accent-500/90 focus-visible:outline-none focus-visible:ring-2 focus:ring-accent-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none dark:focus:ring-offset-neutral-808"
 									aria-busy={submitting}
 									disabled={!valid || submitting}>
 									<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />

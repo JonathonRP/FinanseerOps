@@ -2,7 +2,7 @@ import { writable } from 'svelte/store';
 import type { Session } from '@auth/sveltekit';
 import { browser } from '$app/environment';
 
-const initialValue = browser ? Boolean(JSON.parse(window.localStorage.getItem('useBauhaus') ?? 'null')) : null;
+const initialValue = browser ? Boolean(JSON.parse(window.localStorage.getItem('useBauhaus') ?? 'null')) : undefined;
 
 const useBauhaus = writable(initialValue ?? false);
 
