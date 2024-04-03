@@ -56,7 +56,6 @@ export const formatError = (error: unknown): App.Error => {
 export function returnTo(url: URL, after: `/${string}`, reason?: string) {
 	const match = /^\/.*$/.exec(after);
 	if (!match) throw new TypeError('must redirect to current origin path');
-	// TODO - why is this happening "redirect="uri"&"query""&reason?
 	const { pathname, search } = url;
 	const redirectTo = `${pathname}${search}`;
 	return `${after}?${new URLSearchParams({ redirectTo, reason: reason ?? '' }).toString()}`;
@@ -69,4 +68,12 @@ export function ensureLoggedIn(url: URL, redirectReason?: string) {
 
 export function sleep(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function bearer(token: string) {
+	return `Bearer: ${token}`;
+}
+
+export function AuthorizationHeadersBearerTokenFrom(token: string) {
+	return { Authorization: bearer(token) };
 }

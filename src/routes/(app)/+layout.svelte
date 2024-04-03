@@ -2,11 +2,11 @@
 	import type { Snippet } from 'svelte';
 	import MainLayout from './MainLayout.svelte';
 
-	const { data, children } = $props<{ data: import('./$types').PageData; children: Snippet }>();
+	const { data, children }: { data: import('./$types').LayoutData; children: Snippet } = $props();
 
-	const { session } = $derived(data);
+	const { user } = $derived(data);
 </script>
 
-<MainLayout {session}>
+<MainLayout {user}>
 	{@render children()}
 </MainLayout>

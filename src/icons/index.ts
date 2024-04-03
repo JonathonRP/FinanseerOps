@@ -23,6 +23,8 @@ import Password from '~icons/tabler/password-user';
 
 import InfoIcon from '~icons/tabler/info-circle';
 
+import ReorderIcon from '~icons/tabler/drag-drop-2';
+
 export const icons = {
 	Email,
 	Password,
@@ -38,7 +40,8 @@ export const icons = {
 	BellIcon,
 	MoneyIcon,
 	InviteIcon,
-	InfoIcon
+	InfoIcon,
+	ReorderIcon,
 };
 
 export const navItemIcons = {

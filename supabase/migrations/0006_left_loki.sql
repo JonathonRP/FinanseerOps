@@ -1,0 +1,1 @@
+ALTER TABLE "users" ALTER COLUMN "permitted_bank_accounts" SET DATA TYPE integer[];

@@ -7,7 +7,6 @@ export const transformer = {
 	},
 	output: {
 		serialize: (object: unknown) => uneval(object),
-		// eslint-disable-next-line no-eval
 		deserialize: (object: string) => (0, eval)(`(${object})`) as unknown,
 	},
 	// serialize: (object: unknown) => uneval(object),

@@ -13,11 +13,11 @@
 		icon = navIcons.FileSearchIcon,
 		routes,
 		active,
-	} = $props<{
+	}: {
 		icon?: ComponentType<SvelteComponent>;
 		routes: string[];
 		active: (route: string) => boolean;
-	}>();
+	} = $props();
 
 	const [, label] = $derived(routes[0].split('/'));
 </script>
@@ -26,12 +26,12 @@
 	class="group/menu h-[var(--collapsed)] cursor-pointer overflow-hidden transition-[height] duration-300 open:h-[var(--expanded)]"
 	use:accordion>
 	<summary
-		class="group flex items-center justify-between divide-x-2 divide-primary-400 rounded-lg text-primary-600 transition-colors aria-[current=page]:bg-primary-500 aria-[current=page]:text-white hover:bg-primary-500 hover:text-white dark:text-neutral-309"
+		class="group flex items-center justify-between divide-x-2 divide-accent-400 rounded-lg text-accent-600 transition-colors aria-[current=page]:bg-accent-500 aria-[current=page]:text-white hover:bg-accent-500 hover:text-white dark:text-neutral-309"
 		aria-current={active(`${base}${routes[0]}`) ? 'page' : undefined}>
 		<a href={routes[0]} class="flex w-full items-center space-x-2">
 			<span
 				aria-hidden="true"
-				class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-primary-600 group-hover:text-white group-aria-[current=page]:bg-primary-600 group-aria-[current=page]:text-white">
+				class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600 group-aria-[current=page]:text-white">
 				<svelte:component this={icon} class="h-6 w-6" flip="horizontal" height="auto" />
 			</span>
 			<span>{label}</span>

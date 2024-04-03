@@ -18,12 +18,6 @@ const config = {
 				bracketSpacing: true,
 			},
 		},
-		{
-			files: '*.prisma',
-			options: {
-				parser: 'prisma-parse',
-			},
-		},
 	],
 };
 

@@ -1,10 +1,11 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { Motion, useDragControls, useAnimation, type Variants } from 'svelte-motion';
+	import { Motion } from '$lib/components';
+	import { useDragControls, useAnimation, type Variants } from 'svelte-motion';
 	import { createEventDispatcher, onMount, type Snippet } from 'svelte';
 
-	const { children } = $props<{ children: Snippet }>();
+	const { children }: { children: Snippet } = $props();
 
 	const dispatch = createEventDispatcher();
 	const dragControls = useDragControls();
@@ -60,19 +61,17 @@
 	});
 </script>
 
-<Motion let:motion initial="hidden" animate="visible" exit="hidden" variants={overlayVariants}>
-	<div
-		use:motion
-		style:--bg-modal={'rgba(4, 15, 39, 0.8)'}
-		style:--bg-dark-modal={'rgba(251, 240, 216, 0.8)'}
-		class="max-md:fixed max-md:inset-0 max-md:z-10 max-md:bg-[--bg-modal] max-md:backdrop-blur-[0.4rem] max-md:dark:bg-[--bg-dark-modal] max-md:dark:backdrop-blur-[0.4rem]"
-		onClick={(e) => {
-			dispatch('close', e);
-		}}
-		onKeyDown={(e) => dispatch('close', e)} />
-</Motion>
-<Motion
-	let:motion
+<Motion.div
+	initial="hidden"
+	animate="visible"
+	exit="hidden"
+	variants={overlayVariants}
+	class="[--bg-dark-modal:rgba(251,240,216,0.8) [--bg-modal:rgba(4,15,39,0.8)] max-md:fixed max-md:inset-0 max-md:z-10 max-md:bg-[--bg-modal] max-md:backdrop-blur-[0.4rem] max-md:dark:bg-[--bg-dark-modal] max-md:dark:backdrop-blur-[0.4rem]"
+	onclick={(e) => {
+		dispatch('close', e);
+	}}
+	onkeydown={(e) => dispatch('close', e)} />
+<Motion.div
 	initial="hidden"
 	animate="visible"
 	exit="hidden"
@@ -86,16 +85,13 @@
 		}
 		animateControls.set({ y: 0 });
 	}}
-	{dragControls}>
+	{dragControls}
+	class="z-20 h-full grow max-md:fixed max-md:inset-x-2 max-md:bottom-0 max-md:top-40 max-md:mx-auto max-md:max-w-sm max-md:rounded-t-2xl max-md:bg-white max-md:shadow-md max-md:dark:bg-gray-800 max-md:dark:shadow-neutral-309/20">
 	<div
-		use:motion
-		class="z-20 h-full max-md:fixed max-md:inset-x-2 max-md:bottom-0 max-md:top-40 max-md:mx-auto max-md:max-w-sm max-md:rounded-t-2xl max-md:bg-white max-md:shadow-md max-md:dark:bg-gray-800 max-md:dark:shadow-neutral-309/20">
-		<div
-			aria-label="Handle"
-			class="mx-auto mt-4 h-4 w-28 touch-none rounded-lg bg-black opacity-[.09] md:hidden dark:bg-white dark:opacity-5"
-			onPointerDown={startDrag} />
-		<div class="max-md:mx-auto max-md:h-[calc(100%-12rem)] max-md:w-64 md:h-full md:w-full">
-			{@render children()}
-		</div>
+		aria-label="Handle"
+		class="mx-auto mt-4 h-4 w-28 touch-none rounded-lg bg-black opacity-[.09] md:hidden dark:bg-white dark:opacity-5"
+		onPointerDown={startDrag} />
+	<div class="max-md:mx-auto max-md:h-[calc(100%-12rem)] max-md:w-64 md:h-full md:w-full">
+		{@render children()}
 	</div>
-</Motion>
+</Motion.div>

@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/sveltekit';
 import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { returnTo, formatError, ensureLoggedIn } from '$lib/utils';
+import { returnTo, formatError, ensureLoggedIn, bearer } from '$lib/utils';
 
 import { setupSidecar } from '@spotlightjs/spotlight/sidecar';
 import { auth as authjs } from './server';
@@ -17,7 +17,6 @@ function authorization() {
 	return (async ({ event, resolve }) => {
 		const {
 			url,
-			request: { headers },
 			route,
 			locals: { auth },
 		} = event;
@@ -26,14 +25,11 @@ function authorization() {
 			return redirect(302, ensureLoggedIn(url, 'you were not logged in.'));
 		}
 
-		if (!headers.get('Authorization') && route.id?.includes('finanseer')) {
+		const token = [event.cookies.get('x-account_accessToken'), event.cookies.get('x-family_accessToken')];
+
+		if (route.id?.includes('finanseer') && !(token[0] || token[1])) {
 			return redirect(302, returnTo(url, '/user/linkBuxferAccount', 'your Buxfer Account was not linked.'));
 		}
-
-		// REVIEW - is this needed?
-		// if (session && redirectTo) {
-		// 	return redirect(302, `/${redirectTo.slice(1)}`);
-		// }
 
 		return resolve(event);
 	}) satisfies Handle;

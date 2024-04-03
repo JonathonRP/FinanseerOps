@@ -2,8 +2,10 @@ import type { Config } from 'drizzle-kit';
 
 export default {
 	schema: './src/server/db/schema.ts',
-	driver: 'mysql2',
+	out: './supabase/migrations',
+	driver: 'pg',
 	dbCredentials: {
-		uri: process.env.DATABASE_URL ?? '',
-	}
+		connectionString: process.env.POSTGRES_URL ?? '',
+	},
+	// schemaFilter: ['authjs'],
 } satisfies Config;

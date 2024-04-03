@@ -1,0 +1,1 @@
+ALTER TABLE "authjs"."accounts" DROP COLUMN IF EXISTS "id";

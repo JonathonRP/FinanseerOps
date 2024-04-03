@@ -12,7 +12,9 @@
 		"ghcr.io/devcontainers/features/node:1": {
 			"nodeGypDependencies": false,
 			"version": "18.18.0"
-		}
+		},
+		"ghcr.io/devcontainers-contrib/features/supabase-cli": {},
+		"ghcr.io/devcontainers/features/docker-in-docker": {}
 	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.

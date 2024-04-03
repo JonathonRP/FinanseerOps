@@ -1,6 +1,4 @@
-import type { MotionProps } from 'svelte-motion';
-
 export { staggerChildren } from './staggerChildren';
-export { fadeUp } from './fadeUp';
+export { ease } from './ease';
 
-export type ForwardMotionProps = { [P in keyof MotionProps]: MotionProps[P] }
+// export type ForwardMotionProps = { [P in keyof MotionProps]: MotionProps[P] };

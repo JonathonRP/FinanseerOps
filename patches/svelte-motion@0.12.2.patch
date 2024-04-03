@@ -1,0 +1,13 @@
+diff --git a/types/motion/types.d.ts b/types/motion/types.d.ts
+index a4bfe8fb7db6a62e124b762b7cfb939066974aec..eeada672900be2111445cb280e40f39be252d9b6 100644
+--- a/types/motion/types.d.ts
++++ b/types/motion/types.d.ts
+@@ -71,7 +71,7 @@ export declare type MotionTransform = MakeMotion<TransformProperties>;
+ /**
+  * @public
+  */
+-export declare type MotionStyle = MotionCSS & MotionTransform & MakeMotion<SVGPathProperties> /* & MakeCustomValueType<CustomStyles>*/;
++export declare type MotionStyle = MotionCSS & MotionTransform & MakeMotion<SVGPathProperties> & MakeCustomValueType<CustomStyles>;
+ export declare type OnUpdate = (v: Target) => void;
+ /**
+  * @public

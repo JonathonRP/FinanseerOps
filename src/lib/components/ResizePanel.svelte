@@ -18,7 +18,7 @@
 					if (entry.contentRect.height >= 204 && entry.contentRect.height <= 305) {
 						height = entry.contentRect.height;
 					}
-					console.log(entry.contentRect.height);
+					// console.log(entry.contentRect.height);
 				}}>
 				<slot />
 			</div>

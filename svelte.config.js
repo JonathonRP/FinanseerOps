@@ -21,7 +21,7 @@ const config = {
 	vitePlugin: {
 		inspector: {
 			showToggleButton: 'always',
-			toggleButtonPos: 'top-right',
+			toggleButtonPos: 'bottom-right',
 		},
 	},
 };

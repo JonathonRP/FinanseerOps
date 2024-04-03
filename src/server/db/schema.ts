@@ -1,149 +1,170 @@
-import type { AdapterAccount } from '@auth/sveltekit/adapters';
-import { sql } from 'drizzle-orm';
 import {
-	mysqlTable,
-	uniqueIndex,
-	index,
-	char,
-	varchar,
+	pgTable,
+	foreignKey,
+	pgEnum,
+	uuid,
 	text,
 	boolean,
 	timestamp,
-	int,
-	mysqlEnum,
+	pgSchema,
+	unique,
+	type AnyPgColumn,
+	varchar,
+	bigint,
 	primaryKey,
-	foreignKey,
-} from 'drizzle-orm/mysql-core';
-import { ulid } from 'ulid';
+	integer,
+	serial,
+} from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import type { AdapterAccount } from '@auth/sveltekit/adapters';
 
-export const users = mysqlTable(
-	'user',
-	{
-		id: char('id', { length: 36 }).primaryKey().notNull(),
-		name: varchar('name', { length: 255 }),
-		email: varchar('email', { length: 255 }),
-		emailVerified: timestamp('emailVerified', { mode: 'date', fsp: 3 }).defaultNow(),
-		image: varchar('image', { length: 255 }),
-		widgetStyle: mysqlEnum('widgetStyle', ['simple', 'dense']).default('simple').notNull(),
-		enableNotification: boolean('emailNotifications').default(false).notNull(),
-		financeCheckReminderNotificationRate: mysqlEnum('emailNotificationRate', [
-			'daily',
-			'weekly',
-			'bi-weekly',
-			'monthly',
-			'bi-monthly',
-		])
-			.default('monthly')
-			.notNull(),
-		transactionsNotificationRate: mysqlEnum('inappNotificationRate', [
-			'immediately',
-			'hourly',
-			'daily',
-			'weekly',
-			'bi-weekly',
-			'monthly',
-			'bi-monthly',
-		])
-			.default('daily')
-			.notNull(),
-		leadershipId: char('leadershipId', { length: 36 }),
-		familyId: char('familyId', { length: 36 }),
-	},
-	(table) => ({
-		emailKey: uniqueIndex('User_email_key').on(table.email),
-		idIdx: index('User_id_idx').on(table.id),
-		emailIdx: index('User_email_idx').on(table.email),
-		familyIdx: index('User_familyId_idx').on(table.familyId),
-		leadershipIdx: index('User_leadershipId_idx').on(table.leadershipId),
-	})
-);
+export const keyStatus = pgEnum('key_status', ['default', 'valid', 'invalid', 'expired']);
+export const keyType = pgEnum('key_type', [
+	'aead-ietf',
+	'aead-det',
+	'hmacsha512',
+	'hmacsha256',
+	'auth',
+	'shorthash',
+	'generichash',
+	'kdf',
+	'secretbox',
+	'secretstream',
+	'stream_xchacha20',
+]);
+export const factorType = pgEnum('factor_type', ['totp', 'webauthn']);
+export const factorStatus = pgEnum('factor_status', ['unverified', 'verified']);
+export const aalLevel = pgEnum('aal_level', ['aal1', 'aal2', 'aal3']);
+export const codeChallengeMethod = pgEnum('code_challenge_method', ['s256', 'plain']);
+export const requestStatus = pgEnum('request_status', ['PENDING', 'SUCCESS', 'ERROR']);
+export const widgetStyles = pgEnum('widget_styles', ['simple', 'dense']);
+export const rates = pgEnum('rates', ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly']);
+export const notificationTypes = pgEnum('notification_types', ['invite', 'account']);
 
-export const accounts = mysqlTable(
-	'account',
-	{
-		userId: char('userId', { length: 36 })
-			.notNull()
-			.references(() => users.id, { onDelete: 'cascade' }),
-		familyId: char('familyId', { length: 36 }),
-		type: varchar('type', { length: 255 }).$type<AdapterAccount['type']>().notNull(),
-		provider: varchar('provider', { length: 255 }).notNull(),
-		providerAccountId: varchar('providerAccountId', { length: 255 }).notNull(),
-		refresh_token: text('refresh_token'),
-		access_token: text('access_token'),
-		expires_at: int('expires_at'),
-		token_type: varchar('token_type', { length: 255 }),
-		scope: varchar('scope', { length: 255 }),
-		id_token: text('id_token'),
-		session_state: varchar('session_state', { length: 255 }),
-	},
-	(table) => ({
-		pk: primaryKey({ columns: [table.provider, table.providerAccountId] }),
-		userIdIdx: index('Account_userId_idx').on(table.userId),
-		familyIdIdx: index('Account_familyId_idx').on(table.familyId),
-	})
-);
+export const authjs = pgSchema('authjs');
 
-export const sessions = mysqlTable(
-	'session',
-	{
-		sessionToken: varchar('sessionToken', { length: 255 }).notNull().primaryKey(),
-		userId: char('userId', { length: 36 })
-			.notNull()
-			.references(() => users.id, { onDelete: 'cascade' }),
-		expires: timestamp('expires', { mode: 'date' }).notNull(),
-	},
-	(table) => ({
-		userIdIdx: index('Session_userId_idx').on(table.userId),
-	})
-);
-
-export const family = mysqlTable(
-	'family',
-	{
-		id: char('id', { length: 36 }).notNull().primaryKey(),
-		name: varchar('name', { length: 255 }),
-		provider: varchar('provider', { length: 255 }),
-		providerAccountId: varchar('providerAccountId', { length: 255 }),
-		leaderId: char('leaderId', { length: 36 }).references(() => users.id),
-	},
-	(table) => ({
-		accountReference: foreignKey({
-			name: 'family_accountFK',
-			columns: [table.provider, table.providerAccountId],
-			foreignColumns: [accounts.provider, accounts.providerAccountId],
-		}),
-		leaderIdIdx: index('Family_leaderId_idx').on(table.leaderId),
-		accountIdx: index('Family_account_idx').on(table.provider, table.providerAccountId),
-	})
-);
-
-export const verificationTokens = mysqlTable(
-	'verificationToken',
-	{
-		identifier: varchar('identifier', { length: 255 }).notNull(),
-		token: varchar('token', { length: 255 }).notNull(),
-		expires: timestamp('expires', { mode: 'date' }).notNull(),
-	},
-	(table) => ({
-		pk: primaryKey({ columns: [table.identifier, table.token] }),
-	})
-);
-
-export const notifications = mysqlTable('notification', {
-	id: char('id', { length: 36 })
-		.notNull()
-		.default(sql`(uuid())`)
-		.$default(ulid)
-		.primaryKey(),
-	message: varchar('message', { length: 255 }),
-	type: mysqlEnum('type', ['invite', 'account']),
-	read: boolean('read').default(false).notNull(),
-	recipient: char('recipient', { length: 36 })
-		.notNull()
-		.references(() => users.id),
-	createdBy: char('createdBy', { length: 36 })
-		.notNull()
-		.references(() => users.id),
-	createdOn: timestamp('createdOn', { mode: 'date' }).notNull().defaultNow(),
-	updatedOn: timestamp('updatedOn', { mode: 'date' }).onUpdateNow(),
+export const notifications = pgTable('notifications', {
+	id: uuid('id')
+		.default(sql`uuid_generate_v4()`)
+		.primaryKey()
+		.notNull(),
+	message: text('message'),
+	type: notificationTypes('type'),
+	seen: boolean('seen').default(false),
+	recipientId: uuid('recipient_id').references(() => users.id),
+	createdBy: uuid('created_by').references(() => users.id),
+	createdOn: timestamp('created_on', { mode: 'string' }).defaultNow(),
 });
+
+export const authUsers = authjs.table(
+	'users',
+	{
+		id: uuid('id')
+			.default(sql`uuid_generate_v4()`)
+			.primaryKey()
+			.notNull(),
+		name: text('name'),
+		email: text('email'),
+		emailVerified: timestamp('emailVerified', { mode: 'date' }),
+		image: text('image'),
+	},
+	(table) => ({
+		emailUnique: unique('email_unique').on(table.email),
+	})
+);
+
+export const users = pgTable(
+	'users',
+	{
+		id: uuid('id')
+			.default(sql`uuid_generate_v4()`)
+			.primaryKey()
+			.notNull(),
+		name: text('name'),
+		email: text('email'),
+		emailVerified: timestamp('emailVerified', { mode: 'date' }),
+		image: text('image'),
+		widgetStyle: widgetStyles('widget_style').default('simple'),
+		enableNotifications: boolean('enable_notifications').default(false),
+		emailRate: rates('email_rate').default('monthly'),
+		inAppRate: rates('in-app_rate').default('daily'),
+		permittedBankAccounts: integer('permitted_bank_accounts').array(),
+		leadershipId: uuid('leadership_id').references((): AnyPgColumn => families.id),
+		membershipId: uuid('membership_id').references((): AnyPgColumn => families.id),
+	},
+	(table) => ({
+		emailUnique: unique('email_unique').on(table.email),
+	})
+);
+
+export const families = pgTable('families', {
+	id: uuid('id').defaultRandom().primaryKey().notNull(),
+	name: varchar('name'),
+	leaderId: uuid('leader_id').references((): AnyPgColumn => users.id),
+	accountId: uuid('account_id').references((): AnyPgColumn => buxferAccounts.id),
+});
+
+export const buxferAccounts = pgTable(
+	'buxfer_accounts',
+	{
+		id: uuid('id').defaultRandom().primaryKey().notNull(),
+		userId: uuid('user_id').references(() => users.id),
+		familyId: uuid('family_id').references((): AnyPgColumn => families.id),
+		accessToken: text('access_token'),
+		refreshToken: text('refresh_token'),
+	},
+	(table) => ({
+		userUnique: unique('user_unique').on(table.userId),
+	})
+);
+
+export const sessions = authjs.table(
+	'sessions',
+	{
+		id: uuid('id')
+			.default(sql`uuid_generate_v4()`)
+			.primaryKey()
+			.notNull(),
+		expires: timestamp('expires', { mode: 'date' }).notNull(),
+		sessionToken: text('sessionToken').notNull(),
+		userId: uuid('userId').references(() => users.id, { onDelete: 'cascade' }),
+	},
+	(table) => ({
+		sessiontokenUnique: unique('sessiontoken_unique').on(table.sessionToken),
+	})
+);
+
+export const accounts = authjs.table(
+	'accounts',
+	{
+		id: uuid('id')
+			.default(sql`uuid_generate_v4()`)
+			.primaryKey()
+			.notNull(),
+		type: text('type').$type<AdapterAccount['type']>().notNull(),
+		provider: text('provider').notNull(),
+		providerAccountId: text('providerAccountId').notNull(),
+		refreshToken: text('refresh_token'),
+		accessToken: text('access_token'),
+		expiresAt: integer('expires_at'),
+		scope: text('scope'),
+		idToken: text('id_token'),
+		sessionState: text('session_state'),
+		userId: uuid('userId').references(() => users.id, { onDelete: 'cascade' }),
+	},
+	(table) => ({
+		providerUnique: unique('provider_unique').on(table.provider, table.providerAccountId),
+	})
+);
+
+export const verificationTokens = authjs.table(
+	'verification_tokens',
+	{
+		identifier: text('identifier'),
+		token: text('token').primaryKey().notNull(),
+		expires: timestamp('expires', { mode: 'date' }).notNull(),
+	},
+	(table) => ({
+		tokenIdentifierUnique: unique('token_identifier_unique').on(table.identifier, table.token),
+	})
+);

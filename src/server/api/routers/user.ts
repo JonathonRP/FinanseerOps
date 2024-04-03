@@ -2,13 +2,14 @@ import { signIn } from '@auth/sveltekit/client';
 import { TRPCError } from '@trpc/server';
 import { sql } from 'drizzle-orm';
 import { coerce, object } from 'zod';
-import { from, map } from 'rxjs';
+import { combineLatest, concat, from, map, shareReplay, startWith, switchMap } from 'rxjs';
+import { notificationsChanges, notificationsInsert, notificationsInsertDelete } from '$/server/db/events';
 import { familyLeaderProcedure, procedure, router } from '../trpc';
-import { users, accounts, notifications } from '../../db/schema';
-import { user } from '../../db';
+import { users, notifications, buxferAccounts } from '../../db/schema';
+import { buxferAccount, notification, user } from '../../db';
 
 export const userRouter = router({
-	retrieve: procedure.input(user.pick({ id: true }).optional()).query(async ({ ctx, input }) =>
+	retrieve: procedure.input(user.pick({ id: true }).optional()).query(({ ctx, input }) =>
 		ctx.db
 			.select()
 			.from(users)
@@ -16,6 +17,7 @@ export const userRouter = router({
 			.then((res) => res.at(0))
 	),
 	update: procedure.input(user.partial()).mutation(async ({ ctx, input: { id, ...data } }) => {
+		// TODO - mirror changes to authjs.user
 		const existing = await ctx.db
 			.select()
 			.from(users)
@@ -26,6 +28,30 @@ export const userRouter = router({
 			.set(Object.assign(existing, data))
 			.where(sql`${users.id} = ${id || ctx.user?.id}`);
 	}),
+	buxferAccount: procedure.input(user.pick({ id: true }).optional()).query(({ ctx, input }) =>
+		ctx.db.query.buxferAccounts.findFirst({
+			where: sql`${buxferAccounts.userId} = ${input?.id || ctx.user?.id}`,
+		})
+	),
+	addBuxferAccount: procedure
+		.input(buxferAccount.pick({ userId: true, accessToken: true, refreshToken: true }))
+		.mutation(async ({ ctx, input: { userId, accessToken, refreshToken } }) => {
+			await ctx.db
+				.insert(buxferAccounts)
+				.values({
+					userId: userId || ctx.user.id,
+					accessToken,
+					refreshToken,
+				})
+				.onConflictDoUpdate({
+					target: buxferAccounts.userId,
+					set: {
+						...(accessToken && { accessToken }),
+						...(refreshToken && { refreshToken }),
+					},
+					where: sql`${buxferAccounts.userId} = ${userId || ctx.user.id}`,
+				});
+		}),
 	invite: familyLeaderProcedure
 		.input(user.pick({ email: true }).pipe(object({ email: coerce.string().email() })))
 		.mutation(async ({ ctx, input: { email } }) => {
@@ -50,29 +76,58 @@ export const userRouter = router({
 			// await signIn('email', { email });
 		}),
 
-	notifications: procedure.subscription(async ({ ctx }) =>
-		from(ctx.db.query.notifications.findMany({
-			where: (notifs, { eq }) => eq(notifs.recipient, ctx.user?.id ?? ''),
-			orderBy: (notifs, { desc }) => [desc(notifs.createdOn)],
-		}))
+	notifications: procedure.subscription(({ ctx }) =>
+		concat(
+			ctx.db.query.notifications.findMany({
+				where: (notifs, { eq }) => eq(notifs.recipientId, ctx.user?.id ?? ''),
+				orderBy: (notifs, { desc }) => [desc(notifs.createdOn)],
+			}),
+			notificationsChanges.pipe(
+				switchMap(() =>
+					ctx.db.query.notifications.findMany({
+						where: (notifs, { eq }) => eq(notifs.recipientId, ctx.user?.id ?? ''),
+						orderBy: (notifs, { desc }) => [desc(notifs.createdOn)],
+					})
+				)
+			)
+		)
 	),
 
-	latestNotification: procedure.subscription(async ({ ctx }) =>
-		from(ctx.db.query.notifications
-			.findMany({
-				where: (notifs, { eq }) => eq(notifs.recipient, ctx.user?.id ?? '') && eq(notifs.read, false),
-				orderBy: (notifs, { desc }) => [desc(notifs.createdOn)],
-			})
-		).pipe(map((res) => res[0]))
+	addNotification: procedure.input(notification).mutation(async ({ ctx, input }) => {
+		await ctx.db.insert(notifications).values(input).onConflictDoNothing();
+	}),
+
+	latestNotification: procedure.subscription(({ ctx }) =>
+		notificationsInsert.pipe(
+			switchMap(() =>
+				ctx.db.query.notifications
+					.findMany({
+						where: (notifs, { eq }) => eq(notifs.recipientId, ctx.user?.id ?? '') && eq(notifs.seen, false),
+						orderBy: (notifs, { desc }) => [desc(notifs.createdOn)],
+					})
+					.then((res) => res[0].message)
+			),
+			shareReplay(1)
+		)
 	),
 
 	unreadNotificationsCount: procedure.subscription(({ ctx }) =>
-		from(
+		concat(
 			ctx.db
-				.select({ totalUnread: sql`COUNT(1)` })
+				.select({ totalUnread: sql<number>`COUNT(1)` })
 				.from(notifications)
-				.where(sql`${notifications.recipient} = ${ctx.user?.id} and ${notifications.read} = ${false}`)
-		).pipe(map((res) => res[0].totalUnread))
+				.where(sql`${notifications.recipientId} = ${ctx.user?.id} and ${notifications.seen} = ${false}`)
+				.then((res) => res[0].totalUnread),
+			notificationsChanges.pipe(
+				switchMap(() =>
+					ctx.db
+						.select({ totalUnread: sql<number>`COUNT(1)` })
+						.from(notifications)
+						.where(sql`${notifications.recipientId} = ${ctx.user?.id} and ${notifications.seen} = ${false}`)
+						.then((res) => res[0].totalUnread)
+				)
+			)
+		)
 	),
 });
 

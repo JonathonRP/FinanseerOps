@@ -1,10 +1,25 @@
 import { error } from '@sveltejs/kit';
-import { format, formatISO, parseISO } from 'date-fns';
+import { format, formatISO, parse, parseISO } from 'date-fns';
 import path from 'path';
-import { array, number, object, string, union, z, never, coerce, date, discriminatedUnion, literal } from 'zod';
-import { ulid } from 'ulid';
+import { array, number, object, string, union, z, coerce, date, lazy } from 'zod';
 import { fromFetch } from 'rxjs/fetch';
-import { switchMap, type Observable, map, catchError, expand, EMPTY, reduce } from 'rxjs';
+import {
+	type Observable,
+	map,
+	catchError,
+	expand,
+	EMPTY,
+	reduce,
+	throwError,
+	repeat,
+	takeWhile,
+	delay,
+	switchMap,
+	timer,
+} from 'rxjs';
+import * as Sentry from '@sentry/sveltekit';
+import { dateFormat } from '$/lib/utils';
+import { Intl } from '@js-temporal/polyfill';
 
 const DateFormat = 'yyyy-MM-dd';
 
@@ -29,7 +44,7 @@ const transactionsPage = object({
 			description: string(),
 			date: string()
 				.or(date())
-				.transform((arg) => parseISO(formatISO(new Date(arg)).replace('Z', ''))),
+				.transform((arg) => new Date(arg)),
 			type: string(),
 			amount: number(),
 			accountId: number(),
@@ -113,11 +128,17 @@ export const login = object({
 	password: string(),
 });
 
-export const transactionsWindow = object({
-	startDate: date().transform((arg) => format(arg, DateFormat)),
-	endDate: date().transform((arg) => format(arg, DateFormat)),
+export const transactionsQueryParams = object({
+	startDate: date(),
+	endDate: date(),
 	cursor: number().nullish().default(1).pipe(coerce.string()),
-}).transform((o) => ({ startDate: o.startDate, endDate: o.endDate, page: o.cursor }));
+}).transform(({ startDate, endDate, cursor }) => ({ startDate, endDate, page: cursor }));
+
+const transactionsQueryParamsInternal = transactionsQueryParams.transform(({ startDate, endDate, page }) => ({
+	startDate: format(startDate, DateFormat),
+	endDate: format(endDate, DateFormat),
+	page,
+}));
 
 // export const tokens = object({
 // 	access: token,
@@ -140,7 +161,7 @@ const routes = new Map<string, string>([
 	[api.transactions, path.join(prefix, api.transactions)],
 ]);
 
-const headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+const headers = new Headers([['Content-Type', 'application/x-www-form-urlencoded']]);
 
 const BuxferDomain = 'https://www.buxfer.com';
 
@@ -148,7 +169,10 @@ type BuxferProxyRequest =
 	| { url: typeof api.login; body: z.infer<typeof login> }
 	// | { url: typeof api.refresh; body: z.infer<typeof buxferRefresh> }
 	| { url: typeof api.accounts; body: z.infer<typeof accessToken> }
-	| { url: typeof api.transactions; body: z.infer<typeof transactionsWindow> & z.infer<typeof accessToken> };
+	| {
+			url: typeof api.transactions;
+			body: z.infer<typeof transactionsQueryParamsInternal> & z.infer<typeof accessToken>;
+	  };
 
 type BuxferProxyResponse<T extends BuxferProxyRequest> = Observable<
 	T['url'] extends typeof api.login /* | typeof api.refresh */
@@ -180,21 +204,21 @@ function buxferProxy(
 	endpoint: (typeof api)[keyof typeof api],
 	body:
 		| z.infer<typeof login>
-		| (z.infer<typeof transactionsWindow> & z.infer<typeof accessToken>)
+		| (z.infer<typeof transactionsQueryParamsInternal> & z.infer<typeof accessToken>)
 		| z.infer<typeof accessToken>
 ) {
-	const buxferConfig = {
+	const bodyConstruct = new URLSearchParams({ ...body });
+	const rerouteURL = new URL(
+		`${routes.get(endpoint) ?? <never>null}?${decodeURIComponent(bodyConstruct.toString())}`,
+		BuxferDomain
+	);
+	const buxferRequest = new Request(rerouteURL, {
 		method: 'POST',
-		headers: {
-			...headers,
-		},
-		body: new URLSearchParams(body),
-	} as RequestInit;
+		headers,
+		body: { ...bodyConstruct },
+	});
 
-	const rerouteURL = new URL(routes.get(endpoint) ?? <never>null, BuxferDomain);
-	const request = new Request(rerouteURL, buxferConfig);
-
-	return fromFetch(request, {
+	return fromFetch(buxferRequest.clone(), {
 		selector: (resp) => resp.json(),
 	}).pipe(
 		map((data) => {
@@ -202,9 +226,9 @@ function buxferProxy(
 			if ('error' in result) {
 				const { error: buxferErr } = result;
 
-				error(data.status, {
-					code: ulid(),
-					message: buxferErr.message,
+				Sentry.captureMessage(buxferErr.message);
+				throw new Error(buxferErr.message, {
+					cause: buxferErr,
 				});
 			}
 
@@ -233,10 +257,17 @@ function buxferProxy(
 			// TODO - replace with logging collection data service (ex. Sentry).
 			// logger.error('fetchError: ', err);
 
-			if (err.status === 400 && err.body.message === 'Access denied. Please login first.')
-				return error(401, 'Unauthorized');
+			// if (err.status === 400 && err.body.message === 'Access denied. Please login first.')
+			// 	return error(401, 'Unauthorized');
 
-			return error(err.status || 500, err.body);
+			// return error(err.status || 500, err.body);
+			Sentry.captureException(err);
+			return throwError(() => ({
+				message: err.message,
+				...(err?.code && { code: err.code }),
+				...(err?.cause && { cause: err.cause }),
+				...(err?.stack && { stack: err.stack }),
+			}));
 		})
 	);
 }
@@ -245,7 +276,7 @@ type BuxferRequest =
 	| { url: typeof api.login; body: z.infer<typeof login> }
 	// | { url: typeof api.refresh; body: z.infer<typeof buxferRefresh> }
 	| { url: typeof api.accounts; body?: null | undefined }
-	| { url: typeof api.transactions; body: z.infer<typeof transactionsWindow> };
+	| { url: typeof api.transactions; body: z.infer<typeof transactionsQueryParams> };
 
 type BuxferResponse<T extends BuxferRequest> = Observable<
 	T['url'] extends typeof api.login /* | typeof api.refresh */
@@ -282,6 +313,7 @@ export function client<T extends BuxferRequest>(
 	body: T['body'],
 	options?: { headers: Headers } | null | undefined
 ) {
+	const pollingRate = 1000;
 	switch (url) {
 		// case api.login: {
 		// 	const { tokens: tokensData } = await buxferProxy(url, login.parse(body));
@@ -294,7 +326,10 @@ export function client<T extends BuxferRequest>(
 		// }
 
 		case api.login: {
-			return buxferProxy(url, login.parse(body)).pipe(map(({ token: tokenData }) => token.parse(tokenData)));
+			return buxferProxy(url, login.parse(body)).pipe(
+				catchError((err) => throwError(() => err)),
+				map(({ token: tokenData }) => token.parse(tokenData))
+			);
 		}
 
 		case api.accounts: {
@@ -303,7 +338,10 @@ export function client<T extends BuxferRequest>(
 				error(401, 'Unathorized');
 			}
 			return buxferProxy(url, { token: token.parse(access) }).pipe(
+				catchError((err) => throwError(() => err)),
 				map(({ accounts: accountsData }) => accounts.parse(accountsData))
+				// delay(pollingRate),
+				// repeat()
 			);
 		}
 
@@ -312,29 +350,31 @@ export function client<T extends BuxferRequest>(
 			if (!access) {
 				error(401, 'Unathorized');
 			}
-			const parsedBody = transactionsWindow.parse({ ...body });
+			const parsedBody = transactionsQueryParamsInternal.parse({ ...body });
 			return buxferProxy(url, {
 				...parsedBody,
 				token: token.parse(access),
 			}).pipe(
-				map(({ numTransactions: totalTransactionsCount, transactions: transactionsData }) =>
+				catchError((err) => throwError(() => err)),
+				map(({ numTransactions: totalTransactionsCount, transactions }) =>
 					transactionsPage.parse({
-						transactionsData,
+						transactions,
 						totalTransactionsCount,
-						current: parsedBody.page,
+						current: Number(parsedBody.page),
 					})
 				),
 				expand(({ next }) =>
 					next
 						? buxferProxy(url, {
-								...transactionsWindow.parse({ ...body, cursor: next }),
+								...transactionsQueryParamsInternal.parse({ ...body, cursor: next }),
 								token: token.parse(access),
 							}).pipe(
-								map(({ numTransactions: totalTransactionsCount, transactions: transactionsData }) =>
+								catchError((err) => throwError(() => err)),
+								map(({ numTransactions: totalTransactionsCount, transactions }) =>
 									transactionsPage.parse({
-										transactionsData,
+										transactions,
 										totalTransactionsCount,
-										current: parsedBody.page,
+										current: next,
 									})
 								)
 							)
@@ -342,6 +382,8 @@ export function client<T extends BuxferRequest>(
 				),
 				map((page) => page.transactions),
 				reduce((acc, curr) => acc.concat(curr))
+				// delay(pollingRate),
+				// repeat()
 			);
 		}
 		default:

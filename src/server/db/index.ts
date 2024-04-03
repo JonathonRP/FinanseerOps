@@ -1,23 +1,24 @@
-import { drizzle } from 'drizzle-orm/planetscale-serverless';
-import { connect } from '@planetscale/database';
-import type { InferModel } from 'drizzle-orm';
-import { createSelectSchema } from 'drizzle-zod';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import type { InferInsertModel } from 'drizzle-orm';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { z } from 'zod';
 import * as schema from './schema';
-import { DATABASE_URL } from '$env/static/private';
+import { POSTGRES_URL } from '$env/static/private';
 
-if (!DATABASE_URL) {
+if (!POSTGRES_URL) {
 	throw new Error('please supply url');
 }
 
 // create the connection
-const connection = connect({
-	url: DATABASE_URL,
-});
+const connection = postgres(POSTGRES_URL, { prepare: false });
 
 export const db = drizzle(connection, { schema });
 
 export type DB = typeof db;
-export type Users = InferModel<typeof schema.users, 'insert'>;
-export type Accounts = InferModel<typeof schema.accounts, 'insert'>;
+export type Users = InferInsertModel<typeof schema.users>;
+export type Accounts = InferInsertModel<typeof schema.accounts>;
 
 export const user = createSelectSchema(schema.users);
+export const buxferAccount = createInsertSchema(schema.buxferAccounts);
+export const notification = createInsertSchema(schema.notifications);

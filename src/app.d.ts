@@ -7,6 +7,7 @@
 import type { ZodIssue } from 'zod';
 import type { Session } from '@auth/sveltekit';
 import type { AdapterUser } from '@auth/sveltekit/adapters';
+import type { Accounts, Transactions } from './lib/api';
 
 declare global {
 	namespace App {
@@ -20,8 +21,13 @@ declare global {
 			message: string;
 			code?: string;
 			cause?: { [x: string]: any }[] | ZodIssue[];
+			stack?: any;
 		}
-		// interface PageData {}
+		interface PageData {
+			processedDay: Date;
+			accounts: Promise<Parameters<Parameters<Accounts['subscribe']>['0']>['0']>;
+			transactions: Promise<Parameters<Parameters<Transactions['subscribe']>['0']>['0']>;
+		}
 		// interface Platform {}
 	}
 }

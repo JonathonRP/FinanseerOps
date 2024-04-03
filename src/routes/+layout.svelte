@@ -6,11 +6,23 @@
 	import './styles.css';
 	import 'sweetalert2/src/sweetalert2.scss';
 	import { Toaster } from 'svelte-french-toast';
+	import { AnimatePresence } from 'svelte-motion';
+	import { Motion } from '$/lib/components';
+	import { NavProgress } from '$/lib/components/ui/nav-progress';
+	import { navigating } from '$app/stores';
 
-	const { children } = $props<{ children: Snippet }>();
+	const { children }: { children: Snippet } = $props();
+	let progress = $state({
+		reset: () => {},
+	});
 </script>
 
+<AnimatePresence onExitComplete={progress?.reset} show={!!$navigating}>
+	<Motion.div exit={{ opacity: 0, transition: { duration: 1 } }} class="fixed w-full">
+		<NavProgress bind:this={progress} />
+	</Motion.div>
+</AnimatePresence>
 <Toaster position="top-right" />
-<div class="app flex min-h-[100dvh] dark:text-neutral-309">
+<div class="app flex min-h-[100dvh] text-foreground">
 	{@render children()}
 </div>
