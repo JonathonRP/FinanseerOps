@@ -59,7 +59,7 @@
 	animate="visible"
 	exit={{ opacity: 0, zIndex: 0, position: 'fixed' }}
 	transition={{ duration: 0.8, staggerChildren: 0.35 }}
-	class="relative flex snap-y snap-mandatory flex-col flex-wrap items-center gap-4 overflow-visible pb-3 scrollbar-none md:max-w-none md:flex-row md:items-start">
+	class="relative flex flex-wrap items-center justify-center gap-4 overflow-visible pb-3 scrollbar-none md:max-w-none sm:items-start sm:justify-start">
 	{#each dashboardUserLayout as widget (widget)}
 		{@const dragControls = useDragControls()}
 		{@const             startDrag = (event: MouseEvent | TouchEvent | PointerEvent) => {

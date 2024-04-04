@@ -112,8 +112,6 @@
 	};
 </script>
 
-<!-- // TODO: why is this broken? -->
-<!-- <Motion layoutId="main-date-1" let:motion={layout}> -->
 <AnimatePresence
 	list={[
 		{
@@ -227,4 +225,3 @@
 		</Motion.div>
 	</div>
 </AnimatePresence>
-<!-- </Motion> -->

@@ -16,6 +16,7 @@
 
 	import type { Snippet } from 'svelte';
 	import Form from '$lib/components/Form.svelte';
+	import * as FormUi from '$lib/components/ui/form';
 	import { icons, navItemIcons } from '$/icons';
 	import { userSettings } from '$lib/stores/userSettings.svelte';
 	import { formatISO, intlFormatDistance, parseJSON } from 'date-fns';
@@ -24,7 +25,6 @@
 	import { ease } from '$/lib/animations';
 	import * as Select from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
-	import { widgetStyles } from '$/server/db/schema';
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import NavLink from './NavLink.svelte';
@@ -366,25 +366,10 @@
 		</div>
 	</nav>
 
-	<AnimatePresence show={accountState.open}>
-		<div
-			in:classes={{
-				duration: 250,
-				base: 'md:transition md:duration-250',
-				from: 'md:-translate-x-1/2 md:opacity-0',
-				to: 'md:translate-x-0 md:opacity-100',
-			}}
-			out:classes={{
-				duration: 150,
-				base: 'md:transition md:duration-150',
-				from: 'md:translate-x-0 md:opacity-100',
-				to: 'md:-translate-x-1/2 md:opacity-0',
-			}}
-			class="md:static md:inset-y-0 md:left-16 md:mx-0 md:h-auto md:w-72 md:bg-inherit md:shadow-none md:dark:bg-inherit">
+	{#if accountState.open}
 			<Modal
-				on:close={(e) => {
-					toggleAccount(closeModal)(e);
-				}}>
+				isOpen={accountState.open}
+				on:close={toggleAccount(closeModal)}>
 				<div aria-label="User Account Settings" class="flex h-full flex-col md:px-4">
 					<div class="flex flex-1 flex-col py-10">
 						<!-- Account -->
@@ -449,18 +434,20 @@
 											change user image type, this is abstract art when on.
 										</p>
 									</div>
+									<!-- onCheckedChange={handleInput} -->
 									<Switch
 										id="bauhaus"
 										name="useBauhaus"
 										includeInput
 										bind:checked={useBauhaus}
+										onblur={handleBlur}
 										disabled={submitting} />
 								</label>
 								<fieldset>
 									<legend class="mb-4 text-lg font-medium">App Preferences</legend>
 									<div class="space-y-4">
-										<input type="hidden" name="widgetStyle" value={formData.widgetStyle} onblur={handleBlur} oninput={handleInput}/>
-										<Select.Root name="widgetStyle" selected={{ label: user?.widgetStyle, value: user?.widgetStyle }} onSelectedChange={(v) => formData.widgetStyle = v?.value}>
+										<Select.Root name="widgetStyle" selected={{ label: user?.widgetStyle, value: user?.widgetStyle }} onSelectedChange={(v) => handleInput({currentTarget: v})} onblur={handleBlur}>
+											<input type="hidden" name="widgetStyle" bind:value={formData.widgetStyle} oninput={handleInput}/>
 											<Select.Trigger class="w-full">
 												<Select.Value placeholder="Select a widget style" />
 											</Select.Trigger>
@@ -474,7 +461,7 @@
 										<Select.Root
 											multiple
 											name="bankAccountsFilter"
-											selected={user?.permittedBankAccounts?.map((value) => ({ value }))}>
+											selected={user?.permittedBankAccounts?.map((value) => ({ label: bankAccounts.find(account => account.id === value)?.name, value }))}>
 											<Select.Trigger class="w-full">
 												<Select.Value placeholder="Select accounts to permit" />
 											</Select.Trigger>
@@ -504,8 +491,8 @@
 												name="enableNotifications"
 												includeInput
 												checked={user?.enableNotifications ?? undefined}
-												on:blur={handleBlur}
-												on:input={handleInput}
+												onblur={handleBlur}
+												oninput={handleInput}
 												disabled={submitting} />
 										</label>
 										<Select.Root name="emailRate" selected={{ label: user?.emailRate, value: user?.emailRate }}>
@@ -534,20 +521,18 @@
 										</Select.Root>
 									</div>
 								</fieldset>
-								<button
-									type="submit"
-									class="item-center flex w-full justify-center rounded-full bg-primary text-accent-400 font-medium hover:text-white px-4 py-2 transition-colors hover:bg-accent-500/90 focus-visible:outline-none focus-visible:ring-2 focus:ring-accent-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none dark:focus:ring-offset-neutral-808"
+								<FormUi.Button
 									aria-busy={submitting}
 									disabled={!valid || submitting}>
 									<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
 									Save Settings
-								</button>
+								</FormUi.Button>
 							</Form>
 						</div>
 					</div>
 
 					{#if user}
-						<div class="flex-shrink-0 py-4">
+						<div class="flex-shrink-0 py-4 max-md:px-4">
 							<SignOut
 								signOutPage="auth"
 								className="group flex w-full items-center space-x-2 rounded-lg transition-colors hover:bg-accent-500 hover:text-white">
@@ -562,28 +547,12 @@
 					{/if}
 				</div>
 			</Modal>
-		</div>
-	</AnimatePresence>
+	{/if}
 
-	<AnimatePresence initial={false} show={notificationsState.open}>
-		<div
-			in:classes={{
-				duration: 250,
-				base: 'md:transition md:transition-position md:duration-250',
-				from: 'md:-translate-x-full md:opacity-0',
-				to: 'md:translate-x-0 md:opacity-100',
-			}}
-			out:classes={{
-				duration: 150,
-				base: 'md:transition md:transition-position md:duration-150',
-				from: 'md:translate-x-0 md:opacity-100',
-				to: 'md:-translate-x-1/3 md:opacity-0',
-			}}
-			class="md:static md:inset-y-0 md:left-16 md:mx-0 md:h-auto md:w-72 md:bg-inherit md:shadow-none md:dark:bg-inherit">
+	{#if notificationsState.open}
 			<Modal
-				on:close={(e) => {
-					toggleNotifications(closeModal)(e);
-				}}>
+				isOpen={notificationsState.open}
+				on:close={toggleNotifications(closeModal)}>
 				<div aria-label="Notifications" class="flex h-full flex-col md:px-2">
 					<div class="flex flex-1 flex-col py-10">
 						<!-- notifications -->
@@ -594,6 +563,7 @@
 							class={cn('flex h-full flex-shrink-0 flex-col gap-2 px-2 py-4', {
 								'justify-center': !$notifications?.length,
 							})}>
+								<AnimatePresence initial={false} show={notificationsState.open}>
 							{#if $notifications?.length}
 								{#each $notifications as notification (notification.id)}
 									{@const { icon, actions } = {
@@ -783,12 +753,12 @@
 									<span class="text-bas">You're all caught up</span>
 								</li>
 							{/if}
+							</AnimatePresence>
 						</ul>
 					</div>
 				</div>
 			</Modal>
-		</div>
-	</AnimatePresence>
+	{/if}
 </aside>
 
 <div class="flex flex-1 flex-col overflow-hidden px-6 pb-16 pt-4 md:px-0 md:pr-8">

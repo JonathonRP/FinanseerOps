@@ -15,10 +15,10 @@ body {
 	min-height: 100vh;
 	margin: 0;
 	background-attachment: fixed;
-	background-color: var(--color-bg-1);
+	background-color: var(--color-bg-1) !important;
 	background-size: 100vw 100vh;
 	background-image: radial-gradient(50% 50% at 50% 50%, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 100%),
-		linear-gradient(180deg, var(--color-bg-0) 0%, var(--color-bg-1) 15%, var(--color-bg-2) 50%);
+		linear-gradient(180deg, var(--color-bg-0) 0%, var(--color-bg-1) 15%, var(--color-bg-2) 50%) !important;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,9 +27,9 @@ body {
 		--color-bg-1: hsl(209, 36%, 14%);
 		--color-bg-2: hsl(224, 4%, 15%);
 
-		background-color: var(--color-bg-1);
+		background-color: var(--color-bg-1) !important;
 		background-image: radial-gradient(50% 50% at 50% 50%, hsl(209deg 6% 47% / 52%) 0%, hsla(0, 0%, 100%, 0) 100%),
-			linear-gradient(180deg, var(--color-bg-0) 0%, var(--color-bg-1) 15%, var(--color-bg-2) 50%);
+			linear-gradient(180deg, var(--color-bg-0) 0%, var(--color-bg-1) 15%, var(--color-bg-2) 50%) !important;
 	}
 }
 

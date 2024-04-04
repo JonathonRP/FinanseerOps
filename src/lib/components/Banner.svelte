@@ -20,6 +20,7 @@
 				</span>
 				<span class="mr-2 flex-auto text-left font-semibold">{reason}</span>
 				<button
+					type="button"
 					class="hover:text-white"
 					onclick={async () => {
 						$page.url.searchParams.delete('reason');

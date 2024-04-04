@@ -235,13 +235,13 @@
 					</span>
 					{#if $mostRecentTransactions?.length}
 						<div
-							class="-mr-2 ml-0.5 basis-[calc(100dvh-30em)] overflow-y-scroll scroll-smooth xl:basis-[calc(100dvh_-_34em)]">
+							class="-mr-2 ml-0.5 max-md:mb-8 overflow-y-scroll scroll-smooth max-md:basis-[calc(100dvh_-_34em)] md:basis-[calc(100dvh_-_36em)] xl:basis-[calc(100dvh_-_34em)]">
 							{#each $mostRecentTransactions as transaction, indx (transaction.id)}
 								<div
 									class="relative flex w-full divide-y-2 divide-stone-200 overflow-hidden dark:divide-stone-600 dark:divide-opacity-20">
-									<div class="mx-1 flex shrink-0 flex-grow items-end justify-between overflow-hidden py-3">
+									<div class="mx-1 flex flex-grow items-end justify-between overflow-hidden py-3">
 										<div>
-											<p class="truncate text-base font-medium xl:w-[26ch]">
+											<p class="truncate text-base font-medium max-sm:w-[31ch] xl:w-[26ch]">
 												{transaction.description}
 											</p>
 											<p class="flex text-xs text-muted-foreground">

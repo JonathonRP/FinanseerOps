@@ -22,7 +22,7 @@
 		<NavProgress bind:this={progress} />
 	</Motion.div>
 </AnimatePresence>
-<Toaster position="top-right" />
-<div class="app flex min-h-[100dvh] text-foreground">
+<Toaster position="top-center" />
+<div data-vaul-drawer-wrapper class="app flex min-h-[100dvh] text-foreground">
 	{@render children()}
 </div>
