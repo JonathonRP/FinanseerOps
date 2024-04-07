@@ -47,16 +47,14 @@
 <div class="flex items-center">
 	{#if value !== null && value !== undefined}
 		<p class={cn('text-2xl font-bold', restProps.class)}>
-			<span class="flex min-w-[3ch] flex-nowrap overflow-hidden items-baseline">
-				{numberFormat().format($score$).slice(0, 1)}
-				{#each numberFormat().format($score$).slice(1, -1).split('') as digit}
+			<span class="flex min-w-[3ch] flex-nowrap items-baseline overflow-hidden">
+				{#each numberFormat().format($score$).split('') as digit}
 					{#if !Number(digit) && digit !== '0'}
 						{digit}
 					{:else}
 						<AnimatedNumber value={digit} class="font-bold leading-snug" />
 					{/if}
 				{/each}
-				{numberFormat().format($score$).slice(-1)}
 			</span>
 		</p>
 

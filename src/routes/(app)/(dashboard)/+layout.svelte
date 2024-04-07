@@ -196,11 +196,17 @@
 					<div class="flex flex-col items-start">
 						<p class="text-base font-medium">Recent Transactions</p>
 						<p
-							class="relative flex flex-row items-center justify-center overflow-hidden py-0.5 text-xs text-muted-foreground">
-							<span class="flex-shrink-0">Spent {numberFormat().format($expenseTotal).slice(0, 1)}</span>
-							{#each numberFormat().format($expenseTotal).slice(1).split('') as digit}
-								<AnimatedNumber value={digit.toString()} />
-							{/each}
+							class="relative flex flex-row items-center justify-center gap-1 overflow-hidden py-0.5 text-xs text-muted-foreground">
+							<span class="flex-shrink-0">Spent</span>
+							<span class="flex items-baseline">
+								{#each numberFormat().format($expenseTotal).split('') as digit}
+									{#if !Number(digit) && digit !== '0'}
+										{digit}
+									{:else}
+										<AnimatedNumber value={digit} />
+									{/if}
+								{/each}
+							</span>
 						</p>
 					</div>
 					<form
