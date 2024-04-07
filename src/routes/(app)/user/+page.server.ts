@@ -2,7 +2,7 @@ import { createContext } from '$/server/api/context';
 import { appRouter, createCallerFactory } from '$/server/api/root';
 import { validateData } from '$/server';
 import { fail } from '@sveltejs/kit';
-import { object, string, coerce } from 'zod';
+import { z, object, string, coerce } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 
@@ -33,11 +33,25 @@ export const actions = {
 		const expectedUserSettings = object({
 			useBauhaus: coerce.boolean().default(false),
 			username: string(),
-		}).superRefine(({ username }, ctx) => {
-			if (username === user?.name) {
-				ctx.addIssue({ code: 'custom', message: 'No changes to save.', path: ['name', 'useBauhaus'] });
+			widgetStyle: z.enum(['simple', 'dense']),
+			permittedBankAccounts: coerce.number().array(),
+			enableNotifications: coerce.boolean().default(false),
+			emailRate: z.enum(['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly']),
+			inAppRate: z.enum(['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly']),
+		}).superRefine(
+			({ username, widgetStyle, permittedBankAccounts, enableNotifications, emailRate, inAppRate }, ctx) => {
+				if (
+					username === user?.name &&
+					widgetStyle === user?.widgetStyle &&
+					permittedBankAccounts === user?.permittedBankAccounts &&
+					enableNotifications === user?.enableNotifications &&
+					emailRate === user?.emailRate &&
+					inAppRate === user?.inAppRate
+				) {
+					ctx.addIssue({ code: 'custom', message: 'No changes to save.', path: ['name', 'useBauhaus'] });
+				}
 			}
-		});
+		);
 		let { data, errors } = await validateData(formData, expectedUserSettings);
 
 		if (errors) {

@@ -5,9 +5,8 @@
 
 	import type { SvelteHTMLElements } from 'svelte/elements';
 
-	import { default as Motion } from 'svelte-motion/src/motion/MotionSSR.svelte';
-	import { useMotionValue } from 'svelte-motion';
-	import { getContext } from 'svelte';
+	import { Motion , useMotionValue } from 'svelte-motion';
+		import { getContext } from 'svelte';
 	import type { DefaultPropsType } from '.';
 
 	import { invariant, isMotionValue, useTransform } from './utils';

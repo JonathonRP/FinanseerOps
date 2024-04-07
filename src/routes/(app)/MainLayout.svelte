@@ -91,7 +91,7 @@
 	const notifications = connection.select('messages').json();
 	const notification = connection.select('message').json();
 
-	let useBauhaus = $state(userSettings.useBauhaus);
+	const useBauhaus = $derived(userSettings.useBauhaus);
 
 	const userImage = $derived(userSettings.genertateImage(user));
 
@@ -274,7 +274,7 @@
 			<button
 				type="button"
 				onclick={toggleNotifications()}
-				class="rounded-lg opacity-80 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-808 shadow-sm  @[5rem]:mx-4 @[5rem]:w-11/12 @[5rem]:space-x-2 dark:shadow-neutral-600">
+				class="rounded-lg opacity-80 shadow-sm transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white @[5rem]:mx-4 @[5rem]:w-11/12 @[5rem]:space-x-2 dark:shadow-neutral-600 dark:focus-visible:ring-offset-neutral-808">
 				<span class="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg shadow-md">
 					<svelte:component this={icons.BellIcon} class="h-8 w-6" height="auto" inline />
 					{#if Number($count) > 0}
@@ -289,7 +289,7 @@
 			<button
 				type="button"
 				onclick={toggleAccount()}
-				class="rounded-lg opacity-80 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-808 shadow-sm dark:shadow-neutral-600">
+				class="rounded-lg opacity-80 shadow-sm transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:shadow-neutral-600 dark:focus-visible:ring-offset-neutral-808">
 				<img class="h-8 w-8 rounded-lg shadow-md" src={userImage} alt="user profile" />
 				<span class="sr-only">User menu</span>
 			</button>
@@ -367,203 +367,234 @@
 	</nav>
 
 	{#if accountState.open}
-			<Modal
-				isOpen={accountState.open}
-				on:close={toggleAccount(closeModal)}>
-				<div aria-label="User Account Settings" class="flex h-full flex-col md:px-4">
-					<div class="flex flex-1 flex-col py-10">
-						<!-- Account -->
-						<div class="flex flex-shrink-0 items-center justify-center">
-							<button type="button" class="h-20 w-20 rounded-full">
-								<img src={userImage} alt="user profile" />
-							</button>
-						</div>
+		<Modal isOpen={accountState.open} on:close={toggleAccount(closeModal)}>
+			<div aria-label="User Account Settings" class="flex h-full flex-col md:px-4">
+				<div class="flex flex-1 flex-col py-10">
+					<!-- Account -->
+					<div class="flex flex-shrink-0 items-center justify-center">
+						<button type="button" class="h-20 w-20 rounded-full">
+							<img src={userImage} alt="user profile" />
+						</button>
+					</div>
 
-						<!-- UserSetting -->
-						<div class="flex flex-shrink-0 px-4 py-2">
-							<Form
-								method="post"
-								action="/user?/update"
-								let:formData
-								let:submitting
-								let:valid
-								let:handleBlur
-								let:handleInput
-								validate={(values) => {
-									const errors = { username: '', useBauhaus: '' };
+					<!-- UserSetting -->
+					<div class="flex flex-shrink-0 px-4 py-2">
+						<Form
+							method="post"
+							action="/user?/update"
+							let:formData
+							let:submitting
+							let:valid
+							let:handleBlurOrClick
+							let:handleInput
+							values={(({ name: username, widgetStyle, enableNotifications, emailRate, inAppRate }) => ({
+								username,
+								widgetStyle,
+								enableNotifications,
+								emailRate,
+								inAppRate,
+							}))(user)}
+							validate={(values) => {
+								const errors = {
+									username: '',
+									widgetStyle: '',
+									enableNotifications: '',
+									emailRate: '',
+									inAppRate: '',
+								};
 
-									if (values.username === user?.name && Boolean(values.useBauhaus) === useBauhaus) {
-										errors.username = 'No changes to submit.';
+								if (
+									values.username === user?.name &&
+									values?.widgetStyle === user?.widgetStyle &&
+									values?.enableNotifications === user?.enableNotifications &&
+									values?.emailRate === user?.emailRate &&
+									values?.inAppRate === user?.inAppRate
+								) {
+									const errorMessage = 'No changes to submit.';
+									errors.username = errorMessage;
+									errors.widgetStyle = errorMessage;
+									errors.enableNotifications = errorMessage;
+									errors.emailRate = errorMessage;
+									errors.inAppRate = errorMessage;
+								}
+
+								return errors;
+							}}
+							on:submit={(e) => {
+								const form = Object.fromEntries(e.detail.data);
+
+								if (Boolean(form.useBauhaus) !== useBauhaus) {
+									userSettings.useBauhaus = Boolean(form.useBauhaus);
+									toast.success(`Now using ${useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
+								}
+
+								if (user) {
+									if (user.name === form.username) {
+										return false;
 									}
-
-									return errors;
-								}}
-								on:submit={(e) => {
-									const form = Object.fromEntries(e.detail.data);
-
-									if (Boolean(form.useBauhaus) !== useBauhaus) {
-										useBauhaus = Boolean(form.useBauhaus);
-										toast.success(`Now using ${useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
-									}
-
-									if (user) {
-										if (user.name === form.username) {
-											return false;
-										}
-										user.name = form.username;
-									}
-									return true;
-								}}
-								on:success={(e) => {
-									toast.success(`Updated ${e.detail.data.get('username')}.`);
-								}}
-								class="w-full space-y-6">
-								<input
-									id="name"
-									name="username"
-									class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
-									type="text"
-									value={user?.name}
-									onblur={handleBlur}
-									oninput={handleInput}
-									disabled={submitting} />
-								<label class="flex flex-row items-center justify-between rounded-lg border p-4 bg-slate-200 dark:bg-neutral-808" for="bauhaus">
-									<div class="space-y-0.5">
-										<span class="text-base font-bold leading-snug">Use Buasuah</span>
-										<p class="text-xs text-muted-foreground leading-snug">
-											change user image type, this is abstract art when on.
-										</p>
-									</div>
-									<!-- onCheckedChange={handleInput} -->
-									<Switch
-										id="bauhaus"
-										name="useBauhaus"
-										includeInput
-										bind:checked={useBauhaus}
-										onblur={handleBlur}
-										disabled={submitting} />
-								</label>
-								<fieldset>
-									<legend class="mb-4 text-lg font-medium">App Preferences</legend>
-									<div class="space-y-4">
-										<Select.Root name="widgetStyle" selected={{ label: user?.widgetStyle, value: user?.widgetStyle }} onSelectedChange={(v) => handleInput({currentTarget: v})} onblur={handleBlur}>
-											<input type="hidden" name="widgetStyle" bind:value={formData.widgetStyle} oninput={handleInput}/>
-											<Select.Trigger class="w-full">
-												<Select.Value placeholder="Select a widget style" />
-											</Select.Trigger>
-											<Select.Content>
-												{#each ['simple', 'dense'] as widgetStyle}
-													<Select.Item value={widgetStyle.toLowerCase()} label={widgetStyle} disabled={submitting} />
-												{/each}
-											</Select.Content>
-										</Select.Root>
-										{#await accounts then bankAccounts}
+									user.name = form.username;
+								}
+								return true;
+							}}
+							on:success={(e) => {
+								toast.success(`Successfully updated.`);
+							}}
+							class="w-full space-y-6">
+							<input
+								id="name"
+								name="username"
+								class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+								type="text"
+								bind:value={formData.username}
+								onblur={handleBlurOrClick}
+								oninput={handleInput}
+								disabled={submitting} />
+							<label
+								class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
+								for="bauhaus">
+								<div class="space-y-0.5">
+									<span class="text-base font-bold leading-snug">Use Buasuah</span>
+									<p class="text-xs leading-snug text-muted-foreground">
+										change user image type, this is abstract art when on.
+									</p>
+								</div>
+								<Switch id="bauhaus" name="useBauhaus" bind:checked={userSettings.useBauhaus} disabled={submitting} />
+							</label>
+							<fieldset>
+								<legend class="mb-4 text-lg font-medium">App Preferences</legend>
+								<div class="space-y-4">
+									<Select.Root
+										name="widgetStyle"
+										selected={{ label: user?.widgetStyle, value: user?.widgetStyle }}
+										onSelectedChange={({ value }) => (formData.widgetStyle = value)}
+										disabled={submitting}>
+										<input type="hidden" name="widgetStyle" value={formData.widgetStyle} />
+										<Select.Trigger class="w-full">
+											<Select.Value placeholder="Select a widget style" />
+										</Select.Trigger>
+										<Select.Content>
+											{#each ['simple', 'dense'] as widgetStyle}
+												<Select.Item value={widgetStyle.toLowerCase()} label={widgetStyle} disabled={submitting} />
+											{/each}
+										</Select.Content>
+									</Select.Root>
+									{#await accounts then bankAccounts}
 										<Select.Root
 											multiple
-											name="bankAccountsFilter"
-											selected={user?.permittedBankAccounts?.map((value) => ({ label: bankAccounts.find(account => account.id === value)?.name, value }))}>
+											name="permittedBankAccounts"
+											selected={user?.permittedBankAccounts?.map((value) => ({
+												label: bankAccounts.find((account) => account.id === value)?.name,
+												value,
+											}))}
+											onSelectedChange={([{ value }]) => (formData.permittedBankAccounts = [...value])}
+											disabled={submitting}>
+											{#each formData.permittedBankAccounts as bankAccount (bankAccount)}
+												<input type="hidden" name="permittedBankAccounts" value={bankAccount} />
+											{/each}
 											<Select.Trigger class="w-full">
 												<Select.Value placeholder="Select accounts to permit" />
 											</Select.Trigger>
 											<Select.Content>
 												{#each bankAccounts as { id: bankAccountId, name: bankAccountName } (bankAccountId)}
-													<!-- on:blur={handleBlur}
-												on:input={handleInput} -->
-													<Select.Item value={bankAccountId.toString()} label={bankAccountName} disabled={submitting} />
+													<Select.Item value={bankAccountId.toString()} label={bankAccountName} />
 												{/each}
 											</Select.Content>
 										</Select.Root>
-										{/await}
-									</div>
-								</fieldset>
-								<fieldset>
-									<legend class="mb-4 text-lg font-medium">Notifications Preferences</legend>
-									<div class="space-y-4">
-										<label class="flex flex-row items-center justify-between rounded-lg border p-4 bg-slate-200 dark:bg-neutral-808" for="notifications">
-											<div class="space-y-0.5">
-												<span class="text-base font-bold leading-snug">Notifications</span>
-												<p class="text-xs text-muted-foreground leading-snug">
-													permit sending of in-app and email notifications.
-												</p>
-											</div>
-											<Switch
-												id="notifications"
-												name="enableNotifications"
-												includeInput
-												checked={user?.enableNotifications ?? undefined}
-												onblur={handleBlur}
-												oninput={handleInput}
-												disabled={submitting} />
-										</label>
-										<Select.Root name="emailRate" selected={{ label: user?.emailRate, value: user?.emailRate }}>
-											<Select.Trigger class="w-full">
-												<Select.Value placeholder="Select an email rate" />
-											</Select.Trigger>
-											<Select.Content>
-												{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as emailRate}
-													<!-- on:blur={handleBlur}
-												on:input={handleInput} -->
-													<Select.Item value={emailRate.toLowerCase()} label={emailRate} disabled={submitting} />
-												{/each}
-											</Select.Content>
-										</Select.Root>
-										<Select.Root name="inAppRate" selected={{ label: user?.inAppRate, value: user?.inAppRate }}>
-											<Select.Trigger class="w-full">
-												<Select.Value placeholder="Select an in-app rate" />
-											</Select.Trigger>
-											<Select.Content>
-												{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as inAppRate}
-													<!-- on:blur={handleBlur}
-												on:input={handleInput} -->
-													<Select.Item value={inAppRate.toLowerCase()} label={inAppRate} disabled={submitting} />
-												{/each}
-											</Select.Content>
-										</Select.Root>
-									</div>
-								</fieldset>
-								<FormUi.Button
-									aria-busy={submitting}
-									disabled={!valid || submitting}>
-									<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
-									Save Settings
-								</FormUi.Button>
-							</Form>
-						</div>
+									{/await}
+								</div>
+							</fieldset>
+							<fieldset>
+								<legend class="mb-4 text-lg font-medium">Notifications Preferences</legend>
+								<div class="space-y-4">
+									<label
+										class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
+										for="notifications">
+										<div class="space-y-0.5">
+											<span class="text-base font-bold leading-snug">Notifications</span>
+											<p class="text-xs leading-snug text-muted-foreground">
+												permit sending of in-app and email notifications.
+											</p>
+										</div>
+										<Switch
+											id="notifications"
+											name="enableNotifications"
+											includeInput={true}
+											bind:checked={formData.enableNotifications}
+											onclick={handleBlurOrClick}
+											onblur={handleBlurOrClick}
+											disabled={submitting} />
+									</label>
+									<Select.Root
+										name="emailRate"
+										selected={{ label: user?.emailRate, value: user?.emailRate }}
+										onSelectedChange={({ value }) => (formData.emailRate = value)}
+										disabled={submitting}>
+										<input type="hidden" name="emailRate" value={formData.emailRate} />
+										<Select.Trigger class="w-full">
+											<Select.Value placeholder="Select an email rate" />
+										</Select.Trigger>
+										<Select.Content>
+											{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as emailRate}
+												<Select.Item value={emailRate.toLowerCase()} label={emailRate} disabled={submitting} />
+											{/each}
+										</Select.Content>
+									</Select.Root>
+									<Select.Root
+										name="inAppRate"
+										selected={{ label: user?.inAppRate, value: user?.inAppRate }}
+										onSelectedChange={({ value }) => (formData.inAppRate = value)}
+										disabled={submitting}>
+										<input type="hidden" name="inAppRate" value={formData.inAppRate} />
+										<Select.Trigger class="w-full">
+											<Select.Value placeholder="Select an in-app rate" />
+										</Select.Trigger>
+										<Select.Content>
+											{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as inAppRate}
+												<Select.Item value={inAppRate.toLowerCase()} label={inAppRate} disabled={submitting} />
+											{/each}
+										</Select.Content>
+									</Select.Root>
+								</div>
+							</fieldset>
+							<FormUi.Button aria-busy={submitting} disabled={!valid || submitting}>
+								<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
+								Save Settings
+							</FormUi.Button>
+						</Form>
 					</div>
-
-					{#if user}
-						<div class="flex-shrink-0 py-4 max-md:px-4">
-							<SignOut
-								signOutPage="auth"
-								className="group flex w-full items-center space-x-2 rounded-lg transition-colors hover:bg-accent-500 hover:text-white">
-								<span
-									aria-hidden="true"
-									class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600">
-									<svelte:component this={icons.LogOutIcon} class="h-6 w-6" height="auto" flip="vertical" />
-								</span>
-								<span>Sign Out</span>
-							</SignOut>
-						</div>
-					{/if}
 				</div>
-			</Modal>
+
+				{#if user}
+					<div class="flex-shrink-0 py-4 max-md:px-4">
+						<SignOut
+							signOutPage="auth"
+							className="group flex w-full items-center space-x-2 rounded-lg transition-colors hover:bg-accent-500 hover:text-white">
+							<span
+								aria-hidden="true"
+								class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600">
+								<svelte:component this={icons.LogOutIcon} class="h-6 w-6" height="auto" flip="vertical" />
+							</span>
+							<span>Sign Out</span>
+						</SignOut>
+					</div>
+				{/if}
+			</div>
+		</Modal>
 	{/if}
 
 	{#if notificationsState.open}
-			<Modal
-				isOpen={notificationsState.open}
-				on:close={toggleNotifications(closeModal)}>
-				<div aria-label="Notifications" class="flex h-full flex-col md:px-2">
-					<div class="flex flex-1 flex-col py-10">
-						<!-- notifications -->
-						<div class="flex flex-shrink-0 items-center justify-center pb-2">
-							<header>Notifications</header>
-						</div>
-						<ul
-							class={cn('flex h-full flex-shrink-0 flex-col gap-2 px-2 py-4', {
-								'justify-center': !$notifications?.length,
-							})}>
-								<AnimatePresence initial={false} show={notificationsState.open}>
+		<Modal isOpen={notificationsState.open} on:close={toggleNotifications(closeModal)}>
+			<div aria-label="Notifications" class="flex h-full flex-col md:px-2">
+				<div class="flex flex-1 flex-col py-10">
+					<!-- notifications -->
+					<div class="flex flex-shrink-0 items-center justify-center pb-2">
+						<header>Notifications</header>
+					</div>
+					<ul
+						class={cn('flex h-full flex-shrink-0 flex-col gap-2 px-2 py-4', {
+							'justify-center': !$notifications?.length,
+						})}>
+						<AnimatePresence initial={false} show={notificationsState.open}>
 							{#if $notifications?.length}
 								{#each $notifications as notification (notification.id)}
 									{@const { icon, actions } = {
@@ -608,8 +639,7 @@
 												</div>
 												<div class="flex flex-col text-left">
 													<p class="text-balance">{notification.message}</p>
-													<time
-														datetime={formatISO(parseJSON(notification.createdOn))}
+													<time datetime={formatISO(parseJSON(notification.createdOn))}
 														>{intlFormatDistance(parseJSON(notification.createdOn), new Date())}</time>
 												</div>
 											</a>
@@ -753,11 +783,11 @@
 									<span class="text-bas">You're all caught up</span>
 								</li>
 							{/if}
-							</AnimatePresence>
-						</ul>
-					</div>
+						</AnimatePresence>
+					</ul>
 				</div>
-			</Modal>
+			</div>
+		</Modal>
 	{/if}
 </aside>
 
@@ -802,8 +832,7 @@
 				on:formdata={(e) => {
 					Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
 				}}>
-				<span
-					class="mx-[0.625rem] my-[0.525rem] flex border-spacing-0 items-center rounded-full text-base font-bold">
+				<span class="mx-[0.625rem] my-[0.525rem] flex border-spacing-0 items-center rounded-full text-base font-bold">
 					<svelte:component this={icons.SearchIcon} inline />
 				</span>
 				<input type="hidden" name="processedDate" value={processedDate} />

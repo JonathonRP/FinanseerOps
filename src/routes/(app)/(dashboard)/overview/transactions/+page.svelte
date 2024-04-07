@@ -8,7 +8,7 @@
 	import { AnimatePresence, MotionConfig } from 'svelte-motion';
 	import { Motion } from '$/lib/components';
 
-	const { data }: { data: import('../../transactions/$types').PageData } = $props();
+	const { data }: { data: import('./$types').PageData } = $props();
 	const { processedDate, searchFilter, transactions } = $derived(data);
 
 	const processedDay = $derived((processedDate && new Date(processedDate)) || startOfToday());

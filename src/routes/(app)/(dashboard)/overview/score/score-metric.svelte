@@ -7,6 +7,7 @@
 	import { fade } from 'svelte/transition';
 	import { scoreCardIcons } from '$/icons';
 	import AnimatedNumber from '$/lib/components/AnimatedNumber.svelte';
+	import { string } from 'zod';
 	import type { DefaultPropsType } from '.';
 
 	const {
@@ -46,10 +47,10 @@
 <div class="flex items-center">
 	{#if value !== null && value !== undefined}
 		<p class={cn('text-2xl font-bold', restProps.class)}>
-			<span class="flex min-w-[3ch] grow flex-nowrap overflow-hidden"
-				>{numberFormat().format($score$).slice(0, 1)}
+			<span class="flex min-w-[3ch] flex-nowrap overflow-hidden items-baseline">
+				{numberFormat().format($score$).slice(0, 1)}
 				{#each numberFormat().format($score$).slice(1, -1).split('') as digit}
-					{#if !Number(digit)}
+					{#if !Number(digit) && digit !== '0'}
 						{digit}
 					{:else}
 						<AnimatedNumber value={digit} class="font-bold leading-snug" />
