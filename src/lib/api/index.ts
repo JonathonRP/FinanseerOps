@@ -54,6 +54,7 @@ export const api = (url: { origin: string }) =>
 			// }),
 			unstable_httpBatchStreamLink({
 				url: url ? `${url.origin}/api/trpc` : '/api/trpc',
+				maxURLLength: 2038,
 			}),
 		],
 		transformer,

@@ -1,9 +1,9 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { catchError, filter, from, map, of, reduce, switchMap } from 'rxjs';
-	import { format, isSameMonth, startOfMonth, startOfToday, subMonths } from 'date-fns';
-	import { cn, dateFormat } from '$lib/utils';
+	import { from, map } from 'rxjs';
+	import { isSameMonth, startOfToday, subMonths } from 'date-fns';
+	import { cn } from '$lib/utils';
 	import { Score } from '../score';
 	import { AreaChart } from '../charts';
 	import DashboardWidget from '../DashboardWidget.svelte';

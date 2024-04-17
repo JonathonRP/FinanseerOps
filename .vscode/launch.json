@@ -58,7 +58,7 @@
 			"skipFiles": ["<node_internals>/**"],
 			"serverReadyAction": {
 				"pattern": "http://localhost:.*m([0-9]+)",
-				"uriFormat": "http://localhost:%s",
+				"uriFormat": "http://localhost:%s/overview",
 				"action": "debugWithEdge"
 			}
 		}

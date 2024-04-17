@@ -1,0 +1,41 @@
+diff --git a/cjs/performance.js b/cjs/performance.js
+index 8526862e1e6faf6be63dd36276443c5107f8c6c4..a1969facbb12f74988862434f7cde3dda27cabc6 100644
+--- a/cjs/performance.js
++++ b/cjs/performance.js
+@@ -2,7 +2,6 @@ Object.defineProperty(exports, '__esModule', { value: true });
+ 
+ const browser = require('@sentry/browser');
+ const svelte = require('svelte');
+-const internal = require('svelte/internal');
+ const core = require('@sentry/core');
+ const constants = require('./constants.js');
+ 
+@@ -32,7 +31,7 @@ function trackComponent(options) {
+ 
+   // current_component.ctor.name is likely to give us the component's name automatically
+   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+-  const componentName = `<${customComponentName || internal.current_component.constructor.name || constants.DEFAULT_COMPONENT_NAME}>`;
++  const componentName = `<${customComponentName || constants.DEFAULT_COMPONENT_NAME}>`;
+ 
+   let initSpan = undefined;
+   if (mergedOptions.trackInit) {
+diff --git a/esm/performance.js b/esm/performance.js
+index 94246f3a88d69dfb8ad88232d309787346f9fb1c..ed8d61767516fc9ed66204bb4755144fa26ed1cf 100644
+--- a/esm/performance.js
++++ b/esm/performance.js
+@@ -1,6 +1,5 @@
+ import { getCurrentScope } from '@sentry/browser';
+ import { onMount, beforeUpdate, afterUpdate } from 'svelte';
+-import { current_component } from 'svelte/internal';
+ import { getRootSpan } from '@sentry/core';
+ import { DEFAULT_COMPONENT_NAME, UI_SVELTE_INIT, UI_SVELTE_UPDATE } from './constants.js';
+ 
+@@ -30,7 +29,7 @@ function trackComponent(options) {
+ 
+   // current_component.ctor.name is likely to give us the component's name automatically
+   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+-  const componentName = `<${customComponentName || current_component.constructor.name || DEFAULT_COMPONENT_NAME}>`;
++  const componentName = `<${customComponentName || DEFAULT_COMPONENT_NAME}>`;
+ 
+   let initSpan = undefined;
+   if (mergedOptions.trackInit) {

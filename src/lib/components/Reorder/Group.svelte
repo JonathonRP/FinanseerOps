@@ -3,7 +3,7 @@
 <script lang="ts" generics="V">
 	import type { SvelteHTMLElements } from 'svelte/elements';
 	import { default as Motion } from 'svelte-motion/src/motion/MotionSSR.svelte';
-	import { setContext, untrack } from 'svelte';
+	import { setContext } from 'svelte';
 	import type { ItemData, ReorderContextProps } from './types';
 	import type { DefaultPropsType } from '.';
 

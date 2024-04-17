@@ -3,20 +3,15 @@
 <script lang="ts">
 	import {
 		from,
-		filter,
 		reduce,
 		groupBy,
 		combineLatest,
-		switchMap,
 		map,
-		mergeMap,
-		catchError,
-		of,
 		concatMap,
 		concatAll,
 		toArray,
 	} from 'rxjs';
-	import { isBefore, isSameDay, isSameMonth, startOfMonth, startOfToday } from 'date-fns';
+	import { isBefore, isSameDay, isSameMonth, startOfToday } from 'date-fns';
 	import * as d3 from 'd3';
 	import { Score } from '../score';
 	import { GaugeChart } from '../charts';

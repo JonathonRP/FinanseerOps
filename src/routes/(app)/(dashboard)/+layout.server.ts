@@ -1,8 +1,8 @@
 import { createContext } from '$/server/api/context.js';
 import { appRouter } from '$/server/api/root.js';
 import { createCallerFactory } from '$/server/api/trpc.js';
-import { endOfMonth, endOfWeek, parse, startOfMonth, startOfToday, startOfWeek, subMonths } from 'date-fns';
-import { delay, filter, map, repeat, takeWhile, tap } from 'rxjs';
+import { endOfMonth, endOfWeek, startOfMonth, startOfToday, startOfWeek, subMonths } from 'date-fns';
+import { share } from 'rxjs';
 
 export async function load(event) {
 	const {
@@ -23,7 +23,7 @@ export async function load(event) {
 			origin,
 		},
 		accounts: new Promise(async (resolve, reject) =>
-			(await api.buxfer.accounts()).subscribe({
+			(await api.buxfer.accounts()).pipe(share()).subscribe({
 				next: (result) => {
 					resolve(result);
 				},
@@ -38,14 +38,16 @@ export async function load(event) {
 					startDate: startOfWeek(startOfMonth(subMonths(processedDay, 1)), { weekStartsOn: 1 }),
 					endDate: endOfWeek(endOfMonth(processedDay), { weekStartsOn: 1 }),
 				})
-			).subscribe({
-				next: (result) => {
-					resolve(result);
-				},
-				error: (err) => {
-					console.log(err);
-				},
-			});
+			)
+				.pipe(share())
+				.subscribe({
+					next: (result) => {
+						resolve(result);
+					},
+					error: (err) => {
+						console.log(err);
+					},
+				});
 		}),
 	};
 }

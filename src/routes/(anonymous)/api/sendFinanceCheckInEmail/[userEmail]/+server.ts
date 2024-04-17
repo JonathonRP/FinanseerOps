@@ -1,11 +1,14 @@
 import { resend } from '$/server';
 import * as Sentry from '@sentry/sveltekit';
+import { parseRefill } from 'svelte-api-keys';
 import { EMAIL_FROM, VERCEL_DOMAIN } from '$env/static/private';
 
 // TODO - evaluate Upstash and Vercel cronjobs alternatives.
 // TODO - use supabase postgres cron.
 
-export const POST = async ({ url, params }) => {
+export const POST = async ({ url, params, locals }) => {
+	await locals.api.has(`email`).limit(parseRefill("30 / MINUTE, 10"));
+
 	const mailOptions = {
 		from: EMAIL_FROM,
 		to: params.userEmail,

@@ -1,8 +1,8 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { filter, reduce, combineLatest, from, switchMap, map, of, catchError } from 'rxjs';
-	import { isSameMonth, startOfMonth, startOfToday } from 'date-fns';
+	import { reduce, combineLatest, from, map } from 'rxjs';
+	import { isSameMonth, startOfToday } from 'date-fns';
 	import { Score } from '../score';
 	import DashboardWidget from '../DashboardWidget.svelte';
 	import { page } from '$app/stores';
@@ -12,28 +12,39 @@
 	const { processedDate, accounts, transactions, user } = $derived($page.data);
 
 	const processedDay = $derived((processedDate && new Date(processedDate)) || startOfToday());
-	const balance = $derived(
-		from(accounts).pipe(
+	const balance = $derived.by(() => {
+		const filter = user.permittedBankAccounts;
+		return from(accounts).pipe(
 			map((data) =>
-				data
-					.filter(({ id }) => user.permittedBankAccounts?.includes(id) ?? true)
-					.reduce((sum, { balance }) => sum + balance, 0)
+				data.filter(({ id }) => filter?.includes(id) ?? true).reduce((sum, { balance }) => sum + balance, 0)
 			)
-		)
-	);
+		);
+	});
 
 	const monthExpenseTotal = $derived(
 		from(transactions).pipe(
-			map((result) =>
-				result
+			map((data) =>
+				data
 					.filter(({ date, type }) => isSameMonth(date, processedDay) && type === 'expense')
 					.reduce((acc, { amount }) => acc + amount, 0)
 			)
 		)
 	);
 
+	const monthIncomeTotal = $derived(
+		from(transactions).pipe(
+			map((data) =>
+				data
+					.filter(({ date, type }) => isSameMonth(date, processedDay) && type === 'income')
+					.reduce((acc, { amount }) => acc + amount, 0)
+			)
+		)
+	);
+
 	const forcast$ = $derived(
-		combineLatest([balance, monthExpenseTotal]).pipe(reduce((acc, [bal, exp]) => bal - (acc - exp), 0))
+		combineLatest([balance, monthExpenseTotal, monthIncomeTotal]).pipe(
+			reduce((acc, [bal, exp, income]) => acc + (bal + (acc - exp) + income), 0)
+		)
 	);
 </script>
 

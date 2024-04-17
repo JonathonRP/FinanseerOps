@@ -4,10 +4,8 @@
 	import type { ComponentType, SvelteComponent } from 'svelte';
 	import { cn, numberFormat, type Color } from '$/lib/utils';
 	import { spring, tweened } from 'svelte/motion';
-	import { fade } from 'svelte/transition';
 	import { scoreCardIcons } from '$/icons';
 	import AnimatedNumber from '$/lib/components/AnimatedNumber.svelte';
-	import { string } from 'zod';
 	import type { DefaultPropsType } from '.';
 
 	const {

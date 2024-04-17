@@ -77,6 +77,15 @@
 		-ms-user-select: none;
 		user-select: none;
 	} */
+
+	input:autofill,
+	input:autofill:hover,
+	input:autofill:focus {
+		transition:
+			background-color 0s 600000s,
+			color 0s 600000s !important;
+	}
+
 	:focus {
 		outline: none !important;
 	}
@@ -122,7 +131,7 @@
 		@apply !bg-muted;
 	}
 	::-webkit-scrollbar-thumb {
-		@apply !bg-muted-foreground/30 rounded-sm;
+		@apply rounded-sm !bg-muted-foreground/30;
 	}
 
 	/* Firefox */
@@ -157,7 +166,7 @@
 	}
 
 	.step:before {
-		@apply border-background bg-muted absolute inline-flex h-9 w-9 items-center justify-center rounded-full border-4 text-center -indent-px font-mono text-base font-medium;
+		@apply absolute inline-flex h-9 w-9 items-center justify-center rounded-full border-4 border-background bg-muted text-center -indent-px font-mono text-base font-medium;
 		@apply ml-[-50px] mt-[-4px];
 		content: counter(step);
 	}

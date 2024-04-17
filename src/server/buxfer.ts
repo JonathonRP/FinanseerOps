@@ -1,25 +1,27 @@
 import { error } from '@sveltejs/kit';
-import { format, formatISO, parse, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import path from 'path';
-import { array, number, object, string, union, z, coerce, date, lazy, boolean } from 'zod';
+import { array, number, object, string, union, z, coerce, date, boolean } from 'zod';
 import { fromFetch } from 'rxjs/fetch';
 import {
 	type Observable,
 	map,
 	catchError,
-	expand,
 	EMPTY,
-	reduce,
 	throwError,
-	repeat,
-	takeWhile,
-	delay,
+	tap,
+	share,
 	switchMap,
 	timer,
+	type MonoTypeOperatorFunction,
+	takeWhile,
+	last,
+	reduce,
+	of,
+	mergeMap,
+	concat,
 } from 'rxjs';
 import * as Sentry from '@sentry/sveltekit';
-import { dateFormat } from '$/lib/utils';
-import { Intl } from '@js-temporal/polyfill';
 
 const DateFormat = 'yyyy-MM-dd';
 
@@ -32,6 +34,7 @@ export const accounts = array(
 	})
 );
 
+const buxferPageSize = 100;
 const transactionsPage = object({
 	totalTransactionsCount: coerce
 		.number()
@@ -57,13 +60,13 @@ const transactionsPage = object({
 	next: number().optional(),
 	current: number(),
 	previous: number().optional(),
-}).transform(({ totalTransactionsCount, current, totalRecords, totalPages, transactions }) => ({
+}).transform(({ totalTransactionsCount, current, transactions }) => ({
 	transactions,
 	totalRecords: transactions.length,
-	totalPages: Math.ceil(totalTransactionsCount / totalRecords),
+	totalPages: Math.ceil(totalTransactionsCount / buxferPageSize),
 	previous: current > 1 ? current - 1 : undefined,
 	current,
-	next: current <= totalPages ? current + 1 : undefined,
+	next: current < Math.ceil(totalTransactionsCount / buxferPageSize) ? current + 1 : undefined,
 }));
 
 export const transactions = array(
@@ -134,13 +137,13 @@ export const login = object({
 export const transactionsQueryParams = object({
 	startDate: date(),
 	endDate: date(),
-	cursor: number().nullish().default(1).pipe(coerce.string()),
-}).transform(({ startDate, endDate, cursor }) => ({ startDate, endDate, page: cursor }));
+	page: number().nullish().default(1),
+});
 
 const transactionsQueryParamsInternal = transactionsQueryParams.transform(({ startDate, endDate, page }) => ({
 	startDate: format(startDate, DateFormat),
 	endDate: format(endDate, DateFormat),
-	page,
+	page: String(page),
 }));
 
 // export const tokens = object({
@@ -221,7 +224,7 @@ function buxferProxy(
 		body: { ...bodyConstruct },
 	});
 
-	return fromFetch(buxferRequest.clone(), {
+	return fromFetch(buxferRequest, {
 		selector: (resp) => resp.json(),
 	}).pipe(
 		map((data) => {
@@ -271,7 +274,9 @@ function buxferProxy(
 				...(err?.cause && { cause: err.cause }),
 				...(err?.stack && { stack: err.stack }),
 			}));
-		})
+		}),
+		tap(() => console.log('fetch: ', endpoint, new Date(Date.now()).toLocaleTimeString())),
+		share()
 	);
 }
 
@@ -291,10 +296,12 @@ type BuxferResponse<T extends BuxferRequest> = Observable<
 				: never
 >;
 
+type ClientOptions = { headers: Headers; poll?: boolean; interval?: `${number}s` };
+
 export function client<T extends Extract<BuxferRequest, { url: typeof api.login }>>(
 	url: T['url'],
 	body: T['body'],
-	options?: { headers: Headers } | null | undefined
+	options?: ClientOptions | null | undefined
 ): BuxferResponse<T>;
 // export async function client<T extends Extract<BuxferRequest, { url: typeof api.refresh }>>(
 // 	url: T['url'],
@@ -304,19 +311,18 @@ export function client<T extends Extract<BuxferRequest, { url: typeof api.login 
 export function client<T extends Extract<BuxferRequest, { url: typeof api.accounts }>>(
 	url: T['url'],
 	body: T['body'],
-	options?: { headers: Headers } | null | undefined
+	options?: ClientOptions | null | undefined
 ): BuxferResponse<T>;
 export function client<T extends Extract<BuxferRequest, { url: typeof api.transactions }>>(
 	url: T['url'],
 	body: T['body'],
-	options?: { headers: Headers } | null | undefined
+	options?: ClientOptions | null | undefined
 ): BuxferResponse<T>;
 export function client<T extends BuxferRequest>(
 	url: T['url'],
 	body: T['body'],
-	options?: { headers: Headers } | null | undefined
+	options?: ClientOptions | null | undefined
 ) {
-	const pollingRate = 1000;
 	switch (url) {
 		// case api.login: {
 		// 	const { tokens: tokensData } = await buxferProxy(url, login.parse(body));
@@ -342,20 +348,31 @@ export function client<T extends BuxferRequest>(
 			}
 			return buxferProxy(url, { token: token.parse(access) }).pipe(
 				catchError((err) => throwError(() => err)),
-				map(({ accounts: accountsData }) => accounts.parse(accountsData))
+				map(({ accounts: accountsData }) => accounts.parse(accountsData)),
+				tap(() => console.log('client: ', url, new Date(Date.now()).toLocaleTimeString()))
 				// delay(pollingRate),
 				// repeat()
 			);
 		}
 
 		case api.transactions: {
-			const access = options?.headers?.get('Authorization')?.replace('Bearer: ', '') ?? '';
+			const data = transactionsQueryParams.parse(body);
+			let access;
+			let enablePolling = false;
+			let interval = 1000;
+
+			if (options) {
+				const { headers, poll: polling, interval: optionsInterval } = options;
+				access = headers?.get('Authorization')?.replace('Bearer: ', '') ?? '';
+				enablePolling = polling ?? false;
+				interval = Number(optionsInterval?.replace('s', '')) * 1000;
+			}
 			if (!access) {
 				error(401, 'Unathorized');
 			}
-			const parsedBody = transactionsQueryParamsInternal.parse({ ...body });
+
 			return buxferProxy(url, {
-				...parsedBody,
+				...transactionsQueryParamsInternal.parse(data),
 				token: token.parse(access),
 			}).pipe(
 				catchError((err) => throwError(() => err)),
@@ -363,36 +380,46 @@ export function client<T extends BuxferRequest>(
 					transactionsPage.parse({
 						transactions,
 						totalTransactionsCount,
-						current: Number(parsedBody.page),
+						current: data.page,
 					})
 				),
-				expand(({ next }) =>
-					next
-						? buxferProxy(url, {
-								...transactionsQueryParamsInternal.parse({ ...body, cursor: next }),
-								token: token.parse(access),
-							}).pipe(
-								catchError((err) => throwError(() => err)),
-								map(({ numTransactions: totalTransactionsCount, transactions }) =>
-									transactionsPage.parse({
-										transactions,
-										totalTransactionsCount,
-										current: next,
-									})
-								)
-							)
+				mergeMap(({ transactions, next }) => {
+					const transactions$ = of(transactions);
+					const next$ = next
+						? client('/transactions', transactionsQueryParams.parse({ ...body, page: next }), { headers: options?.headers ?? new Headers() })
 						: EMPTY
-				),
-				map((page) => page.transactions),
-				reduce((acc, curr) => acc.concat(curr))
-				// delay(pollingRate),
-				// repeat()
+					return concat(transactions$, next$);
+				}),
+				reduce((acc, curr) => acc.concat(curr)),
+				tap(() => console.log('client: ', url, new Date(Date.now()).toLocaleTimeString()))
+				// connect((shared$) =>
+				// 	concat(shared$,
+				// 	defer(() => shared$).pipe(
+				// 		tap(() => console.log('polling: ', url, new Date(Date.now()).toLocaleTimeString())),
+				// 		polling(interval, () => enablePolling, (() => !enablePolling)())
+				// 	))
+				// )
 			);
 		}
 		default:
 			assertCannotReach(url);
 	}
 	return <never>null;
+}
+
+function polling<T>(
+	pollInterval: number,
+	active: (res: T) => boolean,
+	emitOnlyLast = false
+): MonoTypeOperatorFunction<T> {
+	return (source$) => {
+		const polling$ = timer(0, pollInterval).pipe(
+			switchMap(() => source$),
+			takeWhile(active, true),
+			tap(() => console.log('polling: ', new Date(Date.now()).toLocaleTimeString()))
+		);
+		return emitOnlyLast ? polling$.pipe(last()) : polling$;
+	};
 }
 
 function assertCannotReach(x: never) {

@@ -1,8 +1,12 @@
-const plugin = require('tailwindcss/plugin');
+import type { Config } from 'tailwindcss';
 import { fontFamily } from 'tailwindcss/defaultTheme';
 
-/** @type {import('tailwindcss').Config} */
-const config = {
+import plugin from 'tailwindcss/plugin';
+import scrollbar from 'tailwind-scrollbar';
+import forms from '@tailwindcss/forms';
+import containerqueries from '@tailwindcss/container-queries';
+
+export default {
 	content: ['./src/**/*.{html,js,svelte,ts}'],
 	variants: {
 		extend: {
@@ -114,21 +118,17 @@ const config = {
 		plugin(({ matchUtilities, theme }) => {
 			matchUtilities(
 				{
-					'animation-delay': (value) => {
-						return {
+					'animation-delay': (value) => ({
 							'animation-delay': value,
-						};
-					},
+						}),
 				},
 				{
 					values: theme('transitionDelay'),
 				}
 			);
 		}),
-		require('tailwind-scrollbar'),
-		require('@tailwindcss/forms'),
-		require('@tailwindcss/container-queries'),
+		scrollbar,
+		forms,
+		containerqueries
 	],
-};
-
-module.exports = config;
+} satisfies Config

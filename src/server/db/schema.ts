@@ -1,6 +1,5 @@
 import {
 	pgTable,
-	foreignKey,
 	pgEnum,
 	uuid,
 	text,
@@ -10,10 +9,7 @@ import {
 	unique,
 	type AnyPgColumn,
 	varchar,
-	bigint,
-	primaryKey,
 	integer,
-	serial,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import type { AdapterAccount } from '@auth/sveltekit/adapters';
@@ -43,6 +39,33 @@ export const notificationTypes = pgEnum('notification_types', ['invite', 'accoun
 
 export const authjs = pgSchema('authjs');
 
+// TODO: Add api-key storage table to api-keys schema.
+export const apiKeys = pgSchema('api-keys');
+
+export const buckets = apiKeys.table('buckets', {
+	name: text('name').primaryKey().notNull(),
+	tokens: integer('tokens').notNull(),
+	updated: integer('updated').notNull()
+});
+
+export const keys = apiKeys.table('keys', {
+	hash: text('hash').primaryKey().notNull(),
+	user: uuid('user').references(() => users.id, { onDelete: 'cascade'}).notNull(),
+	name: text('name').notNull(),
+	description: text('description').notNull(),
+	expires: timestamp('expires', { mode: 'date' }),
+	permissions: text('permissions').array().notNull()
+});
+
+// TODO: Add waiting list table to public schema.
+export const waitingList = pgTable('waitingList', {
+	id: uuid('id')
+		.default(sql`uuid_generate_v4()`)
+		.primaryKey()
+		.notNull(),
+	email: text('email'),
+})
+
 export const notifications = pgTable('notifications', {
 	id: uuid('id')
 		.default(sql`uuid_generate_v4()`)
@@ -51,8 +74,8 @@ export const notifications = pgTable('notifications', {
 	message: text('message'),
 	type: notificationTypes('type'),
 	seen: boolean('seen').default(false),
-	recipientId: uuid('recipient_id').references(() => users.id),
-	createdBy: uuid('created_by').references(() => users.id),
+	recipientId: uuid('recipient_id').references(() => users.id, { onDelete: 'cascade'  }),
+	createdBy: uuid('created_by').references(() => users.id, { onDelete: 'cascade' }),
 	createdOn: timestamp('created_on', { mode: 'string' }).defaultNow(),
 });
 

@@ -2,11 +2,12 @@
 
 <script lang="ts">
 	import { formatDistanceToNow, isBefore, isSameDay, isSameMonth, startOfToday } from 'date-fns';
-	import { filter, from, map, of, reduce, scan, startWith, switchMap, tap } from 'rxjs';
+	import { from, map, startWith } from 'rxjs';
 	import { cn, numberFormat } from '$lib/utils';
 	import { icons } from '$/icons';
 	import { AnimatePresence, MotionConfig } from 'svelte-motion';
 	import { Motion } from '$/lib/components';
+	import { afterNavigate } from '$app/navigation';
 
 	const { data }: { data: import('./$types').PageData } = $props();
 	const { processedDate, searchFilter, transactions } = $derived(data);
@@ -29,12 +30,24 @@
 		)
 	);
 
-	const monthExpenseTotal = $derived(
+	const expenseTotal = $derived(
 		history.pipe(
 			map((result) => result.filter(({ type }) => type === 'expense').reduce((acc, { amount }) => acc + amount, 0)),
 			startWith(0)
 		)
 	);
+
+	let mounting = $state(true);
+
+	afterNavigate((nav) => {
+		if (nav.type === 'enter') {
+			mounting = false;
+		}
+	});
+	
+	$effect(() => {
+		if (mounting) mounting = false;
+	});
 </script>
 
 <svelte:head>
@@ -70,7 +83,7 @@
 				<p
 					class="mx-2 flex h-full items-center justify-center rounded-full px-2 py-0.5 text-sm
 			{'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300'}">
-					{numberFormat().format($monthExpenseTotal)}
+					{numberFormat().format($expenseTotal)}
 				</p>
 			</div>
 		</div>
@@ -87,7 +100,7 @@
 					duration: 0.3,
 				}}>
 				<AnimatePresence
-					initial={false}
+					initial={!mounting}
 					list={$history?.map((transaction) => ({
 						key: transaction.id,
 						...transaction,
@@ -128,7 +141,8 @@
 				</AnimatePresence>
 			</MotionConfig>
 		</div>
-	{:else}
+		{:else}
+			{#await transactions then data}
 		<svg
 			height="calc(100dvh - 15em)"
 			version="1.1"
@@ -895,5 +909,6 @@
 				</g>
 			</g>
 		</svg>
+		{/await}
 	{/if}
 </div>

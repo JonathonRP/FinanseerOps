@@ -1,9 +1,8 @@
 <svelte:options runes={true} />
 
 <script lang="ts" generics="V">
-	import { cn } from '$lib/utils';
-
-	import type { SvelteHTMLElements } from 'svelte/elements';
+	
+import type { SvelteHTMLElements } from 'svelte/elements';
 
 	import { Motion , useMotionValue } from 'svelte-motion';
 		import { getContext } from 'svelte';

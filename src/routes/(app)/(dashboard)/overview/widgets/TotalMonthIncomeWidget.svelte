@@ -1,7 +1,7 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { filter, from, map, reduce, switchMap } from 'rxjs';
+	import { from, map } from 'rxjs';
 	import { isBefore, isSameDay, isSameMonth, startOfToday, subMonths } from 'date-fns';
 	import { cn } from '$lib/utils';
 	import { Score } from '../score';

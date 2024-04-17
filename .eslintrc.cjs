@@ -10,7 +10,7 @@ const config = {
 		'airbnb-typescript/base',
 		'prettier',
 	],
-	plugins: ['@typescript-eslint', 'import-no-duplicates-prefix-resolved-path'],
+	plugins: ['@typescript-eslint', 'import-no-duplicates-prefix-resolved-path', 'unused-imports'],
 	ignorePatterns: [
 		'node_modules',
 		'dist',
@@ -70,6 +70,7 @@ const config = {
 				prefixResolvedPathWithImportName: true,
 			},
 		],
+		'unused-imports/no-unused-imports-ts': 2,
 	},
 };
 

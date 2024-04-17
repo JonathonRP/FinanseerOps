@@ -1,0 +1,96 @@
+diff --git a/dist/adapter.d.ts b/dist/adapters.d.ts
+similarity index 100%
+rename from dist/adapter.d.ts
+rename to dist/adapters.d.ts
+diff --git a/dist/adapter.js b/dist/adapters.js
+similarity index 100%
+rename from dist/adapter.js
+rename to dist/adapters.js
+diff --git a/dist/components/SignIn.svelte b/dist/components/SignIn.svelte
+index f9796053d82ea558e906f5464a76d2ae19615fbd..c404d43cb2684862761e44bfdb8a488b893e2bda 100644
+--- a/dist/components/SignIn.svelte
++++ b/dist/components/SignIn.svelte
+@@ -18,7 +18,7 @@ const authorizationParamsInputs = authorizationParams ? typeof authorizationPara
+ >
+   <input type="hidden" name="providerId" value={provider} />
+   {#if callbackUrl}
+-    <input type="hidden" name="callbackUrl" value={callbackUrl} />
++    <input type="hidden" name="redirectTo" value={callbackUrl} />
+   {/if}
+   {#if redirect}
+     <input type="hidden" name="redirect" value={redirect} />
+@@ -49,7 +49,7 @@ const authorizationParamsInputs = authorizationParams ? typeof authorizationPara
+       />
+     </slot>
+   {/if}
+-  <button type="submit">
++  <button type="submit" style="width: 100%">
+     <slot name="submitButton">Signin{provider ? ` with ${provider}` : ""}</slot>
+   </button>
+ </form>
+diff --git a/dist/components/SignOut.svelte b/dist/components/SignOut.svelte
+index 9c212eddabe61c68074f48ccd3d6bc9364d7a108..de1d68371bfa945427d241c371f8de3ef4a7e787 100644
+--- a/dist/components/SignOut.svelte
++++ b/dist/components/SignOut.svelte
+@@ -8,7 +8,7 @@ export let signOutPage = "signout";
+   method="POST"
+   action={`/${signOutPage}`}
+   use:enhance
+-  class={`signOutButton ${className}`}
++  class="signOutButton"
+   {...$$restProps}
+ >
+   {#if options}
+@@ -19,7 +19,7 @@ export let signOutPage = "signout";
+       <input type="hidden" name="redirectTo" value={options.redirectTo} />
+     {/if}
+   {/if}
+-  <button type="submit">
++  <button type="submit" class={className}>
+     <slot name="submitButton">Sign Out</slot>
+   </button>
+ </form>
+diff --git a/src/lib/components/SignIn.svelte b/src/lib/components/SignIn.svelte
+index 3026ee9950a0d4af00fc4d15e1ab3f593732dc8e..202160f7d39f3640e078d5805b6354070877d8db 100644
+--- a/src/lib/components/SignIn.svelte
++++ b/src/lib/components/SignIn.svelte
+@@ -33,7 +33,7 @@
+ >
+   <input type="hidden" name="providerId" value={provider} />
+   {#if callbackUrl}
+-    <input type="hidden" name="callbackUrl" value={callbackUrl} />
++    <input type="hidden" name="redirectTo" value={callbackUrl} />
+   {/if}
+   {#if redirect}
+     <input type="hidden" name="redirect" value={redirect} />
+@@ -64,7 +64,7 @@
+       />
+     </slot>
+   {/if}
+-  <button type="submit">
++  <button type="submit" style="width: 100%">
+     <slot name="submitButton">Signin{provider ? ` with ${provider}` : ""}</slot>
+   </button>
+ </form>
+diff --git a/src/lib/components/SignOut.svelte b/src/lib/components/SignOut.svelte
+index 9a404834f7f02c45224f53136d4a5b0567322863..fb3f6b1137533af6c56dcb588cb83a2b8fd02b02 100644
+--- a/src/lib/components/SignOut.svelte
++++ b/src/lib/components/SignOut.svelte
+@@ -12,7 +12,7 @@
+   method="POST"
+   action={`/${signOutPage}`}
+   use:enhance
+-  class={`signOutButton ${className}`}
++  class="signOutButton"
+   {...$$restProps}
+ >
+   {#if options}
+@@ -23,7 +23,7 @@
+       <input type="hidden" name="redirectTo" value={options.redirectTo} />
+     {/if}
+   {/if}
+-  <button type="submit">
++  <button type="submit" class={className}>
+     <slot name="submitButton">Sign Out</slot>
+   </button>
+ </form>

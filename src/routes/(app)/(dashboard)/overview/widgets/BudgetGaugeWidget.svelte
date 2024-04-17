@@ -1,12 +1,10 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { filter, reduce, from, switchMap, catchError, of, map } from 'rxjs';
-	import { getDaysInMonth, isBefore, isSameDay, isSameMonth, startOfMonth, getDate, startOfToday } from 'date-fns';
+	import { from, map } from 'rxjs';
+	import { getDaysInMonth, isBefore, isSameDay, isSameMonth, getDate, startOfToday } from 'date-fns';
 	import { cn } from '$/lib/utils';
 	import * as d3 from 'd3';
-	import { AnimatePresence } from 'svelte-motion';
-	import { Motion } from '$/lib/components';
 	import { Score } from '../score';
 	import { GaugeChart } from '../charts';
 	import DashboardWidget from '../DashboardWidget.svelte';

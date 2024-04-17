@@ -1,7 +1,6 @@
 import { SvelteKitAuth, type SvelteKitAuthConfig } from '@auth/sveltekit';
 import Resend from '@auth/sveltekit/providers/resend';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
-import { AuthorizationHeadersBearerTokenFrom } from '$lib/utils';
 import { type PgTableFn, pgTable } from 'drizzle-orm/pg-core';
 import { sendVerificationRequest } from './sendVerificationRequest';
 import { EMAIL_FROM } from '$env/static/private';

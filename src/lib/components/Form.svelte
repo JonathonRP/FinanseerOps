@@ -1,34 +1,59 @@
 <svelte:options runes={true} />
 
-<script lang="ts">
+<script lang="ts" generics="T extends Record<string, unknown>">
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { BehaviorSubject } from 'rxjs';
-	import { createEventDispatcher, setContext, type Snippet } from 'svelte';
+	import { setContext, type Snippet } from 'svelte';
 	import toast from 'svelte-french-toast';
 	import { writable } from 'svelte/store';
 	import { applyAction, enhance } from '$app/forms';
 
 	let {
-		form,
+		form = $bindable(),
 		method,
 		action,
 		reset = false,
 		values: initialValues,
-		validate = (_values) =>
-			Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), {}) as Record<string, string>,
+		validate = (_values, errors) =>
+			Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), <typeof errors>{}),
+		onsubmitting,
+		onsucceeded,
+		children,
 		...restProps
 	}: {
-		method: string;
-		action: string;
 		form?: HTMLFormElement;
+		method: 'post';
+		action: string;
 		reset?: boolean;
-		values?: Values;
-		validate?: (_values: Values) => Record<string, string>;
-		children: Snippet;
+		values?: T;
+		validate?: (_values: typeof initialValues, errors: Errors<T>) => typeof errors;
+		onsubmitting: (data: FormData) => void;
+		onsucceeded: (data: FormData) => Promise<void>;
+		children: Snippet<
+			[
+				{
+					valid: typeof $formValidity;
+					submitting: typeof $formSubmitting;
+					formData: typeof initialValues;
+					handleInput: typeof handleInput;
+					handleBlurOrClick: typeof handleBlurOrClick;
+				},
+			]
+		>;
 		class: string;
 	} = $props();
 
-	type Values = Record<string, undefined | null | string | number | boolean | string[]>;
+	// work on this type...
+	// type Values = Record<string, undefined | null | string | number | boolean | string[]>;
+
+	// const elements = <const>form.elements.map((field) => field as HTMLInputElement);
+	// type elementName = (typeof elements)[number]['value'];
+	// type values<T extends (typeof elements)[number]['type']> = T extends 'number'
+	// 	? { [(typeof elements[number]).name]: (typeof elements)[number]['valueAsNumber'] }
+	// 	: {};
+
+	// type Values<T extends Record<string, unknown>> = T extends Record<infer K, string> ? { [v in K]: string } : T;
+	type Errors<T extends Record<string, unknown>> = T extends Record<infer K, unknown> ? { [v in K]: string } : T;
 
 	const values = writable(
 		initialValues ??
@@ -42,14 +67,14 @@
 							(type !== 'checkbox' && type !== 'number' && value) ||
 							checked,
 					}),
-					<Values>{}
+					<T>{}
 				)
 	);
 	const formSubmitting = new BehaviorSubject(false);
 	const formValidity = new BehaviorSubject(false);
 
 	const handleValidation = (onlyField: (EventTarget & HTMLInputElement) | undefined = undefined) => {
-		const errors = validate($values);
+		const errors = validate($values, {} as Errors<T>);
 
 		if (onlyField) {
 			onlyField.setCustomValidity(errors[onlyField.name] ?? '');
@@ -67,17 +92,15 @@
 		return $formValidity;
 	};
 
-	const dispatch = createEventDispatcher();
-
 	const submit: SubmitFunction = ({ formData }) => {
 		formSubmitting.next(true);
-		dispatch('submit', { data: formData });
+		onsubmitting(formData);
 
 		return async ({ result, update }) => {
 			switch (result.type) {
 				case 'success':
 					await update({ reset });
-					dispatch('success', { data: formData });
+					await onsucceeded(formData);
 					break;
 				case 'failure': {
 					const [firstError] = Object.keys(result.data?.errors);
@@ -90,9 +113,9 @@
 				default:
 					await update({ reset });
 			}
+			await applyAction(result);
 			handleValidation();
 			formSubmitting.next(false);
-			await applyAction(result);
 		};
 	};
 
@@ -133,21 +156,23 @@
 	// 	)
 	// );
 
-	const formData = $values;
+	const formData = $derived($values);
 
 	setContext('form', { valid: formValidity, submitting: formSubmitting });
 
-	// $effect(() => {
-	// 	handleValidation();
-	// });
+	$effect(() => {
+		handleValidation();
+	});
 </script>
 
 {#if method.includes('post')}
 	<form method="post" {action} {...restProps} novalidate bind:this={form} use:enhance={submit}>
-		<slot valid={$formValidity} submitting={$formSubmitting} {formData} {handleInput} {handleBlurOrClick} />
-	</form>
-{:else}
-	<form {method} {action} {...restProps} novalidate bind:this={form}>
-		<slot valid={$formValidity} submitting={$formSubmitting} {formData} {handleInput} {handleBlurOrClick} />
+		{@render children({
+			valid: $formValidity,
+			submitting: $formSubmitting,
+			formData,
+			handleInput,
+			handleBlurOrClick,
+		})}
 	</form>
 {/if}

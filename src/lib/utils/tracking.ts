@@ -1,4 +1,4 @@
-import { Observable, combineLatest, defer, map, switchMap, tap } from 'rxjs';
+import { combineLatest, defer, switchMap, tap } from 'rxjs';
 import { type Transactions } from '../api';
 
 export const tracking = (onNewRecord: (record: any) => void) => (source: Transactions) =>

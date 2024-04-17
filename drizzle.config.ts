@@ -7,5 +7,6 @@ export default {
 	dbCredentials: {
 		connectionString: process.env.POSTGRES_URL ?? '',
 	},
+	// schemaFilter: ['api-keys'],
 	// schemaFilter: ['authjs'],
 } satisfies Config;

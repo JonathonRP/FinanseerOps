@@ -1,13 +1,11 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import classes from 'svelte-transition-classes';
-
 	import { cn, merge } from '$lib/utils';
 	import { SignOut } from '@auth/sveltekit/components';
 
 	import toast from 'svelte-french-toast';
-	import { AnimatePresence, MotionConfig, useMotionTemplate, useMotionValue, useTransform } from 'svelte-motion';
+	import { AnimatePresence } from 'svelte-motion';
 	import { Motion } from '$lib/components';
 	import { source } from 'sveltekit-sse';
 
@@ -30,6 +28,7 @@
 	import NavLink from './NavLink.svelte';
 	import DesktopMenuItem from './DesktopMenuItem.svelte';
 	import Modal from './Modal.svelte';
+	import { invalidateAll } from '$app/navigation';
 
 	type ModalState =
 		| {
@@ -86,7 +85,7 @@
 		)
 	);
 
-	const connection = source('/api/notifications');
+	const connection = source('/api/notifications', { beacon: 0 });
 	const count = connection.select('unreadCount').json();
 	const notifications = connection.select('messages').json();
 	const notification = connection.select('message').json();
@@ -116,9 +115,9 @@
 				accountState = definedState ?? stateToggle;
 				break;
 		}
-		if (accountState) {
-			(event.currentTarget as HTMLButtonElement).ariaCurrent = 'location';
-		}
+		// if (accountState) {
+		// 	(event.currentTarget as HTMLButtonElement).ariaCurrent = 'location';
+		// }
 	};
 
 	const toggleMenuWidth = (definedState?: ModalState | undefined) => (event: MouseEvent | KeyboardEvent) => {
@@ -367,7 +366,7 @@
 	</nav>
 
 	{#if accountState.open}
-		<Modal isOpen={accountState.open} on:close={toggleAccount(closeModal)}>
+		<Modal isOpen={accountState.open} onclose={toggleAccount(closeModal)}>
 			<div aria-label="User Account Settings" class="flex h-full flex-col md:px-4">
 				<div class="flex flex-1 flex-col py-10">
 					<!-- Account -->
@@ -382,30 +381,26 @@
 						<Form
 							method="post"
 							action="/user?/update"
-							let:formData
-							let:submitting
-							let:valid
-							let:handleBlurOrClick
-							let:handleInput
-							values={(({ name: username, widgetStyle, enableNotifications, emailRate, inAppRate }) => ({
+							values={(({
+								name: username,
+								widgetStyle,
+								permittedBankAccounts,
+								enableNotifications,
+								emailRate,
+								inAppRate,
+							}: Partial<{ name: string | null, widgetStyle: 'simple' | 'dense' | null, permittedBankAccounts: number[] | null, enableNotifications: boolean | null, emailRate: 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'bi-monthly' | null, inAppRate: 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'bi-monthly' | null }>) => ({
 								username,
 								widgetStyle,
+								permittedBankAccounts,
 								enableNotifications,
 								emailRate,
 								inAppRate,
 							}))(user)}
-							validate={(values) => {
-								const errors = {
-									username: '',
-									widgetStyle: '',
-									enableNotifications: '',
-									emailRate: '',
-									inAppRate: '',
-								};
-
+							validate={(values, errors) => {
 								if (
-									values.username === user?.name &&
+									values?.username === user?.name &&
 									values?.widgetStyle === user?.widgetStyle &&
+									values?.permittedBankAccounts === user?.permittedBankAccounts &&
 									values?.enableNotifications === user?.enableNotifications &&
 									values?.emailRate === user?.emailRate &&
 									values?.inAppRate === user?.inAppRate
@@ -413,6 +408,7 @@
 									const errorMessage = 'No changes to submit.';
 									errors.username = errorMessage;
 									errors.widgetStyle = errorMessage;
+									errors.permittedBankAccounts = errorMessage;
 									errors.enableNotifications = errorMessage;
 									errors.emailRate = errorMessage;
 									errors.inAppRate = errorMessage;
@@ -420,8 +416,8 @@
 
 								return errors;
 							}}
-							on:submit={(e) => {
-								const form = Object.fromEntries(e.detail.data);
+							onsubmitting={(data) => {
+								const form = Object.fromEntries(data);
 
 								if (Boolean(form.useBauhaus) !== useBauhaus) {
 									userSettings.useBauhaus = Boolean(form.useBauhaus);
@@ -432,134 +428,151 @@
 									if (user.name === form.username) {
 										return false;
 									}
-									user.name = form.username;
+									user.name = String(form.username);
 								}
 								return true;
 							}}
-							on:success={(e) => {
+							onsucceeded={async (data) => {
+								await invalidateAll();
+								toggleAccount(closeModal)(new Event('close'));
 								toast.success(`Successfully updated.`);
 							}}
 							class="w-full space-y-6">
-							<input
-								id="name"
-								name="username"
-								class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
-								type="text"
-								bind:value={formData.username}
-								onblur={handleBlurOrClick}
-								oninput={handleInput}
-								disabled={submitting} />
-							<label
-								class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
-								for="bauhaus">
-								<div class="space-y-0.5">
-									<span class="text-base font-bold leading-snug">Use Buasuah</span>
-									<p class="text-xs leading-snug text-muted-foreground">
-										change user image type, this is abstract art when on.
-									</p>
-								</div>
-								<Switch id="bauhaus" name="useBauhaus" bind:checked={userSettings.useBauhaus} disabled={submitting} />
-							</label>
-							<fieldset>
-								<legend class="mb-4 text-lg font-medium">App Preferences</legend>
-								<div class="space-y-4">
-									<Select.Root
-										name="widgetStyle"
-										selected={{ label: user?.widgetStyle, value: user?.widgetStyle }}
-										onSelectedChange={({ value }) => (formData.widgetStyle = value)}
-										disabled={submitting}>
-										<input type="hidden" name="widgetStyle" value={formData.widgetStyle} />
-										<Select.Trigger class="w-full">
-											<Select.Value placeholder="Select a widget style" />
-										</Select.Trigger>
-										<Select.Content>
-											{#each ['simple', 'dense'] as widgetStyle}
-												<Select.Item value={widgetStyle.toLowerCase()} label={widgetStyle} disabled={submitting} />
-											{/each}
-										</Select.Content>
-									</Select.Root>
-									{#await accounts then bankAccounts}
+							{#snippet children({ formData, valid, submitting, handleInput, handleBlurOrClick })}
+								<input
+									id="name"
+									name="username"
+									class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+									type="text"
+									bind:value={formData.username}
+									onblur={handleBlurOrClick}
+									oninput={handleInput}
+									disabled={submitting} />
+								<label
+									class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
+									for="bauhaus">
+									<div class="space-y-0.5">
+										<span class="text-base font-bold leading-snug">Use Buasuah</span>
+										<p class="text-xs leading-snug text-muted-foreground">
+											change user image type, this is abstract art when on.
+										</p>
+									</div>
+									<Switch id="bauhaus" name="useBauhaus" bind:checked={userSettings.useBauhaus} disabled={submitting} />
+								</label>
+								<fieldset>
+									<legend class="mb-4 text-lg font-medium">App Preferences</legend>
+									<div class="space-y-4">
 										<Select.Root
-											multiple
-											name="permittedBankAccounts"
-											selected={user?.permittedBankAccounts?.map((value) => ({
-												label: bankAccounts.find((account) => account.id === value)?.name,
-												value,
-											}))}
-											onSelectedChange={([{ value }]) => (formData.permittedBankAccounts = [...value])}
+											name="widgetStyle"
+											selected={{ label: formData?.widgetStyle, value: formData?.widgetStyle }}
+											onSelectedChange={({ value }) =>
+												handleInput({
+													currentTarget: { name: 'widgetStyle', value },
+												})}
 											disabled={submitting}>
-											{#each formData.permittedBankAccounts as bankAccount (bankAccount)}
-												<input type="hidden" name="permittedBankAccounts" value={bankAccount} />
-											{/each}
+											<input type="hidden" name="widgetStyle" value={formData?.widgetStyle} />
 											<Select.Trigger class="w-full">
-												<Select.Value placeholder="Select accounts to permit" />
+												<Select.Value placeholder="Select a widget style" />
 											</Select.Trigger>
 											<Select.Content>
-												{#each bankAccounts as { id: bankAccountId, name: bankAccountName } (bankAccountId)}
-													<Select.Item value={bankAccountId.toString()} label={bankAccountName} />
+												{#each ['simple', 'dense'] as widgetStyle}
+													<Select.Item value={widgetStyle.toLowerCase()} label={widgetStyle} disabled={submitting} />
 												{/each}
 											</Select.Content>
 										</Select.Root>
-									{/await}
-								</div>
-							</fieldset>
-							<fieldset>
-								<legend class="mb-4 text-lg font-medium">Notifications Preferences</legend>
-								<div class="space-y-4">
-									<label
-										class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
-										for="notifications">
-										<div class="space-y-0.5">
-											<span class="text-base font-bold leading-snug">Notifications</span>
-											<p class="text-xs leading-snug text-muted-foreground">
-												permit sending of in-app and email notifications.
-											</p>
-										</div>
-										<Switch
-											id="notifications"
-											name="enableNotifications"
-											includeInput={true}
-											bind:checked={formData.enableNotifications}
-											onclick={handleBlurOrClick}
-											onblur={handleBlurOrClick}
-											disabled={submitting} />
-									</label>
-									<Select.Root
-										name="emailRate"
-										selected={{ label: user?.emailRate, value: user?.emailRate }}
-										onSelectedChange={({ value }) => (formData.emailRate = value)}
-										disabled={submitting}>
-										<input type="hidden" name="emailRate" value={formData.emailRate} />
-										<Select.Trigger class="w-full">
-											<Select.Value placeholder="Select an email rate" />
-										</Select.Trigger>
-										<Select.Content>
-											{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as emailRate}
-												<Select.Item value={emailRate.toLowerCase()} label={emailRate} disabled={submitting} />
-											{/each}
-										</Select.Content>
-									</Select.Root>
-									<Select.Root
-										name="inAppRate"
-										selected={{ label: user?.inAppRate, value: user?.inAppRate }}
-										onSelectedChange={({ value }) => (formData.inAppRate = value)}
-										disabled={submitting}>
-										<input type="hidden" name="inAppRate" value={formData.inAppRate} />
-										<Select.Trigger class="w-full">
-											<Select.Value placeholder="Select an in-app rate" />
-										</Select.Trigger>
-										<Select.Content>
-											{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as inAppRate}
-												<Select.Item value={inAppRate.toLowerCase()} label={inAppRate} disabled={submitting} />
-											{/each}
-										</Select.Content>
-									</Select.Root>
-								</div>
-							</fieldset>
-							<FormUi.Button aria-busy={submitting} disabled={!valid || submitting}>
-								<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
-								Save Settings
-							</FormUi.Button>
+										{#await accounts then bankAccounts}
+											<Select.Root
+												multiple
+												name="permittedBankAccounts"
+												selected={formData?.permittedBankAccounts?.map((value) => ({
+													label: bankAccounts.find((account) => account.id === Number(value))?.name,
+													value: String(value),
+												}))}
+												onSelectedChange={(values) =>
+													handleInput({
+														currentTarget: { name: 'permittedBankAccounts', value: values?.map(({ value }) => value) },
+													})}
+												disabled={submitting}>
+												{#each formData?.permittedBankAccounts ?? [] as bankAccount (bankAccount)}
+													<input type="hidden" name="permittedBankAccounts" value={bankAccount} />
+												{/each}
+												<Select.Trigger class="w-full">
+													<Select.Value placeholder="Select accounts to permit" />
+												</Select.Trigger>
+												<Select.Content>
+													{#each bankAccounts as { id: bankAccountId, name: bankAccountName } (bankAccountId)}
+														<Select.Item value={bankAccountId.toString()} label={bankAccountName} />
+													{/each}
+												</Select.Content>
+											</Select.Root>
+										{/await}
+									</div>
+								</fieldset>
+								<fieldset>
+									<legend class="mb-4 text-lg font-medium">Notifications Preferences</legend>
+									<div class="space-y-4">
+										<label
+											class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
+											for="notifications">
+											<div class="space-y-0.5">
+												<span class="text-base font-bold leading-snug">Notifications</span>
+												<p class="text-xs leading-snug text-muted-foreground">
+													permit sending of in-app and email notifications.
+												</p>
+											</div>
+											<Switch
+												id="notifications"
+												name="enableNotifications"
+												includeInput={false}
+												bind:checked={formData.enableNotifications}
+												onclick={handleBlurOrClick}
+												onblur={handleBlurOrClick}
+												disabled={submitting} />
+											<input type="hidden" name="enableNotifications" value={formData.enableNotifications} />
+										</label>
+										<Select.Root
+											name="emailRate"
+											selected={{ label: formData?.emailRate, value: formData?.emailRate }}
+											onSelectedChange={({ value }) =>
+												handleInput({
+													currentTarget: { name: 'emailRate', value },
+												})}
+											disabled={submitting}>
+											<input type="hidden" name="emailRate" value={formData?.emailRate} />
+											<Select.Trigger class="w-full">
+												<Select.Value placeholder="Select an email rate" />
+											</Select.Trigger>
+											<Select.Content>
+												{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as emailRate}
+													<Select.Item value={emailRate.toLowerCase()} label={emailRate} disabled={submitting} />
+												{/each}
+											</Select.Content>
+										</Select.Root>
+										<Select.Root
+											name="inAppRate"
+											selected={{ label: formData?.inAppRate, value: formData?.inAppRate }}
+											onSelectedChange={({ value }) =>
+												handleInput({
+													currentTarget: { name: 'inAppRate', value },
+												})}
+											disabled={submitting}>
+											<input type="hidden" name="inAppRate" value={formData?.inAppRate} />
+											<Select.Trigger class="w-full">
+												<Select.Value placeholder="Select an in-app rate" />
+											</Select.Trigger>
+											<Select.Content>
+												{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as inAppRate}
+													<Select.Item value={inAppRate.toLowerCase()} label={inAppRate} disabled={submitting} />
+												{/each}
+											</Select.Content>
+										</Select.Root>
+									</div>
+								</fieldset>
+								<FormUi.Button aria-busy={submitting} disabled={!valid || submitting}>
+									<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
+									Save Settings
+								</FormUi.Button>
+							{/snippet}
 						</Form>
 					</div>
 				</div>
@@ -569,12 +582,14 @@
 						<SignOut
 							signOutPage="auth"
 							className="group flex w-full items-center space-x-2 rounded-lg transition-colors hover:bg-accent-500 hover:text-white">
-							<span
-								aria-hidden="true"
-								class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600">
-								<svelte:component this={icons.LogOutIcon} class="h-6 w-6" height="auto" flip="vertical" />
-							</span>
-							<span>Sign Out</span>
+							<svelte:fragment slot="submitButton">
+								<span
+									aria-hidden="true"
+									class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600">
+									<svelte:component this={icons.LogOutIcon} class="h-6 w-6" height="auto" flip="vertical" />
+								</span>
+								<span>Sign Out</span>
+							</svelte:fragment>
 						</SignOut>
 					</div>
 				{/if}
@@ -583,7 +598,7 @@
 	{/if}
 
 	{#if notificationsState.open}
-		<Modal isOpen={notificationsState.open} on:close={toggleNotifications(closeModal)}>
+		<Modal isOpen={notificationsState.open} onclose={toggleNotifications(closeModal)}>
 			<div aria-label="Notifications" class="flex h-full flex-col md:px-2">
 				<div class="flex flex-1 flex-col py-10">
 					<!-- notifications -->

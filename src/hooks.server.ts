@@ -1,10 +1,10 @@
 import * as Sentry from '@sentry/sveltekit';
 import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { returnTo, formatError, ensureLoggedIn, bearer } from '$lib/utils';
+import { returnTo, formatError, ensureLoggedIn } from '$lib/utils';
 
 import { setupSidecar } from '@spotlightjs/spotlight/sidecar';
-import { auth as authjs } from './server';
+import { auth as authjs, api_keys } from './server';
 import { dev } from '$app/environment';
 
 Sentry.init({
@@ -13,15 +13,20 @@ Sentry.init({
 	spotlight: dev,
 });
 
+
+function authentication() {
+	return sequence(authjs.handle, api_keys.handle);
+}
+
 function authorization() {
 	return (async ({ event, resolve }) => {
 		const {
 			url,
 			route,
-			locals: { auth },
+			locals,
 		} = event;
 
-		if (!route.id?.includes('anonymous') && !(await auth())) {
+		if (!route.id?.includes('anonymous') && !(await locals.auth())) {
 			return redirect(302, ensureLoggedIn(url, 'you were not logged in.'));
 		}
 
@@ -33,10 +38,6 @@ function authorization() {
 
 		return resolve(event);
 	}) satisfies Handle;
-}
-
-function authentication() {
-	return authjs.handle;
 }
 
 // function setup() {

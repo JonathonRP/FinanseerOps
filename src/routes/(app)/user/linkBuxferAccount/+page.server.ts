@@ -6,8 +6,7 @@ import { TRPCError } from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 import { appRouter, createCallerFactory } from '$/server/api/root.js';
 import { createContext } from '$/server/api/context.js';
-import { EMPTY, catchError, delayWhen, filter, from, iif, lastValueFrom, of, switchMap, tap, throwError } from 'rxjs';
-import { AuthorizationHeadersBearerTokenFrom } from '$lib/utils/index.js';
+import { catchError, delayWhen, tap, throwError } from 'rxjs';
 
 export const actions = {
 	default: async (event) => {

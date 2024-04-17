@@ -1,6 +1,6 @@
 import { createContext } from '$/server/api/context.js';
 import { appRouter, createCallerFactory } from '$/server/api/root.js';
-import { combineLatest, from, fromEventPattern, merge, switchMap, takeUntil } from 'rxjs';
+import { combineLatest, fromEventPattern, takeUntil } from 'rxjs';
 import { events } from 'sveltekit-sse';
 
 export function POST({ request, ...event }) {

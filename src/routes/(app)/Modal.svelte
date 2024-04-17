@@ -1,17 +1,18 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { Motion } from '$lib/components';
-	import { useDragControls, useAnimation, type Variants } from 'svelte-motion';
-	import { createEventDispatcher, onMount, type Snippet } from 'svelte';
+	import type { Snippet } from 'svelte';
 	import { classes } from 'svelte-transition-classes';
 	import * as Drawer from '$/lib/components/ui/drawer';
 	import { writable } from 'svelte/store';
 
-	const { isOpen, children }: { isOpen: boolean, children: Snippet } = $props();
+	const {
+		isOpen,
+		children,
+		onclose: onClose,
+	}: { isOpen: boolean; children: Snippet; onclose: (event: Event) => void } = $props();
 
 	const open = writable(false);
-	const dispatch = createEventDispatcher();
 	// const dragControls = useDragControls();
 	// const animateControls = useAnimation();
 	const md = window.matchMedia('(max-width:768px)');
@@ -66,7 +67,7 @@
 
 	$effect(() => {
 		open.set(isOpen && mdState.isMobile);
-	})
+	});
 </script>
 
 <!-- <Motion.div
@@ -104,10 +105,10 @@
 	</div>
 </Motion.div> -->
 <!-- class="hidden max-md:block" -->
-<Drawer.Root shouldScaleBackground bind:open={$open} onClose={() => {dispatch('close', new MouseEvent('click'))}}>
-		<Drawer.Content>
-			{@render children()}
-		</Drawer.Content>
+<Drawer.Root shouldScaleBackground bind:open={$open} onClose={() => onClose(new Event('close'))}>
+	<Drawer.Content>
+		{@render children()}
+	</Drawer.Content>
 </Drawer.Root>
 <div
 	in:classes={{
@@ -122,6 +123,6 @@
 		from: 'md:translate-x-0 md:opacity-100',
 		to: 'md:-translate-x-1/2 md:opacity-0',
 	}}
-	class="hidden md:block md:static md:inset-y-0 md:left-16 md:mx-0 md:h-auto md:w-72 md:bg-inherit md:shadow-none md:dark:bg-inherit">
-		{@render children()}
+	class="hidden md:static md:inset-y-0 md:left-16 md:mx-0 md:block md:h-auto md:w-72 md:bg-inherit md:shadow-none md:dark:bg-inherit">
+	{@render children()}
 </div>

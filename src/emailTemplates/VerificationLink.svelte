@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { Body, Button, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text } from 'svelte-email';
+	import { Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text } from '@bradford/svelte-mail';
+
+	export let magicLink: string;
 
 	const main = {
 		backgroundColor: '#ffffff',

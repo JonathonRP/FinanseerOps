@@ -26,10 +26,12 @@ export const buxferRouter = router({
 			const headers = new Headers();
 			if (ctx && ctx.accessToken) {
 				const auth = AuthorizationHeadersBearerTokenFrom(ctx.accessToken);
-				headers.append(Object.keys(auth)[0], Object.values(auth)[0]);
+				headers.append(...Object.entries(auth)[0]);
 			}
 			return client('/transactions', input, {
 				headers,
+				poll: true,
+				interval: '1s',
 			});
 		}),
 });

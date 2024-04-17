@@ -27,7 +27,7 @@
 		duration?: number;
 	};
 
-	export function flyAndScale(
+	function flyAndScale(
 		node: Element,
 		params: FlyAndScaleParams = { y: -8, x: 0, start: 0.95, duration: 150 }
 	): TransitionConfig {
@@ -75,7 +75,7 @@
 	{outTransitionConfig}
 	{sideOffset}
 	class={cn(
-		'bg-popover text-popover-foreground relative z-50 min-w-[8rem] overflow-hidden rounded-md border shadow-md outline-none',
+		'relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md outline-none',
 		className
 	)}
 	{...$$restProps}

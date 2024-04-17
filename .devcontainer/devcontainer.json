@@ -53,7 +53,7 @@
 				},
 				"[javascript][typescript]": {
 					"editor.defaultFormatter": "esbenp.prettier-vscode",
-					"prettier.configPath": "./.prettierrc.cjs",
+					"prettier.configPath": "./prettier.config.js",
 					"prettier.prettierPath": "./node_modules/prettier"
 				},
 
@@ -62,7 +62,7 @@
 
 				"dotfiles.repository": "https://github.com/JonathonRP/.dotfiles",
 				"dotfiles.targetPath": "~/dotfiles",
-				"editor.fontFamily": "'cascadia code', Consolas, 'Courier New', monospace",
+				"editor.fontFamily": "'JetBrains Mono', 'cascadia code', Consolas, 'Courier New', monospace",
 				"terminal.integrated.fontFamily": "'MesloLGM Nerd Font'",
 				"terminal.integrated.defaultProfile.linux": "fish",
 				"terminal.integrated.profiles.linux": {

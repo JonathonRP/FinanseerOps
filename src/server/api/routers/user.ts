@@ -1,9 +1,7 @@
-import { signIn } from '@auth/sveltekit/client';
-import { TRPCError } from '@trpc/server';
 import { sql } from 'drizzle-orm';
 import { coerce, object } from 'zod';
-import { combineLatest, concat, from, map, shareReplay, startWith, switchMap } from 'rxjs';
-import { notificationsChanges, notificationsInsert, notificationsInsertDelete } from '$/server/db/events';
+import { concat, shareReplay, switchMap } from 'rxjs';
+import { notificationsChanges, notificationsInserted } from '$/server/db/events';
 import { familyLeaderProcedure, procedure, router } from '../trpc';
 import { users, notifications, buxferAccounts } from '../../db/schema';
 import { buxferAccount, notification, user } from '../../db';
@@ -98,7 +96,7 @@ export const userRouter = router({
 	}),
 
 	latestNotification: procedure.subscription(({ ctx }) =>
-		notificationsInsert.pipe(
+		notificationsInserted.pipe(
 			switchMap(() =>
 				ctx.db.query.notifications
 					.findMany({

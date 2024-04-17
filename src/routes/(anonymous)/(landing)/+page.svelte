@@ -43,10 +43,12 @@
 				</p>
 			</div>
 			<div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-				<form class="w-full rounded-2xl bg-white/20 p-1.5 lg:mx-auto lg:w-auto" action={dev ? '/overview' : ''}>
+				<form class="w-full rounded-2xl bg-white/20 p-1.5 lg:mx-auto lg:w-auto" method="post" action='/'>
 					<div class="w-full lg:flex lg:items-center">
 						<div class="shrink">
 							<input
+								id="email"
+								name="email"
 								aria-label="Email address"
 								autocomplete="email"
 								class="block w-full appearance-none rounded-xl border border-transparent bg-transparent p-3 text-black placeholder:text-slate-300 focus:border-slate-500 focus:outline-none focus:ring-slate-500 sm:text-sm"

@@ -19,13 +19,13 @@
 		subMonths,
 	} from 'date-fns';
 	import { cn, dateFormat } from '$lib/utils';
-	import { catchError, filter, from, map, of, switchMap, tap } from 'rxjs';
+	import { from, map } from 'rxjs';
 	import { tick } from 'svelte';
 	import { AnimatePresence, type Variants } from 'svelte-motion';
 	import { Motion } from '$lib/components';
 	import ResizePanel from '$lib/components/ResizePanel.svelte';
 	import { icons } from '$/icons';
-	import { ease, staggerChildren } from '$/lib/animations';
+	import { ease } from '$/lib/animations';
 	import { page } from '$app/stores';
 
 	const { current, processedDate, searchFilter, transactions } = $derived($page.data);

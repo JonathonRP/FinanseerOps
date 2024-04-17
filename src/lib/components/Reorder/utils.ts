@@ -205,7 +205,7 @@ export function useTransform<I, O>(
 }
 
 function useListTransform<I, O>(values: MotionValue<I>[], transformer: MultiTransformer<I, O>): MotionValue<O> {
-	let latest = <I[]>[];
+	const latest = <I[]>[];
 
 	return useCombineMotionValues(values, () => {
 		latest.length = 0;

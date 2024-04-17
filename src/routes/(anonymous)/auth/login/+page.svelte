@@ -11,8 +11,7 @@
 
 <main class="flex flex-1 flex-col items-center justify-center overflow-hidden">
 	<Banner {redirectReason} />
-	<div
-		class="grid w-[368px] overflow-hidden rounded-2xl bg-slate-200 pt-1 md:flex dark:bg-neutral-808">
+	<div class="grid w-[368px] overflow-hidden rounded-2xl bg-slate-200 pt-1 md:flex dark:bg-neutral-808">
 		<div class="flex h-full w-full items-center justify-center p-4">
 			<SignIn
 				provider="resend"

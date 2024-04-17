@@ -1,22 +1,19 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { untrack, type Snippet } from 'svelte';
-	import { fly, slide } from 'svelte/transition';
-	import { cubicInOut } from 'svelte/easing';
-	import { formatDistanceToNow, isBefore, isSameDay, isSameMonth, startOfMonth, startOfToday } from 'date-fns';
-	import { filter, reduce, startWith, take, from, switchMap, catchError, of, map } from 'rxjs';
-	import { cn, numberFormat, sleep } from '$lib/utils';
-	import { AnimateSharedLayout, AnimatePresence, type Variants, MotionConfig, useMotionValue } from 'svelte-motion';
+	import { type Snippet } from 'svelte';
+	import { formatDistanceToNow, isBefore, isSameDay, isSameMonth, startOfToday } from 'date-fns';
+	import { startWith, from, map } from 'rxjs';
+	import { cn, numberFormat } from '$lib/utils';
+	import { AnimatePresence, type Variants } from 'svelte-motion';
 	import { Motion } from '$lib/components';
 	import { icons } from '$/icons';
 	import { Tabs } from '$lib/components/ui/tabs';
-	import { ease, staggerChildren } from '$lib/animations';
+	import { ease } from '$lib/animations';
 	import AnimatedNumber from '$/lib/components/AnimatedNumber.svelte';
 	import { base } from '$app/paths';
 	import DateSelect from './DateSelect.svelte';
 	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
-	import { navigating } from '$app/stores';
 	import { browser } from '$app/environment';
 
 	const { data, children }: { data: import('./$types').LayoutData; children: Snippet } = $props();

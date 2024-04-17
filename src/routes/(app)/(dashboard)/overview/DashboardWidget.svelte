@@ -5,10 +5,8 @@
 	import type { ClassValue } from 'clsx';
 
 	import { cn } from '$lib/utils/cn';
-	import { AnimatePresence } from 'svelte-motion';
-	import { Motion } from '$/lib/components';
-
-	const {
+	
+const {
 		children,
 		class: className,
 	}: {

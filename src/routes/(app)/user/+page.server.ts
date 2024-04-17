@@ -31,7 +31,6 @@ export const actions = {
 
 		// NOTE - handle formdata checkbox boolean existance and inexistance states for boolean.
 		const expectedUserSettings = object({
-			useBauhaus: coerce.boolean().default(false),
 			username: string(),
 			widgetStyle: z.enum(['simple', 'dense']),
 			permittedBankAccounts: coerce.number().array(),
@@ -48,7 +47,11 @@ export const actions = {
 					emailRate === user?.emailRate &&
 					inAppRate === user?.inAppRate
 				) {
-					ctx.addIssue({ code: 'custom', message: 'No changes to save.', path: ['name', 'useBauhaus'] });
+					ctx.addIssue({
+						code: 'custom',
+						message: 'No changes to save.',
+						path: ['name', 'widgetStyle', 'permittedBankAccounts', 'enableNotifications', 'emailRate', 'inAppRate'],
+					});
 				}
 			}
 		);
@@ -59,7 +62,10 @@ export const actions = {
 		}
 
 		try {
-			await createCallerFactory(appRouter)(createContext(event)).user.update({ ...user, ...{ name: data.username } });
+			await createCallerFactory(appRouter)(createContext(event)).user.update({
+				...user,
+				...{ name: data.username, ...data },
+			});
 
 			return { success: true };
 		} catch (err) {
