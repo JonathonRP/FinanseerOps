@@ -1,8 +1,21 @@
-import { api } from '$lib/api';
+import { sleep } from '$lib/utils';
 
-export async function load(event) {
+export async function load({ locals: { session, user }, url: { searchParams } }) {
+	let redirectTo = searchParams.getAll('redirectTo').pop();
+	const redirectReason = searchParams.getAll('reason').pop();
+	const reason = async () => {
+		if (redirectReason) await sleep(1500);
+		return redirectReason;
+	};
+
+	if (redirectTo) {
+		redirectTo = `/${redirectTo?.slice(1)}`;
+	}
+
 	return {
-		session: event.locals.session,
-		api: api.ssr(event),
+		session,
+		user,
+		redirectTo,
+		redirectReason: reason(),
 	};
 }

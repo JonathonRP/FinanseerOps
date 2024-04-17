@@ -1,0 +1,216 @@
+diff --git a/dist/adapter.d.ts b/dist/adapters.d.ts
+similarity index 100%
+rename from dist/adapter.d.ts
+rename to dist/adapters.d.ts
+diff --git a/dist/adapter.js b/dist/adapters.js
+similarity index 100%
+rename from dist/adapter.js
+rename to dist/adapters.js
+diff --git a/dist/components/SignIn.svelte b/dist/components/SignIn.svelte
+index 8585466735dde66378af8510493ac6ed530fdf83..3e52be9386fa1bb52a5179a84919f1f7f7b85d04 100644
+--- a/dist/components/SignIn.svelte
++++ b/dist/components/SignIn.svelte
+@@ -1,12 +1,21 @@
+-<script>import { enhance } from "$app/forms";
+-export let className = "";
+-export let provider;
+-export let signInPage = "signin";
+-export let options = void 0;
+-export let authorizationParams = void 0;
+-const callbackUrl = options instanceof FormData ? options.get("redirectTo") : options?.redirectTo;
+-const redirect = options instanceof FormData ? options.get("redirect") : options?.redirectTo;
+-const authorizationParamsInputs = authorizationParams ? typeof authorizationParams === "string" && authorizationParams ? new URLSearchParams(authorizationParams) : authorizationParams : void 0;
++<script>
++  import { enhance } from "$app/forms";
++  export let className = "";
++  export let provider;
++  export let signInPage = "signin";
++  export let options = void 0;
++  export let authorizationParams = void 0;
++  const callbackUrl =
++    options instanceof FormData
++      ? options.get("redirectTo")
++      : options?.redirectTo;
++  const redirect =
++    options instanceof FormData ? options.get("redirect") : options?.redirectTo;
++  const authorizationParamsInputs = authorizationParams
++    ? typeof authorizationParams === "string" && authorizationParams
++      ? new URLSearchParams(authorizationParams)
++      : authorizationParams
++    : void 0;
+ </script>
+ 
+ <form
+@@ -18,14 +27,14 @@ const authorizationParamsInputs = authorizationParams ? typeof authorizationPara
+ >
+   <input type="hidden" name="providerId" value={provider} />
+   {#if callbackUrl}
+-  <input type="hidden" name="callbackUrl" value={callbackUrl} />
++    <input type="hidden" name="redirectTo" value={callbackUrl} />
+   {/if}
+   {#if redirect}
+-  <input type="hidden" name="redirect" value={redirect} />
++    <input type="hidden" name="redirect" value={redirect} />
+   {/if}
+   {#if authorizationParamsInputs}
+     {#each Object.entries(authorizationParamsInputs) as [key, value]}
+-      <input type="hidden" name={`authorizationParams-${key}`} value={value} />
++      <input type="hidden" name={`authorizationParams-${key}`} {value} />
+     {/each}
+   {/if}
+   {#if provider === "credentials"}
+@@ -33,7 +42,10 @@ const authorizationParamsInputs = authorizationParams ? typeof authorizationPara
+   {/if}
+   {#if provider === "email" || provider === "sendgrid" || provider === "resend"}
+     <slot name="email">
+-      <label class="section-header" for={`input-email-for-${provider}-provider`}>
++      <label
++        class="section-header"
++        for={`input-email-for-${provider}-provider`}
++      >
+         Email
+       </label>
+       <input
+diff --git a/dist/components/SignOut.svelte b/dist/components/SignOut.svelte
+index 66c3d6d5bda5eeeeed65369d9ce4fc56681969f5..f2e0b1b5a6a6345deabcfa04d07205947310d4de 100644
+--- a/dist/components/SignOut.svelte
++++ b/dist/components/SignOut.svelte
+@@ -1,14 +1,15 @@
+-<script>import { enhance } from "$app/forms";
+-export let className = "";
+-export let options = void 0;
+-export let signOutPage = "signout";
++<script>
++  import { enhance } from "$app/forms";
++  export let className = "";
++  export let options = void 0;
++  export let signOutPage = "signout";
+ </script>
+ 
+ <form
+   method="POST"
+   action={`/${signOutPage}`}
+   use:enhance
+-  class={`signOutButton ${className}`}
++  class="signOutButton"
+   {...$$restProps}
+ >
+   {#if options}
+@@ -19,5 +20,5 @@ export let signOutPage = "signout";
+       <input type="hidden" name="redirectTo" value={options.redirectTo} />
+     {/if}
+   {/if}
+-  <button type="submit"><slot /></button>
++  <button type="submit" class={className}><slot /></button>
+ </form>
+diff --git a/src/lib/adapter.ts b/src/lib/adapters.ts
+similarity index 100%
+rename from src/lib/adapter.ts
+rename to src/lib/adapters.ts
+diff --git a/src/lib/components/SignIn.svelte b/src/lib/components/SignIn.svelte
+index 6c973e69e740eebdbd18367da3ded693984620c4..6d052b7bed1f110ce41ae2e91cfe76ffb8042ef2 100644
+--- a/src/lib/components/SignIn.svelte
++++ b/src/lib/components/SignIn.svelte
+@@ -1,26 +1,26 @@
+ <script lang="ts">
+-  import { enhance } from "$app/forms"
+-  import type { signIn } from "$lib/actions"
++  import { enhance } from "$app/forms";
++  import type { signIn } from "$lib/actions";
+ 
+-  export let className = ""
+-  export let provider: Parameters<typeof signIn>[0]
++  export let className = "";
++  export let provider: Parameters<typeof signIn>[0];
+   /** The path to the FormAction file in your route. @default signin */
+-  export let signInPage = "signin"
+-  export let options: Parameters<typeof signIn>[1] | undefined = undefined
++  export let signInPage = "signin";
++  export let options: Parameters<typeof signIn>[1] | undefined = undefined;
+   export let authorizationParams: Parameters<typeof signIn>[2] | undefined =
+-    undefined
++    undefined;
+   const callbackUrl =
+     options instanceof FormData
+       ? options.get("redirectTo")
+-      : options?.redirectTo
++      : options?.redirectTo;
+   const redirect =
+-    options instanceof FormData ? options.get("redirect") : options?.redirectTo
++    options instanceof FormData ? options.get("redirect") : options?.redirectTo;
+ 
+   const authorizationParamsInputs = authorizationParams
+     ? typeof authorizationParams === "string" && authorizationParams
+       ? new URLSearchParams(authorizationParams)
+       : authorizationParams
+-    : undefined
++    : undefined;
+ </script>
+ 
+ <form
+@@ -32,14 +32,14 @@
+ >
+   <input type="hidden" name="providerId" value={provider} />
+   {#if callbackUrl}
+-  <input type="hidden" name="callbackUrl" value={callbackUrl} />
++    <input type="hidden" name="redirectTo" value={callbackUrl} />
+   {/if}
+   {#if redirect}
+-  <input type="hidden" name="redirect" value={redirect} />
++    <input type="hidden" name="redirect" value={redirect} />
+   {/if}
+   {#if authorizationParamsInputs}
+     {#each Object.entries(authorizationParamsInputs) as [key, value]}
+-      <input type="hidden" name={`authorizationParams-${key}`} value={value} />
++      <input type="hidden" name={`authorizationParams-${key}`} {value} />
+     {/each}
+   {/if}
+   {#if provider === "credentials"}
+@@ -47,7 +47,10 @@
+   {/if}
+   {#if provider === "email" || provider === "sendgrid" || provider === "resend"}
+     <slot name="email">
+-      <label class="section-header" for={`input-email-for-${provider}-provider`}>
++      <label
++        class="section-header"
++        for={`input-email-for-${provider}-provider`}
++      >
+         Email
+       </label>
+       <input
+diff --git a/src/lib/components/SignOut.svelte b/src/lib/components/SignOut.svelte
+index 59add88071407a708a6aa2bfd7930d451f4ac41f..4811d4dff42f134f57485277d7bdbdfaeee2a4bd 100644
+--- a/src/lib/components/SignOut.svelte
++++ b/src/lib/components/SignOut.svelte
+@@ -1,18 +1,17 @@
+ <script lang="ts">
+-  import { enhance } from "$app/forms"
+-  import type { signOut } from "$lib/actions"
++  import { enhance } from "$app/forms";
++  import type { signOut } from "$lib/actions";
+ 
+-  export let className = ""
+-  export let options: Parameters<typeof signOut>[0] = undefined
+-  export let signOutPage = "signout"
+-  
++  export let className = "";
++  export let options: Parameters<typeof signOut>[0] = undefined;
++  export let signOutPage = "signout";
+ </script>
+ 
+ <form
+   method="POST"
+   action={`/${signOutPage}`}
+   use:enhance
+-  class={`signOutButton ${className}`}
++  class="signOutButton"
+   {...$$restProps}
+ >
+   {#if options}
+@@ -23,5 +22,5 @@
+       <input type="hidden" name="redirectTo" value={options.redirectTo} />
+     {/if}
+   {/if}
+-  <button type="submit"><slot /></button>
++  <button type="submit" class={className}><slot /></button>
+ </form>

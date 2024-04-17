@@ -1,0 +1,1 @@
+ALTER TABLE "buxfer_accounts" ADD CONSTRAINT "user_unique" UNIQUE("user_id");

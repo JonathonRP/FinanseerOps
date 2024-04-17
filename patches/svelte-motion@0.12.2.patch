@@ -1,0 +1,175 @@
+diff --git a/package.json b/package.json
+index 1d79dc5ad3e7e1104d0bc37bc22d44154dffbe5f..affd9b8ed5e8edf80d431656916e7ea43f3ff4c1 100644
+--- a/package.json
++++ b/package.json
+@@ -11,28 +11,28 @@
+   "author": "Michael Lucht <micha-lmxt@gradientdescent.de> (https://svelte-motion.gradientdescent.de)",
+   "license": "MIT",
+   "dependencies": {
+-    "@types/react": "^18.2.42",
++    "@types/react": "^18.2.75",
+     "framesync": "^6.1.2",
+     "popmotion": "^11.0.5",
+     "style-value-types": "5.1.2",
+     "tslib": "^2.6.2"
+   },
+   "devDependencies": {
+-    "@emotion/is-prop-valid": "^1.2.1",
++    "@emotion/is-prop-valid": "^1.2.2",
+     "@rollup/plugin-node-resolve": "^15.2.3",
+     "@rollup/plugin-replace": "^5.0.5",
+-    "@sveltejs/vite-plugin-svelte": "^3.0.1",
+-    "@tsconfig/svelte": "^5.0.2",
+-    "rollup": "^4.9.2",
++    "@sveltejs/vite-plugin-svelte": "^3.0.2",
++    "@tsconfig/svelte": "^5.0.4",
++    "publint": "^0.2.7",
++    "rollup": "^4.14.1",
+     "rollup-plugin-css-porter": "^1.0.2",
+-    "rollup-plugin-svelte": "^7.1.6",
+-    "svelte": "^5.0.0-next.37",
+-    "svelte-preprocess": "^5.1.1",
++    "rollup-plugin-svelte": "^7.2.0",
++    "svelte": "5.0.0-next.96",
++    "svelte-preprocess": "^5.1.3",
+     "tsc": "2.0.4",
+     "typescript": "5.3.3",
+-    "vite": "^5.0.12",
+-    "vitest": "1.1.1",
+-    "publint": "^0.2.7"
++    "vite": "^5.2.8",
++    "vitest": "1.1.1"
+   },
+   "peerDependencies": {
+     "svelte": ">=3.35.0 || ^4.0.0 || ^5.0.0 || ^5.0.0-next.0"
+diff --git a/tests/types/components.test-d.ts b/tests/types/components.test-d.ts
+index ee7006b41d3d4eab36ac14920c136d23cb1d7de6..b51049ab17c411ed726f25fea84091d0b1d9041e 100644
+--- a/tests/types/components.test-d.ts
++++ b/tests/types/components.test-d.ts
+@@ -7,29 +7,29 @@ import type { CustomMotionComponentConfig } from '../../types/render/dom/motion-
+ import type { IsSVG } from '../../types/render/dom/motion.js';
+ import type { UseDomEventProps } from '../../types/events/use-dom-event.js';
+ 
+-describe('test components type - svelte 4', () => {
++describe('test components type - svelte 5', () => {
+     it('should have Svelte legacy component type for Motion', () => {
+-        assertType<SvelteComponent<CustomMotionComponentConfig & MotionProps & IsSVG, {}, {default: { props:object, motion: import('svelte/action').Action }}>>(new Motion({target: new Element }));
++        assertType<SvelteComponent<CustomMotionComponentConfig & MotionProps & IsSVG, { $on: SvelteComponent['$on'], $set: SvelteComponent['$set'], $destroy: SvelteComponent['$destroy'] }, {default: { props:object, motion: import('svelte/action').Action }}>>(new Motion({target: new Element }));
+     })
+ 
+     it('should have Svelte legacy component type for AnimatePresence', () => {
+-        assertType<SvelteComponent<AnimatePresenceProps<any>, {}, {default:{ item: ConditionalGeneric<any> }}>>(new AnimatePresence({ target: new Element }));
++        assertType<SvelteComponent<AnimatePresenceProps<any>, { $on: SvelteComponent['$on'], $set: SvelteComponent['$set'], $destroy: SvelteComponent['$destroy'] }, {default:{ item: ConditionalGeneric<any> }}>>(new AnimatePresence({ target: new Element }));
+     })
+ 
+     it('should have Svelte legacy component type for AnimateSharedLayout', () => {
+-        assertType<SvelteComponent<SharedLayoutProps, {}, {default:{}}>>(new AnimateSharedLayout({ target: new Element }));
++        assertType<SvelteComponent<SharedLayoutProps, { $on: SvelteComponent['$on'], $set: SvelteComponent['$set'], $destroy: SvelteComponent['$destroy'] }, {default:{}}>>(new AnimateSharedLayout({ target: new Element }));
+     })
+ 
+     it('should have Svelte legacy component type for MotionConfig', () => {
+-        assertType<SvelteComponent<MotionConfigProps, {}, {default:{}}>>(new MotionConfig({ target: new Element }));
++        assertType<SvelteComponent<MotionConfigProps, { $on: SvelteComponent['$on'], $set: SvelteComponent['$set'], $destroy: SvelteComponent['$destroy'] }, {default:{}}>>(new MotionConfig({ target: new Element }));
+     })
+ 
+     it('should have Svelte legacy component type for UseDomEvent', () => {
+-        assertType<SvelteComponent<UseDomEventProps, {}, {default:{}}>>(new UseDomEvent({ target: new Element }));
++        assertType<SvelteComponent<UseDomEventProps, { $on: SvelteComponent['$on'], $set: SvelteComponent['$set'], $destroy: SvelteComponent['$destroy'] }, {default:{}}>>(new UseDomEvent({ target: new Element }));
+     })
+ })
+ 
+-describe('test components type - svelte 5', () => {
++describe('test components type - svelte 4', () => {
+     it('should have Svelte component type for Motion', () => {
+         assertType<ConstructorOfATypedSvelteComponent>(Motion);
+     })
+diff --git a/types/components/AnimatePresence/index.d.ts b/types/components/AnimatePresence/index.d.ts
+index 9cb259427697f2a0f94a8a3957e4fa21b6a32374..2b77b271f5f5c743f91d19e046415dfdb4c7403f 100644
+--- a/types/components/AnimatePresence/index.d.ts
++++ b/types/components/AnimatePresence/index.d.ts
+@@ -2,7 +2,7 @@
+ based on framer-motion@4.1.17,
+ Copyright (c) 2018 Framer B.V.
+ */
+-import { SvelteComponent } from "svelte";
++import type { SvelteComponent, ContructorOfATypedSvelteComponent, ATypedSvelteComponet, SvelteComponentTyped } from "svelte";
+ import { AnimatePresenceProps } from "./types.js";
+ /**
+  * `AnimatePresence` enables the animation of components that have been removed from the tree.
+@@ -43,4 +43,4 @@ import { AnimatePresenceProps } from "./types.js";
+  * @public
+  */
+ type ConditionalGeneric<T> = T extends {key:any} ? T : { key: 1}; // Better handling of defaults and the optional list prop
+-export declare class AnimatePresence<T extends {key:any}> extends SvelteComponent<AnimatePresenceProps<T>, ATypedSvelteComponent, {default:{ item: ConditionalGeneric<T> }}>{}
++export declare class AnimatePresence<T extends {key:any}> extends SvelteComponent<AnimatePresenceProps<T>, { $on: SvelteComponent['$on'], $set: SvelteComponent['$set'], $destroy: SvelteComponent['$destroy'] }, {default:{ item: ConditionalGeneric<T> }}>{}
+diff --git a/types/components/AnimateSharedLayout/index.d.ts b/types/components/AnimateSharedLayout/index.d.ts
+index dcbd2df72404f9ae8386e8a6acafef2b0f17deae..2cad8936d96ce88b35f1b318db836040e571f90e 100644
+--- a/types/components/AnimateSharedLayout/index.d.ts
++++ b/types/components/AnimateSharedLayout/index.d.ts
+@@ -3,10 +3,10 @@ based on framer-motion@4.1.17,
+ Copyright (c) 2018 Framer B.V.
+ */
+ 
++import type { SvelteComponent } from "svelte";
+ import { SharedLayoutProps } from "./types.js";
+-import { SvelteComponent } from "svelte";
+ /**
+  * Wrap several [#Motion] components with the \`layout\` or \`layoutId\` prop with this component, so that all react smoothly to the change of a single component.
+  * @public
+  */
+-export declare class AnimateSharedLayout extends SvelteComponent<SharedLayoutProps, ATypedSvelteComponent, {default:{}}>{}
++export declare class AnimateSharedLayout extends SvelteComponent<SharedLayoutProps, { $on: SvelteComponent['$on'], $set: SvelteComponent['$set'], $destroy: SvelteComponent['$destroy'] }, {default:{}}>{}
+diff --git a/types/components/MotionConfig/index.d.ts b/types/components/MotionConfig/index.d.ts
+index dcd1b804724313adc2bd3311f375bb914d94ef31..2730716c57e0f2150f17c76f04716486ca58fe11 100644
+--- a/types/components/MotionConfig/index.d.ts
++++ b/types/components/MotionConfig/index.d.ts
+@@ -2,7 +2,7 @@
+ based on framer-motion@4.1.17,
+ Copyright (c) 2018 Framer B.V.
+ */
+-import { SvelteComponent } from "svelte";
++import type { SvelteComponent } from "svelte";
+ import { MotionConfigContextObject } from "../../context/MotionConfigContext.js";
+ export declare type MotionConfigProps = Partial<MotionConfigContextObject> 
+ /**
+@@ -18,4 +18,4 @@ export declare type MotionConfigProps = Partial<MotionConfigContextObject>
+  *
+  * @public
+  */
+-export declare class MotionConfig extends SvelteComponent<MotionConfigProps,ATypedSvelteComponent,{default:{}}>{}
++export declare class MotionConfig extends SvelteComponent<MotionConfigProps, { $on: SvelteComponent['$on'], $set: SvelteComponent['$set'], $destroy: SvelteComponent['$destroy'] }, {default:{}}>{}
+diff --git a/types/motion/types.d.ts b/types/motion/types.d.ts
+index a4bfe8fb7db6a62e124b762b7cfb939066974aec..eeada672900be2111445cb280e40f39be252d9b6 100644
+--- a/types/motion/types.d.ts
++++ b/types/motion/types.d.ts
+@@ -71,7 +71,7 @@ export declare type MotionTransform = MakeMotion<TransformProperties>;
+ /**
+  * @public
+  */
+-export declare type MotionStyle = MotionCSS & MotionTransform & MakeMotion<SVGPathProperties> /* & MakeCustomValueType<CustomStyles>*/;
++export declare type MotionStyle = MotionCSS & MotionTransform & MakeMotion<SVGPathProperties> & MakeCustomValueType<CustomStyles>;
+ export declare type OnUpdate = (v: Target) => void;
+ /**
+  * @public
+diff --git a/types/render/dom/motion.d.ts b/types/render/dom/motion.d.ts
+index 92a4bd3d4b3b2e34a3a7ecb0da78d84481becbc6..9d2be0149628d8bdbef30aa572fc2fb82ae1731d 100644
+--- a/types/render/dom/motion.d.ts
++++ b/types/render/dom/motion.d.ts
+@@ -2,7 +2,7 @@
+ based on framer-motion@4.1.17,
+ Copyright (c) 2018 Framer B.V.
+ */
+-import { SvelteComponent } from "svelte";
++import type { SvelteComponent } from "svelte";
+ import { DOMMotionComponents } from "./types.js";
+ import { CustomMotionComponentConfig} from './motion-proxy.js'
+ import { MotionProps } from "../../motion/types.js";
+@@ -19,7 +19,7 @@ export declare interface IsSVG{
+  */
+ export declare class Motion extends SvelteComponent<
+     CustomMotionComponentConfig & MotionProps & IsSVG,
+-    ATypedSvelteComponent,
++    { $on: SvelteComponent['$on'], $set: SvelteComponent['$set'], $destroy: SvelteComponent['$destroy'] },
+     {
+         default: { 
+             /** Pass down unused props from the Motion component */

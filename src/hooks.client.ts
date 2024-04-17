@@ -1,21 +1,36 @@
-// import * as Sentry from '@sentry/svelte';
+import { handleErrorWithSentry, replayIntegration } from '@sentry/sveltekit';
+import * as Sentry from '@sentry/sveltekit';
 
-import { api } from '$lib/api';
+import type { HandleClientError } from '@sveltejs/kit';
+import { formatError } from '$lib/utils';
+import * as Spotlight from '@spotlightjs/spotlight';
+import { dev } from '$app/environment';
 
-// Sentry.init({
-/* ... */
-// });
+// If you don't want to use Session Replay, remove the `Replay` integration, 
+// `replaysSessionSampleRate` and `replaysOnErrorSampleRate` options.
+Sentry.init({
+    dsn: "https://997785fc8294fedf8043d05970029853@o4506588389900288.ingest.sentry.io/4506588421095424",
+    tracesSampleRate: 1,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1,
+    integrations: [replayIntegration()]
+})
 
-export async function handleError({ error, event }) {
-	const errorId = crypto.randomUUID();
-	// example integration with https://sentry.io/
-	// Sentry.captureException(error, { event, errorId });
+export const handleError = handleErrorWithSentry((async ({ error, event }) => 
+	// const errorId = ulid();
 
 	// TODO - replace with logging collection data service (ex. Sentry).
-	api.logger.error.query({ error, ...{ event, errorId } });
+	// logger.error({
+	// 	issue: (error as Error)?.stack || (error as App.Error).message || 'Oops!',
+	// 	...{ event, errorId, error },
+	// });
 
-	return {
-		code: errorId,
-		message: (error as Error).message ?? 'Whoops!',
-	};
+	formatError(error)
+) satisfies HandleClientError);
+
+if (dev) {
+  await Spotlight.init({
+    injectImmediately: true,
+    anchor: 'topRight'
+  });
 }

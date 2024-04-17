@@ -1,31 +1,86 @@
-<script lang="ts">
+<svelte:options runes={true} />
+
+<script lang="ts" generics="T extends Record<string, unknown>">
+	import type { SubmitFunction } from '@sveltejs/kit';
 	import { BehaviorSubject } from 'rxjs';
-	import { createEventDispatcher, onMount, setContext } from 'svelte';
-	import { type SubmitFunction, enhance } from '$app/forms';
+	import { setContext, type Snippet } from 'svelte';
 	import toast from 'svelte-french-toast';
 	import { writable } from 'svelte/store';
+	import { applyAction, enhance } from '$app/forms';
 
-	let form: HTMLFormElement;
+	let {
+		form = $bindable(),
+		method,
+		action,
+		reset = false,
+		values: initialValues,
+		validate = (_values, errors) =>
+			Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), <typeof errors>{}),
+		onsubmitting,
+		onsucceeded,
+		children,
+		...restProps
+	}: {
+		form?: HTMLFormElement;
+		method: 'post';
+		action: string;
+		reset?: boolean;
+		values?: T;
+		validate?: (_values: typeof initialValues, errors: Errors<T>) => typeof errors;
+		onsubmitting: (data: FormData) => void;
+		onsucceeded: (data: FormData) => Promise<void>;
+		children: Snippet<
+			[
+				{
+					valid: typeof $formValidity;
+					submitting: typeof $formSubmitting;
+					formData: typeof initialValues;
+					handleInput: typeof handleInput;
+					handleBlurOrClick: typeof handleBlurOrClick;
+				},
+			]
+		>;
+		class: string;
+	} = $props();
 
-	const values = writable({} as Record<string, undefined | string | number | boolean | string[]>);
+	// work on this type...
+	// type Values = Record<string, undefined | null | string | number | boolean | string[]>;
+
+	// const elements = <const>form.elements.map((field) => field as HTMLInputElement);
+	// type elementName = (typeof elements)[number]['value'];
+	// type values<T extends (typeof elements)[number]['type']> = T extends 'number'
+	// 	? { [(typeof elements[number]).name]: (typeof elements)[number]['valueAsNumber'] }
+	// 	: {};
+
+	// type Values<T extends Record<string, unknown>> = T extends Record<infer K, string> ? { [v in K]: string } : T;
+	type Errors<T extends Record<string, unknown>> = T extends Record<infer K, unknown> ? { [v in K]: string } : T;
+
+	const values = writable(
+		initialValues ??
+			Array.from(form?.elements ?? [])
+				.map((field) => field as HTMLInputElement)
+				.reduce(
+					(res, { name, valueAsNumber, value, checked, type }) => ({
+						...res,
+						[name]:
+							((type === 'number' || type === 'range') && valueAsNumber) ||
+							(type !== 'checkbox' && type !== 'number' && value) ||
+							checked,
+					}),
+					<T>{}
+				)
+	);
 	const formSubmitting = new BehaviorSubject(false);
 	const formValidity = new BehaviorSubject(false);
 
-	export let reset = false;
-
-	export let action: string;
-
-	export let validate = (_values: typeof $values) =>
-		Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), {}) as Record<string, string>;
-
 	const handleValidation = (onlyField: (EventTarget & HTMLInputElement) | undefined = undefined) => {
-		const errors = validate($values);
+		const errors = validate($values, {} as Errors<T>);
 
 		if (onlyField) {
 			onlyField.setCustomValidity(errors[onlyField.name] ?? '');
 		}
 
-		Array.from(form.elements)
+		Array.from(form?.elements ?? [])
 			.map((element) => element as HTMLInputElement)
 			.reduce((error, input) => {
 				input.checkValidity();
@@ -33,21 +88,19 @@
 				return { ...error, ...{ [input.name]: input.validationMessage } };
 			}, {});
 
-		formValidity.next(form.checkValidity());
+		formValidity.next(form?.checkValidity() ?? false);
 		return $formValidity;
 	};
 
-	const dispatch = createEventDispatcher();
-
-	const submit: SubmitFunction = ({ data }) => {
+	const submit: SubmitFunction = ({ formData }) => {
 		formSubmitting.next(true);
-		dispatch('submit', { data });
+		onsubmitting(formData);
 
 		return async ({ result, update }) => {
 			switch (result.type) {
 				case 'success':
 					await update({ reset });
-					dispatch('success', { data });
+					await onsucceeded(formData);
 					break;
 				case 'failure': {
 					const [firstError] = Object.keys(result.data?.errors);
@@ -60,31 +113,16 @@
 				default:
 					await update({ reset });
 			}
+			await applyAction(result);
 			handleValidation();
 			formSubmitting.next(false);
 		};
 	};
 
-	const handleInput = ({ currentTarget }: Event & { currentTarget: EventTarget & HTMLInputElement }) => {
-		const { name, type, checked, value } = currentTarget;
-		let nextValue = value as any;
-		if (type === 'range' || type === 'number') {
-			nextValue = nextValue === '' ? undefined : +nextValue;
-		} else if (type === 'select-multiple') {
-			nextValue = new Array<any>().map.call(currentTarget.querySelectorAll(':checked'), (option) => option.value);
-		} else if (type === 'checkbox') {
-			nextValue = checked;
-		}
-		values.update((_v) => ({ ..._v, [name]: nextValue }));
-		handleValidation();
-	};
-
-	const handleBlur = ({
+	const handleInput = ({
 		currentTarget,
-	}: FocusEvent & {
-		currentTarget: EventTarget & HTMLInputElement;
-	}) => {
-		const { name, type, checked, value } = currentTarget;
+	}: Event & { currentTarget: EventTarget & (HTMLInputElement | HTMLButtonElement) }) => {
+		const { name, type, value } = currentTarget;
 		let nextValue: string | number | boolean | undefined | string[] = value;
 		if (type === 'range' || type === 'number') {
 			nextValue = nextValue === '' ? undefined : +nextValue;
@@ -94,32 +132,47 @@
 				(option) => option.value
 			) as string[];
 		} else if (type === 'checkbox') {
-			nextValue = checked;
+			nextValue = (currentTarget as HTMLInputElement).checked;
 		}
 		values.update((_v) => ({ ..._v, [name]: nextValue }));
 		handleValidation();
 	};
 
+	const handleBlurOrClick = (
+		node: FocusEvent & {
+			currentTarget: EventTarget & (HTMLInputElement | HTMLButtonElement);
+		}
+	) => {
+		handleInput(node);
+	};
+
+	// const protoFormData = new FormData(form);
+	// const formData = $derived(
+	// 	Object.fromEntries(
+	// 		Array.from(protoFormData.entries()).map(([name, value]) => {
+	// 			const allValues = protoFormData.getAll(name);
+	// 			return [name, allValues.length > 1 ? value : allValues];
+	// 		})
+	// 	)
+	// );
+
+	const formData = $derived($values);
+
 	setContext('form', { valid: formValidity, submitting: formSubmitting });
 
-	onMount(() => {
-		$values = Array.from(form.elements)
-			.map((field) => field as HTMLInputElement)
-			.reduce(
-				(res, { name, valueAsNumber, value, checked, type }) => ({
-					...res,
-					[name]:
-						((type === 'number' || type === 'range') && valueAsNumber) ||
-						(type !== 'checkbox' && type !== 'number' && value) ||
-						checked,
-				}),
-				<typeof $values>{}
-			);
-
+	$effect(() => {
 		handleValidation();
 	});
 </script>
 
-<form {action} {...$$restProps} novalidate bind:this={form} use:enhance={submit}>
-	<slot valid={$formValidity} submitting={$formSubmitting} {handleInput} {handleBlur} />
-</form>
+{#if method.includes('post')}
+	<form method="post" {action} {...restProps} novalidate bind:this={form} use:enhance={submit}>
+		{@render children({
+			valid: $formValidity,
+			submitting: $formSubmitting,
+			formData,
+			handleInput,
+			handleBlurOrClick,
+		})}
+	</form>
+{/if}

@@ -1,12 +1,6 @@
 {
 	"extends": "./.svelte-kit/tsconfig.json",
 	"compilerOptions": {
-		"paths": {
-			"$lib": ["./src/lib"],
-			"$lib/*": ["./src/lib/*"],
-			"$app": ["./node_modules/@sveltejs/kit/types"],
-			"$app/*": ["./node_modules/@sveltejs/kit/types/ambient.d.ts"]
-		},
 		"outDir": ".svelte-kit/output",
 		"allowJs": true,
 		"checkJs": true,
@@ -15,7 +9,8 @@
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"sourceMap": true,
-		"strict": true
+		"strict": true,
+		"types": ["unplugin-icons/types/svelte"],
 	},
 	// Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
 	//
@@ -24,12 +19,11 @@
 	"include": [
 		"./.svelte-kit/ambient.d.ts",
 		"./.svelte-kit/types/**/$types.d.ts",
+		"../vite.config.ts",
 		"./src/**/*.js",
 		"./src/**/*.ts",
 		"./src/**/*.svelte",
-		"./prisma/**/*.ts",
 		"./types/**/*.ts",
-		"*.cjs",
 		".*.cjs",
 		"*.js",
 		"*.ts",

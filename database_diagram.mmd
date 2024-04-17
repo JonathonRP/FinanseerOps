@@ -1,0 +1,94 @@
+erDiagram
+    App-User ||--|| App-BuxferAccount : ""
+    App-User ||--o{ App-Notifications : ""
+    App-User ||--o{ App-FinancalObligationsReminder : ""
+    App-Family ||--|| App-BuxferAccount : "can view data"
+    App-Family |o--o| App-User : "owner"
+    App-Family |o--o{ App-User : "member"
+    Authjs-User ||--|{ Authjs-Account : ""
+    Authjs-User ||--|{ Authjs-Session : ""
+    Authjs-User ||--|{ Authjs-VerificationToken : ""
+
+    Authjs-VerificationToken {
+        string identifier PK
+        string token PK, UK
+        timestamp expires
+    }
+
+    Authjs-User {
+        string id PK
+        string name
+        string email
+        timestamp emailVerified
+        string image
+    }
+
+    App-User {
+        string id PK
+        enum widget_style "simple, dense"
+        bool enable_notifications "cashflow check reminder and budget alert"
+        string email_notification_rate "weekly | monthly | bi-weekly | bi-monthly"
+        string familyId FK
+        string leadershipId FK
+    }
+
+    App-Notifications {
+        string id PK
+        string type "invite, account, reminder/null"
+        string createdBy "userId of creator"
+        string recipient "target userId"
+        timestamp createdOn
+        string message
+        bool read
+    }
+
+    App-FinancalObligationsReminder {
+        string id PK
+        string userId FK
+        date obligationDueDate
+        timestamp remindTime
+        
+    }
+
+
+
+    %% Family members are invite only.
+    App-Family {
+        string id PK
+        string name "[user.name]'s family"
+        string provider FK
+        string providerAccountId FK
+        string leaderId FK "userId"
+    }
+
+    %% for oath accounts and linking accounts (specifically Buxfer only)
+    %% buxfer password - (encrypted and JsonWebToken)
+    %% buxfer_token should be passed through as cookie to allow expiring
+    %% on expire of buxfer_token use refresh_token (buxfer password) to relogin.
+    Authjs-Account {
+        string provider PK "auth provider (email, github, etc.)"
+        string providerAccountId PK "typicaly email"
+        string userId FK
+        string type "oath, email, oidc"
+        string refresh_token "oath refresh_token"
+        string access_token "oath access_token"
+        int expires_at
+        string token_type
+        string scope
+        string id_token
+        string session_state
+    }
+
+    Authjs-Session {
+        string sessionToken PK
+        timestamp expires
+        string userId FK
+    }
+
+    App-BuxferAccount {
+        string familyId FK
+        string userId FK
+        string refresh_token "Buxfer password (encrypted and JsonWebToken)"
+        string access_token "Buxfer token (token returned by buxfer api login)"
+        int expires_at
+    }

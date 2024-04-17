@@ -4,12 +4,13 @@ const config = {
 	extends: [
 		'eslint:recommended',
 		'plugin:@typescript-eslint/recommended',
+		'plugin:@typescript-eslint/recommended-requiring-type-checking',
 		'plugin:svelte/recommended',
 		'airbnb-base',
 		'airbnb-typescript/base',
-		'plugin:prettier/recommended',
+		'prettier',
 	],
-	plugins: ['@typescript-eslint', 'import-no-duplicates-prefix-resolved-path'],
+	plugins: ['@typescript-eslint', 'import-no-duplicates-prefix-resolved-path', 'unused-imports'],
 	ignorePatterns: [
 		'node_modules',
 		'dist',
@@ -36,7 +37,7 @@ const config = {
 		sourceType: 'module',
 		ecmaVersion: 2020,
 		tsconfigRootDir: __dirname,
-		project: './tsconfig.json',
+		project: true,
 		extraFileExtensions: ['.svelte'],
 	},
 	env: {
@@ -69,6 +70,7 @@ const config = {
 				prefixResolvedPathWithImportName: true,
 			},
 		],
+		'unused-imports/no-unused-imports-ts': 2,
 	},
 };
 
