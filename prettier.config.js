@@ -8,7 +8,7 @@ const config = {
 	printWidth: 120,
 	plugins: ['prettier-plugin-svelte', 'prettier-plugin-tailwindcss'],
 	pluginSearchDirs: false,
-	tailwindConfig: './tailwind.config.cjs',
+	tailwindConfig: './tailwind.config.ts',
 	overrides: [
 		{
 			files: '*.svelte',

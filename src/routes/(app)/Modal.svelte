@@ -3,7 +3,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { classes } from 'svelte-transition-classes';
-	import * as Drawer from '$/lib/components/ui/drawer';
+	import * as Drawer from '$lib/components/ui/drawer';
+
 	import { writable } from 'svelte/store';
 
 	const {

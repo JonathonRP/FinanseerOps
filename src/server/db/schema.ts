@@ -63,7 +63,7 @@ export const waitingList = pgTable('waitingList', {
 		.default(sql`uuid_generate_v4()`)
 		.primaryKey()
 		.notNull(),
-	email: text('email'),
+	email: text('email').notNull().unique(),
 })
 
 export const notifications = pgTable('notifications', {
