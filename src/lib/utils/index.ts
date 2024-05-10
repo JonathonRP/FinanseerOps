@@ -5,12 +5,20 @@ import { dev } from '$app/environment';
 
 export { default as accordion } from './accordion';
 export { default as form } from './form';
+export { eachDay } from './eachDay';
+export { startOfMonth } from './startOfMonth';
+export { startOfWeek } from './startOfWeek';
+export { endOfMonth } from './endOfMonth';
+export { endOfWeek } from './endOfWeek';
+export { today, startOfToday } from './today';
+export { intlFormatDistance } from './intlFormatDistance';
 
 export type { Color } from './Color';
 export { merge } from './merge';
 export { SvelteSubject } from './svelteSubject';
 export { cubicBezier as cubic_bezier } from './cubic-bezier';
 export { cn } from './cn';
+export { flyAndScale } from './flyAndScale';
 
 export const dateFormat = 'MM/dd/yyyy';
 

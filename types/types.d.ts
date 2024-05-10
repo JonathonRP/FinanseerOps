@@ -1,4 +1,4 @@
-import '@auth/sveltekit'
+import '@auth/sveltekit';
 import '@auth/sveltekit/adapters';
 import type { Users } from '../src/server/db';
 

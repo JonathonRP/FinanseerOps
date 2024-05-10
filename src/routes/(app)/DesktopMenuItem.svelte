@@ -15,7 +15,7 @@
 <button
 	type="button"
 	{onclick}
-	class="relative flex w-3 items-center space-x-2 rounded-lg opacity-80 shadow-sm transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring focus:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white @[5rem]:mx-4 @[5rem]:w-11/12 @[5rem]:space-x-2 md:w-full dark:shadow-neutral-600 dark:focus-visible:ring-offset-neutral-808">
+	class="relative flex w-3 items-center space-x-2 rounded-lg opacity-80 shadow-sm transition-opacity hover:opacity-100 focus:ring-accent-600 focus-visible:outline-none focus-visible:ring focus-visible:ring-offset-2 focus-visible:ring-offset-white @[5rem]:mx-4 @[5rem]:w-11/12 @[5rem]:space-x-2 md:w-full dark:shadow-neutral-600 dark:focus-visible:ring-offset-neutral-808">
 	{#if children}
 		{@render children()}
 	{/if}

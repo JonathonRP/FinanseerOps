@@ -5,30 +5,33 @@ import { buckets } from '../db/schema';
 import { db } from '../db';
 
 export class DrizzleBucket extends TokenBucket {
-
 	async consume(key: string, refill: Refill, count = 1) {
-		const now = Date.now()
+		const now = Temporal.Now.zonedDateTime(Temporal.Now.timeZoneId()).epochMilliseconds;
 
-		let bucket = await db.select().from(buckets).where(eq(buckets.name, key)).then(resp => resp[0]);
+		let bucket = await db
+			.select()
+			.from(buckets)
+			.where(eq(buckets.name, key))
+			.then((resp) => resp[0]);
 		if (!bucket) {
-            bucket = { name: key, tokens: refill.size, updated: now };
+			bucket = { name: key, tokens: refill.size, updated: now };
 			await db.insert(buckets).values(bucket).onConflictDoUpdate({
-                target: buckets.name,
-                set: bucket
-            })
+				target: buckets.name,
+				set: bucket,
+			});
 		}
 
-		const deltaMs = now - bucket.updated
-		const deltaNo = (deltaMs * refill.rate) / 1000
+		const deltaMs = now - bucket.updated;
+		const deltaNo = (deltaMs * refill.rate) / 1000;
 
-		bucket.tokens = Math.min(refill.size, bucket.tokens + deltaNo)
-		bucket.updated = now
+		bucket.tokens = Math.min(refill.size, bucket.tokens + deltaNo);
+		bucket.updated = now;
 
-		const allowed = bucket.tokens >= count
+		const allowed = bucket.tokens >= count;
 		if (allowed) {
-			bucket.tokens -= count
+			bucket.tokens -= count;
 		}
 
-		return this.apply(refill, count, allowed, bucket.tokens)
+		return this.apply(refill, count, allowed, bucket.tokens);
 	}
 }

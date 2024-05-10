@@ -1,19 +1,32 @@
 import type { Session } from '@auth/sveltekit';
 import { browser } from '$app/environment';
 
-const getValue = () => (browser ? Boolean(JSON.parse(window.localStorage.getItem('useBauhaus') ?? 'null')) : undefined);
-const setValue = (value: boolean) => browser && window.localStorage.setItem('useBauhaus', String(value));
+const getValue = <V extends keyof UserSettings>(value: V) =>
+	(browser ? JSON.parse(window.localStorage.getItem('userSettings') ?? 'null') : undefined)?.[
+		value
+	] satisfies UserSettings[V];
+const setValue = (value: UserSettings) => browser && window.localStorage.setItem('userSettings', JSON.stringify(value));
 
 class UserSettings {
-	private usingBauhaus = $state(getValue() ?? false);
+	private useBauhausValue = $state(getValue('useBauhaus') ?? false);
+	private budgetValue = $state(getValue('budget') ?? 2000);
+
+	get budget() {
+		return this.budgetValue;
+	}
+
+	set budget(value: number) {
+		setValue({ ...this, budgetValue: value });
+		this.budgetValue = value;
+	}
 
 	get useBauhaus() {
-		return this.usingBauhaus;
+		return this.useBauhausValue;
 	}
 
 	set useBauhaus(value: boolean) {
-		setValue(value);
-		this.usingBauhaus = value;
+		setValue({ ...this, useBauhausValue: value });
+		this.useBauhausValue = value;
 	}
 
 	// eslint-disable-next-line class-methods-use-this

@@ -43,7 +43,7 @@
 				</p>
 			</div>
 			<div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-				<form class="w-full rounded-2xl bg-white/20 p-1.5 lg:mx-auto lg:w-auto" method="post" action='/'>
+				<form class="w-full rounded-2xl bg-white/20 p-1.5 lg:mx-auto lg:w-auto" method="post" action="/">
 					<div class="w-full lg:flex lg:items-center">
 						<div class="shrink">
 							<input

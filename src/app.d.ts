@@ -1,4 +1,5 @@
 /// <reference types="@auth/sveltekit" />
+/// <reference types="temporal-polyfill/global" />
 
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
@@ -24,9 +25,9 @@ declare global {
 			stack?: any;
 		}
 		interface PageData {
-			processedDay: Date;
-			accounts: Promise<Parameters<Parameters<Accounts['subscribe']>['0']>['0']>;
-			transactions: Promise<Parameters<Parameters<Transactions['subscribe']>['0']>['0']>;
+			processedDay: Temporal.PlainDate;
+			bankAccounts: Promise<Parameters<Parameters<Accounts['subscribe']>['0']>['0']>;
+			bankTransactions: Promise<Parameters<Parameters<Transactions['subscribe']>['0']>['0']>;
 		}
 		// interface Platform {}
 	}

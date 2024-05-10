@@ -1,24 +1,7 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import {
-		addMonths,
-		eachDayOfInterval,
-		endOfMonth,
-		endOfWeek,
-		format,
-		isAfter,
-		isBefore,
-		isEqual,
-		isSameDay,
-		isSameMonth,
-		isToday,
-		startOfMonth,
-		startOfToday,
-		startOfWeek,
-		subMonths,
-	} from 'date-fns';
-	import { cn, dateFormat } from '$lib/utils';
+	import { cn, eachDay, today as getToday } from '$lib/utils';
 	import { from, map } from 'rxjs';
 	import { tick } from 'svelte';
 	import { AnimatePresence, type Variants } from 'svelte-motion';
@@ -28,24 +11,25 @@
 	import { ease } from '$/lib/animations';
 	import { page } from '$app/stores';
 
-	const { current, processedDate, searchFilter, transactions } = $derived($page.data);
-	const today = startOfToday();
+	const { current, processedDate, searchFilter, bankTransactions } = $derived($page.data);
+	const today = getToday();
 
 	let direction: number = $state(0);
 
-	const processedDay = $derived((processedDate && new Date(processedDate)) || today);
-	let currentMonth = $state(processedDay);
-	const { daysOfPeriod, next, previous, calendarMonthTransactions } = $derived.by(() => {
-		const weekStartsOn = 1;
-		const prevPeriod = subMonths(currentMonth, 1);
-		const nextPeriod = addMonths(currentMonth, 1);
-		const monthWeekStart = startOfWeek(startOfMonth(currentMonth), { weekStartsOn });
-		const monthWeekEnd = endOfWeek(endOfMonth(currentMonth), { weekStartsOn });
+	const processedDay = $derived(processedDate ? Temporal.PlainDate.from(processedDate) : today);
+	let currentMonth = $state(processedDay.toPlainYearMonth());
+	const { daysOfCalendarMonth, next, previous, calendarMonthTransactions } = $derived.by(() => {
+		const prevPeriod = currentMonth.subtract({ months: 1 });
+		const nextPeriod = currentMonth.add({ months: 1 });
+		const startOfMonth = currentMonth.toPlainDate({ day: 1 });
+		const monthStartOfWeek = startOfMonth.subtract({ days: startOfMonth.daysInWeek - startOfMonth.dayOfWeek });
+		const endOfMonth = currentMonth.toPlainDate({ day: currentMonth.daysInMonth });
+		const monthEndOfWeek = endOfMonth.add({ days: endOfMonth.daysInWeek - endOfMonth.dayOfWeek });
 
 		return {
-			daysOfPeriod: eachDayOfInterval({
-				start: monthWeekStart,
-				end: monthWeekEnd,
+			daysOfCalendarMonth: eachDay({
+				start: monthStartOfWeek,
+				end: monthEndOfWeek,
 			}),
 			next: async () => {
 				direction = 1;
@@ -57,8 +41,8 @@
 				await tick();
 				currentMonth = prevPeriod;
 			},
-			calendarMonthTransactions: from(transactions).pipe(
-				map((result) => result.filter(({ date }) => isAfter(date, monthWeekStart) && isBefore(date, monthWeekEnd)))
+			calendarMonthTransactions: from(bankTransactions).pipe(
+				map((result) => result.filter(({ date }) => date >= monthStartOfWeek && date < monthEndOfWeek))
 			),
 		};
 	});
@@ -116,14 +100,15 @@
 	list={[
 		{
 			key: currentMonth,
-			title: format(currentMonth, 'yyyy, MMM'),
-			days: daysOfPeriod.map((day, indx) => ({ key: format(day, dateFormat), indx, date: day })),
+			// title: format(currentMonth, 'yyyy, MMM'),
+			title: Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' }).format(currentMonth),
+			// title output: 2023, Jan
+			days: daysOfCalendarMonth.map((day, indx) => ({ key: day.toString(), indx, date: day })),
 		},
 	]}
 	exitBeforeEnter
 	custom={direction}
 	let:item={month}>
-	<!-- use:layout -->
 	<div
 		class="mx-auto min-w-[17rem] max-w-[17rem] flex-shrink-0 overflow-hidden rounded-xl border border-slate-50 px-3 py-3 dark:border-slate-600">
 		<Motion.div
@@ -133,10 +118,7 @@
 			variants={{ visible: { transition: { staggerChildren: 0.25 } } }}
 			custom={direction}>
 			<div class="flex items-center">
-				<Motion.h2
-					variants={slideHeading}
-					custom={direction}
-					class="flex-auto touch-none font-semibold">
+				<Motion.h2 variants={slideHeading} custom={direction} class="flex-auto touch-none font-semibold">
 					{month.title}
 				</Motion.h2>
 				<button
@@ -157,18 +139,30 @@
 				</button>
 			</div>
 			<div class="mt-5 grid grid-cols-7 text-center text-xs leading-6">
-				{#each daysOfPeriod.slice(0, 7) as day, dayIdx (dayIdx)}
-					<span>{format(day, 'eeeeee')}</span>
+				{#each month.days.slice(0, 7) as day, dayIdx (dayIdx)}
+					<span>{Intl.DateTimeFormat(undefined, { weekday: 'narrow' }).format(day.date)}</span>
 				{/each}
 			</div>
 			<Motion.div variants={slideHorizontal} custom={direction}>
 				<ResizePanel>
 					<div class="mt-2 grid grid-cols-7 overflow-hidden text-sm">
 						{#each month.days as day (day.key)}
-							{@const { isSelected, dayIsToday, isPartOfMonth } = {
-								isSelected: isEqual(day.date, processedDay),
-								dayIsToday: isToday(day.date),
-								isPartOfMonth: isSameMonth(day.date, currentMonth),
+							{@const {
+								isSelected,
+								dayIsToday,
+								dayIsPartOfMonth,
+								selectedIsSameMonth,
+								dayIsStartOfMonth,
+								dayIsStartOfWeek,
+								dayIsEndOfWeek,
+							} = {
+								isSelected: day.date === processedDay,
+								dayIsToday: day.date === today,
+								dayIsPartOfMonth: day.date.toPlainYearMonth() === currentMonth,
+								selectedIsSameMonth: processedDay.toPlainYearMonth() === currentMonth,
+								dayIsStartOfMonth: day.date === day.date.toPlainYearMonth().toPlainDate({ day: 1 }),
+								dayIsStartOfWeek: day.date.dayOfWeek === 1,
+								dayIsEndOfWeek: day.date.dayOfWeek === day.date.daysInWeek,
 							}}
 							<div
 								class={cn('py-1', {
@@ -177,22 +171,16 @@
 								})}>
 								<span
 									class={cn('mx-auto flex h-full w-full items-center justify-center', {
-										'bg-accent-400/20': isSameMonth(day.date, processedDay) && day.date <= processedDay,
-										'rounded-e-full':
-											isSameMonth(day.date, processedDay) &&
-											day.date <= processedDay &&
-											(isSameDay(day.date, endOfWeek(day.date, { weekStartsOn: 1 })) || isSelected),
+										'bg-accent-400/20': selectedIsSameMonth && day.date <= processedDay,
+										'rounded-e-full': selectedIsSameMonth && day.date <= processedDay && (dayIsEndOfWeek || isSelected),
 										'rounded-s-full':
-											isSameMonth(day.date, processedDay) &&
-											day.date <= processedDay &&
-											(isSameDay(day.date, startOfMonth(day.date)) ||
-												isSameDay(day.date, startOfWeek(day.date, { weekStartsOn: 1 }))),
+											selectedIsSameMonth && day.date <= processedDay && (dayIsStartOfMonth || dayIsStartOfWeek),
 									})}>
 									<a
 										href={`${current.pathname}${
-											((isBefore(day.date, today) || searchFilter) &&
+											((day.date < today || searchFilter) &&
 												`?${new URLSearchParams({
-													...(isBefore(day.date, today) && {
+													...(day.date < today && {
 														processedDate: day.key,
 													}),
 													...(searchFilter && { searchFilter }),
@@ -200,27 +188,29 @@
 											''
 										}`}
 										class={cn('mx-auto flex h-8 w-8 items-center justify-center rounded-full', {
-											'text-muted-foreground': !isSelected && !dayIsToday && !isPartOfMonth,
-											'font-medium': !isSelected && !dayIsToday && isPartOfMonth,
+											'text-muted-foreground': !isSelected && !dayIsToday && !dayIsPartOfMonth,
+											'font-medium': !isSelected && !dayIsToday && dayIsPartOfMonth,
 											'font-semibold ring-1 ring-inset ring-accent-400 dark:ring-accent-500': isSelected,
 											'font-semibold': dayIsToday,
 											'hover:bg-accent-400/20': !isSelected,
 											'text-accent-500': dayIsToday && !isSelected,
 										})}>
 										<time class="relative flex" datetime={day.key}>
-											{format(day.date, 'd')}
+											{Intl.DateTimeFormat(undefined, { day: 'numeric' }).format(day.date)}
 											{#if $calendarMonthTransactions
 												?.filter(({ type }) => type === 'expense')
-												?.some(({ date }) => isSameDay(date, day.date))}
+												?.some(({ date }) => date === day.date)}
 												<div
-													class="absolute -right-1.5 -top-0 mx-auto h-1 w-1 max-w-[0.25rem] rounded-full bg-accent-400" />
+													class="absolute -right-1.5 -top-0 mx-auto h-1 w-1 max-w-[0.25rem] rounded-full bg-accent-400">
+												</div>
 											{/if}
 										</time>
 									</a>
 								</span>
 							</div>
 						{/each}
-					</div></ResizePanel>
+					</div>
+				</ResizePanel>
 			</Motion.div>
 		</Motion.div>
 	</div>

@@ -7,7 +7,7 @@ import { EMAIL_FROM, VERCEL_DOMAIN } from '$env/static/private';
 // TODO - use supabase postgres cron.
 
 export const POST = async ({ url, params, locals }) => {
-	await locals.api.has(`email`).limit(parseRefill("30 / MINUTE, 10"));
+	await locals.api.has(`email`).limit(parseRefill('30 / MINUTE, 10'));
 
 	const mailOptions = {
 		from: EMAIL_FROM,

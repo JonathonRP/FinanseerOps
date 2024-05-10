@@ -122,5 +122,5 @@ function createApiSvelteProxyClient<TRouter extends AnyRouter>(
 	});
 }
 
-export type { AppRouter, Accounts, Transactions } from '$/server/api/root';
+export type { AppRouter, BankAccounts as Accounts, BankTransactions as Transactions } from '$/server/api/root';
 export { transformer };

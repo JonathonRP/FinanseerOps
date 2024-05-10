@@ -19,8 +19,8 @@
 	let:builder
 	on:click
 	on:keydown>
-	<slot {builder} />
+	<slot {builder}></slot>
 	<div>
-		<ChevronDown class="h-4 w-4 opacity-50" />
+		<ChevronDown class="h-4 w-4 opacity-50"></ChevronDown>
 	</div>
 </SelectPrimitive.Trigger>

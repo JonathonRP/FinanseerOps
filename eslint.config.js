@@ -1,10 +1,9 @@
-import importNoDuplicates from "eslint-plugin-import-no-duplicates-prefix-resolved-path";
-import unusedImports from "eslint-plugin-unused-imports";
-import js from "@eslint/js";
-import ts from "typescript-eslint";
-import svelte from "eslint-plugin-svelte";
-import prettier from "eslint-config-prettier";
-import globals from "globals"
+import unusedImports from 'eslint-plugin-unused-imports';
+import js from '@eslint/js';
+import ts from 'typescript-eslint';
+import svelte from 'eslint-plugin-svelte';
+import prettier from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default ts.config(
 	{
@@ -21,8 +20,8 @@ export default ts.config(
 			'**/*.cjs',
 			'**/pnpm-lock.yaml',
 			'**/package-lock.json',
-			'**/yarn.lock'
-		]
+			'**/yarn.lock',
+		],
 	},
 	js.configs.recommended,
 	{
@@ -35,26 +34,23 @@ export default ts.config(
 			'**/svelte.config.js',
 			'**/static/*.{js,ts,css}',
 		],
-		extends: [
-			...svelte.configs['flat/prettier'],
-		],
+		extends: [...svelte.configs['flat/prettier']],
 		plugins: {
 			'@typescript-eslint': ts.plugin,
-			'import-no-duplicates-prefix-resolved-path': importNoDuplicates,
-			'unused-imports': unusedImports
+			'unused-imports': unusedImports,
 		},
 		languageOptions: {
 			sourceType: 'module',
 			ecmaVersion: 2020,
 			parser: ts.parser,
 			parserOptions: {
-				project:true,
+				project: true,
 			},
 			globals: {
 				...globals.browser,
 				...globals.node,
-				...globals.es2015
-			}
+				...globals.es2015,
+			},
 		},
 		rules: {
 			'arrow-body-style': ['error', 'as-needed'],
@@ -65,12 +61,6 @@ export default ts.config(
 			'import/no-extraneous-dependencies': 0,
 			'import/no-mutable-exports': 0,
 			'import/no-duplicates': 0,
-			'import-no-duplicates-prefix-resolved-path/no-duplicates': [
-				'error',
-				{
-					prefixResolvedPathWithImportName: true,
-				},
-			],
 			'unused-imports/no-unused-imports-ts': 2,
 		},
 	},
@@ -87,4 +77,4 @@ export default ts.config(
 		},
 	},
 	prettier
-)
+);

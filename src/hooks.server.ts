@@ -13,18 +13,13 @@ Sentry.init({
 	spotlight: dev,
 });
 
-
 function authentication() {
 	return sequence(authjs.handle, api_keys.handle);
 }
 
 function authorization() {
 	return (async ({ event, resolve }) => {
-		const {
-			url,
-			route,
-			locals,
-		} = event;
+		const { url, route, locals } = event;
 
 		if (!route.id?.includes('anonymous') && !(await locals.auth())) {
 			return redirect(302, ensureLoggedIn(url, 'you were not logged in.'));

@@ -58,7 +58,7 @@ export const actions = {
 				const errors = { user: [err.message] };
 				return fail(getHTTPStatusCodeFromError(err), { errors });
 			}
-			return error(500, err);
+			return error(500, err.message);
 		}
 
 		return redirect(302, `/${redirectTo?.slice(1)}`);

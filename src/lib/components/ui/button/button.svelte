@@ -21,5 +21,5 @@
 	{...$$restProps}
 	on:click
 	on:keydown>
-	<slot />
+	<slot></slot>
 </ButtonPrimitive.Root>

@@ -4,6 +4,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import Icons from 'unplugin-icons/vite';
 import { sentrySvelteKit } from '@sentry/sveltekit';
 // import basicSsl from '@vitejs/plugin-basic-ssl';
+import 'temporal-polyfill/global';
 
 export default defineConfig(({ command, mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
@@ -11,6 +12,9 @@ export default defineConfig(({ command, mode }) => {
 		define: {
 			'process.env': env,
 		},
+		// optimizeDeps: {
+		// 	exclude: ['temporal-polyfill/global'],
+		// },
 		server: {
 			port: 5000,
 			strictPort: true,
@@ -25,6 +29,11 @@ export default defineConfig(({ command, mode }) => {
 			//   "/api": "https://www.buxfer.com",
 			// },
 		},
+		// esbuild: {
+		// 	define: {
+		// 		Temporal: 'Temporal',
+		// 	},
+		// },
 		plugins: [
 			sentrySvelteKit({
 				sourceMapsUploadOptions: {

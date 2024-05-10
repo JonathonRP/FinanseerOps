@@ -32,20 +32,20 @@
 			<span
 				aria-hidden="true"
 				class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600 group-aria-[current=page]:text-white">
-				<svelte:component this={icon} class="h-6 w-6" flip="horizontal" height="auto" />
+				<svelte:component this={icon} class="h-6 w-6" flip="horizontal" height="auto"></svelte:component>
 			</span>
 			<span>{label}</span>
 		</a>
 		<span
 			aria-hidden="true"
 			class="flex items-baseline px-2 text-stone-50 transition-transform group-open/menu:-scale-y-100 dark:text-stone-800">
-			<svelte:component this={icons.UpChevron} flip="vertical" class="h-7 w-7" height="auto" />
+			<svelte:component this={icons.UpChevron} flip="vertical" class="h-7 w-7" height="auto"></svelte:component>
 		</span>
 	</summary>
 	<ul class="mt-2 flex-1 space-y-2 overflow-hidden hover:overflow-auto">
 		{#each routes.slice(1, -1) as route, i (i)}
 			<li>
-				<NavLink active={active(`${base}${route}`)} {route} />
+				<NavLink active={active(`${base}${route}`)} {route}></NavLink>
 			</li>
 		{/each}
 	</ul>

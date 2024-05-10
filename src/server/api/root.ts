@@ -13,6 +13,6 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
-export type Accounts = inferRouterOutputs<AppRouter>['buxfer']['accounts'];
-export type Transactions = inferRouterOutputs<AppRouter>['buxfer']['transactions'];
+export type BankAccounts = inferRouterOutputs<AppRouter>['buxfer']['accounts'];
+export type BankTransactions = inferRouterOutputs<AppRouter>['buxfer']['transactions'];
 export { createCallerFactory } from './trpc';

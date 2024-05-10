@@ -5,8 +5,8 @@
 	import type { ClassValue } from 'clsx';
 
 	import { cn } from '$lib/utils/cn';
-	
-const {
+
+	const {
 		children,
 		class: className,
 	}: {
@@ -22,14 +22,6 @@ const {
 	// 	mounting = false;
 	// });
 </script>
-
-<!-- <AnimatePresence show={loading || mounting}>
-	<Motion.div
-		initial={{ opacity: 0 }}
-		animate={{ opacity: 1 }}
-		exit={{ opacity: 0 }}
-		class="relative inset-0 z-20 touch-none select-none backdrop-blur-[0.4rem]" />
-</AnimatePresence> -->
 
 <dl
 	class={cn(

@@ -1,22 +1,26 @@
 import { createContext } from '$/server/api/context.js';
 import { appRouter, createCallerFactory } from '$/server/api/root.js';
 import { combineLatest, fromEventPattern, takeUntil } from 'rxjs';
-import { events } from 'sveltekit-sse';
+import { events, extend, findBeacon } from 'sveltekit-sse';
 
 export function POST({ request, ...event }) {
+	const beacon = findBeacon({ request });
+	if (beacon) {
+		console.log('Stream extended.');
+		return extend({ beacon });
+	}
+	const api = createCallerFactory(appRouter)(createContext({ request, ...event }));
+	const abort = fromEventPattern(
+		(handle) => request.signal.addEventListener('abort', handle),
+		(handle) => request.signal.removeEventListener('abort', handle)
+	);
+
 	return events({
 		request,
 		headers: {
 			'X-Accel-Buffering': 'no',
 		},
-		timeout: 0,
 		async start({ emit, lock }) {
-			const api = createCallerFactory(appRouter)(createContext({ request, ...event }));
-			const abort = fromEventPattern(
-				(handle) => request.signal.addEventListener('abort', handle),
-				(handle) => request.signal.removeEventListener('abort', handle)
-			);
-
 			try {
 				await new Promise(async (resolve, reject) => {
 					const notifications = await api.user.notifications();

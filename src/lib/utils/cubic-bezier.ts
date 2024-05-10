@@ -76,11 +76,11 @@ export function cubicBezier(mX1: number, mY1: number, mX2: number, mY2: number) 
 		const initialSlope = getSlope(guessForT, mX1, mX2);
 		if (initialSlope >= newtonMinSlope) {
 			return newtonRaphsonIterate(aX, guessForT, mX1, mX2);
-		} if (initialSlope === 0.0) {
+		}
+		if (initialSlope === 0.0) {
 			return guessForT;
-		} 
-			return binarySubdivide(aX, intervalStart, intervalStart + kSampleStepSize, mX1, mX2);
-		
+		}
+		return binarySubdivide(aX, intervalStart, intervalStart + kSampleStepSize, mX1, mX2);
 	}
 
 	// If animation is at start/end, return t without easing

@@ -16,7 +16,7 @@
 		{#if reason}
 			<div class="flex items-center rounded-full bg-accent-800 p-2 leading-none text-accent-100" role="alert">
 				<span class="mr-3 flex rounded-full bg-accent-500 px-1 py-1 text-xs font-bold uppercase">
-					<svelte:component this={icons.InfoIcon} class="h-6 w-6" height="auto" inline />
+					<svelte:component this={icons.InfoIcon} class="h-6 w-6" height="auto" inline></svelte:component>
 				</span>
 				<span class="mr-2 flex-auto text-left font-semibold">{reason}</span>
 				<button
@@ -30,7 +30,7 @@
 							replaceState: true,
 						});
 					}}>
-					<svelte:component this={icons.CloseIcon} class="mr-1 h-4 w-4" height="auto" inline />
+					<svelte:component this={icons.CloseIcon} class="mr-1 h-4 w-4" height="auto" inline></svelte:component>
 				</button>
 			</div>
 		{/if}

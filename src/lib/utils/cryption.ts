@@ -1,5 +1,3 @@
-const { subtle } = globalThis.crypto;
-
 const algorithm = {
 	/**
 	 * GCM is an authenticated encryption mode that
@@ -31,12 +29,16 @@ const algorithm = {
 
 const encrypt = async (text: string) => {
 	const key = crypto.getRandomValues(new Uint8Array(algorithm.keyByteLeng));
-	const iv = globalThis.crypto.getRandomValues(new Uint8Array(algorithm.ivByteLeng));
+	const iv = crypto.getRandomValues(new Uint8Array(algorithm.ivByteLeng));
 	const encrypted = await crypto.subtle.encrypt(
 		{ name: algorithm.blockCipher, iv },
-		await subtle.importKey('raw', key, { name: algorithm.blockCipher, length: algorithm.blockCipherLeng }, false, [
-			'encrypt',
-		]),
+		await crypto.subtle.importKey(
+			'raw',
+			key,
+			{ name: algorithm.blockCipher, length: algorithm.blockCipherLeng },
+			false,
+			['encrypt']
+		),
 		new TextEncoder().encode(text)
 	);
 	return Buffer.concat([key, iv, new Uint8Array(encrypted)]).toString('hex');
@@ -49,11 +51,15 @@ const decrypt = async (text: string) => {
 	const encryptedText = data.subarray(algorithm.keyByteLeng + algorithm.ivByteLeng);
 
 	return new TextDecoder().decode(
-		await subtle.decrypt(
+		await crypto.subtle.decrypt(
 			{ name: algorithm.blockCipher, iv },
-			await subtle.importKey('raw', key, { name: algorithm.blockCipher, length: algorithm.blockCipherLeng }, false, [
-				'decrypt',
-			]),
+			await crypto.subtle.importKey(
+				'raw',
+				key,
+				{ name: algorithm.blockCipher, length: algorithm.blockCipherLeng },
+				false,
+				['decrypt']
+			),
 			encryptedText
 		)
 	);

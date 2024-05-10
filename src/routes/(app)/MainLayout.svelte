@@ -1,7 +1,7 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { cn, merge } from '$lib/utils';
+	import { cn, intlFormatDistance, merge, today } from '$lib/utils';
 	import { SignOut } from '@auth/sveltekit/components';
 
 	import toast from 'svelte-french-toast';
@@ -13,22 +13,20 @@
 	// import dashboard from '@iconify/icons-tabler/chart-infographic';
 
 	import type { Snippet } from 'svelte';
-	import Form from '$lib/components/Form.svelte';
-	import * as FormUi from '$lib/components/ui/form';
+	import { Form } from '$lib/components/ui/form';
 	import { icons, navItemIcons } from '$/icons';
 	import { userSettings } from '$lib/stores/userSettings.svelte';
-	import { formatISO, intlFormatDistance, parseJSON } from 'date-fns';
 	import { api } from '$lib/api';
 	import AnimatedNumber from '$lib/components/AnimatedNumber.svelte';
 	import { ease } from '$/lib/animations';
-	import * as Select from '$lib/components/ui/select';
+	import { Select } from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import NavLink from './NavLink.svelte';
 	import DesktopMenuItem from './DesktopMenuItem.svelte';
 	import Modal from './Modal.svelte';
-	import { invalidateAll } from '$app/navigation';
+	import type { Notification } from '$/server/db';
 
 	type ModalState =
 		| {
@@ -71,28 +69,32 @@
 	let invitationState: ModalState = $state(closeModal);
 	let notificationsState: ModalState = $state(closeModal);
 
-	const { pathname, origin } = $derived($page.url);
-	const current = $derived({ pathname, origin });
-	const { processedDate, searchFilter, accounts } = $derived($page.data);
+	const { pathname, origin, search } = $derived($page.url);
+	const current = $derived({ pathname, origin, search });
+	const { processedDate, searchFilter, bankAccounts } = $derived($page.data);
 
-	const preserveState = $derived(processedDate ? `?${new URLSearchParams({ processedDate })}` : undefined);
-	const links = $derived((processedDate && [{ route: `${base}/${preserveState}` }]) || undefined);
+	const appRoutes = [{ route: `overview` }] as const;
+	const preserveState = $derived(processedDate || searchFilter ? current.search : undefined);
+	const links = $derived(appRoutes.map(({ route }) => ({ route: `${base}/${route}${preserveState ?? ''}` }) as const));
 
-	const routes = $derived(
-		merge(
-			[{ icon: navIcons.ChartHistogram, label: 'dashboard' }],
-			Object.assign([], [{ route: `${base}/overview` }], links)
-		)
-	);
+	const routes = $derived(merge([{ icon: navIcons.ChartHistogram, label: 'dashboard' }] as const, links));
 
-	const connection = source('/api/notifications', { beacon: 0 });
-	const count = connection.select('unreadCount').json();
-	const notifications = connection.select('messages').json();
-	const notification = connection.select('message').json();
+	const connection = source('/api/notifications', {
+		close({ isLocal, connect }) {
+			if (isLocal) {
+				// Don't reconnect if the event is local
+				return;
+			}
+			connect();
+		},
+	});
+	const count = connection.select('unreadCount').json<string>();
+	const notifications = connection.select('messages').json<Notification[]>();
+	const notification = connection.select('message').json<Notification>();
 
 	const useBauhaus = $derived(userSettings.useBauhaus);
-
 	const userImage = $derived(userSettings.genertateImage(user));
+	const budget = $derived(userSettings.budget);
 
 	const toggleAccount = (definedState?: ModalState | undefined) => (event: MouseEvent | KeyboardEvent | Event) => {
 		const prevs = document.querySelectorAll('[aria-current="location"]');
@@ -187,7 +189,7 @@
 </script>
 
 <svelte:window
-	on:keydown={(e) => {
+	onkeydown={(e) => {
 		toggleAccount(closeModal)(e);
 		toggleMenuWidth(closeModal)(e);
 		toggleInvitation(closeModal)(e);
@@ -199,17 +201,17 @@
 		onkeydown={toggleInvitation(closeModal)}
 		open={invitationState.open}
 		class="rounded-2xl bg-white open:relative dark:bg-neutral-800">
-		<Form
+		<Form.Root
 			method="post"
 			action="/user?/invite"
 			reset={true}
 			let:submitting
 			let:valid
-			let:handleBlur
+			let:handleBlurOrClick
 			let:handleInput
-			on:success={(e) => {
+			onsucceeded={async (data, invalidate, invalidateAll) => {
 				toggleInvitation(closeModal);
-				toast.success(`Sent invitation to ${e?.detail?.data.get('email')}.`);
+				toast.success(`Sent invitation to ${data.get('email')}.`);
 			}}
 			class="flex w-full items-center border-b py-2 transition-colors focus-within:border-accent-500 hover:border-accent-400">
 			<svelte:component this={icons.PlusUserIcon} class="mr-2 flex h-6 w-12 items-center" height="auto" inline />
@@ -219,8 +221,8 @@
 				class="mr-3 w-full appearance-none border-none bg-transparent px-2 py-1 leading-tight focus:outline-none focus:ring-0"
 				type="email"
 				inputmode="email"
-				on:blur={handleBlur}
-				on:input={handleInput}
+				onblur={handleBlurOrClick}
+				oninput={handleInput}
 				placeholder="email address"
 				required
 				aria-label="email"
@@ -238,7 +240,7 @@
 				<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
 				Invite
 			</button>
-		</Form>
+		</Form.Root>
 	</dialog>
 {/if}
 <!-- side-bar -->
@@ -252,7 +254,7 @@
 		<ul class="flex-1 space-x-2 overflow-hidden hover:overflow-auto">
 			{#each routes as { icon, route, label }, id (id)}
 				<li>
-					<NavLink active={current.pathname === new URL(route, current.origin).pathname} {icon} {route}>
+					<NavLink active={current.pathname.includes(route)} {icon} {route}>
 						{label}
 					</NavLink>
 				</li>
@@ -276,7 +278,7 @@
 				class="rounded-lg opacity-80 shadow-sm transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white @[5rem]:mx-4 @[5rem]:w-11/12 @[5rem]:space-x-2 dark:shadow-neutral-600 dark:focus-visible:ring-offset-neutral-808">
 				<span class="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg shadow-md">
 					<svelte:component this={icons.BellIcon} class="h-8 w-6" height="auto" inline />
-					{#if Number($count) > 0}
+					{#if $count && Number($count) > 0}
 						<span
 							class="absolute right-0.5 top-1.5 flex items-center justify-center overflow-hidden rounded-lg bg-accent-400 px-1 ring-2 ring-slate-200 ring-offset-1 ring-offset-neutral-808 dark:ring-neutral-808">
 							<AnimatedNumber value={$count} class="text-[10px] font-black leading-tight" />
@@ -330,7 +332,7 @@
 			<ul class="w-full flex-1 space-y-2 @[6rem]:px-4">
 				{#each routes as { icon, route, label }, id (id)}
 					<li>
-						<NavLink active={current.pathname.includes(new URL(route, current.origin).pathname)} {icon} {route}>
+						<NavLink active={current.pathname.includes(route)} {icon} {route}>
 							{label}
 						</NavLink>
 					</li>
@@ -349,7 +351,7 @@
 			<DesktopMenuItem onclick={toggleNotifications()} label="notifications" ariaLabel="Toggle notifications">
 				<span class="relative flex items-center px-[0.688rem] py-2">
 					<svelte:component this={icons.BellIcon} class="h-8 w-[26px]" height="auto" inline />
-					{#if Number($count) > 0}
+					{#if $count && Number($count) > 0}
 						<span
 							class="absolute right-2 top-3 flex items-center justify-center overflow-hidden rounded-lg bg-accent-400 px-1 ring-2 ring-slate-200 ring-offset-1 ring-offset-neutral-808 dark:ring-neutral-808">
 							<AnimatedNumber value={$count} class="text-[10px] font-normal leading-tight" />
@@ -357,7 +359,7 @@
 					{/if}
 				</span>
 			</DesktopMenuItem>
-			<DesktopMenuItem onclick={toggleAccount()} label={user?.name} ariaLabel="User menu">
+			<DesktopMenuItem onclick={toggleAccount()} label={user.name ?? 'User Account'} ariaLabel="User menu">
 				<span class="flex flex-shrink-0 items-center rounded-lg p-0.5">
 					<img class="h-11 w-11" src={userImage} alt="user profile" />
 				</span>
@@ -365,23 +367,22 @@
 		</div>
 	</nav>
 
-	{#if accountState.open}
-		<Modal isOpen={accountState.open} onclose={toggleAccount(closeModal)}>
-			<div aria-label="User Account Settings" class="flex h-full flex-col md:px-4">
-				<div class="flex flex-1 flex-col py-10">
-					<!-- Account -->
-					<div class="flex flex-shrink-0 items-center justify-center">
-						<button type="button" class="h-20 w-20 rounded-full">
-							<img src={userImage} alt="user profile" />
-						</button>
-					</div>
+	<Modal isOpen={accountState.open} onclose={toggleAccount(closeModal)}>
+		<div aria-label="User Account Settings" class="flex h-full flex-col md:px-4">
+			<div class="flex flex-1 flex-col py-10">
+				<!-- Account -->
+				<div class="flex flex-shrink-0 items-center justify-center">
+					<button type="button" class="h-20 w-20 rounded-full">
+						<img src={userImage} alt="user profile" />
+					</button>
+				</div>
 
-					<!-- UserSetting -->
-					<div class="flex flex-shrink-0 px-4 py-2">
-						<Form
-							method="post"
-							action="/user?/update"
-							values={(({
+				<!-- UserSetting -->
+				<div class="flex flex-shrink-0 px-4 py-2">
+					<Form.Root
+						method="post"
+						action="/user?/update"
+						values={(({
 								name: username,
 								widgetStyle,
 								permittedBankAccounts,
@@ -396,414 +397,423 @@
 								emailRate,
 								inAppRate,
 							}))(user)}
-							validate={(values, errors) => {
-								if (
-									values?.username === user?.name &&
-									values?.widgetStyle === user?.widgetStyle &&
-									values?.permittedBankAccounts === user?.permittedBankAccounts &&
-									values?.enableNotifications === user?.enableNotifications &&
-									values?.emailRate === user?.emailRate &&
-									values?.inAppRate === user?.inAppRate
-								) {
-									const errorMessage = 'No changes to submit.';
-									errors.username = errorMessage;
-									errors.widgetStyle = errorMessage;
-									errors.permittedBankAccounts = errorMessage;
-									errors.enableNotifications = errorMessage;
-									errors.emailRate = errorMessage;
-									errors.inAppRate = errorMessage;
-								}
+						validate={(values, errors) => {
+							if (
+								values?.username === user?.name &&
+								values?.widgetStyle === user?.widgetStyle &&
+								values?.permittedBankAccounts === user?.permittedBankAccounts &&
+								values?.enableNotifications === user?.enableNotifications &&
+								values?.emailRate === user?.emailRate &&
+								values?.inAppRate === user?.inAppRate
+							) {
+								const errorMessage = 'No changes to submit.';
+								errors.username = errorMessage;
+								errors.widgetStyle = errorMessage;
+								errors.permittedBankAccounts = errorMessage;
+								errors.enableNotifications = errorMessage;
+								errors.emailRate = errorMessage;
+								errors.inAppRate = errorMessage;
+							}
 
-								return errors;
-							}}
-							onsubmitting={(data) => {
-								const form = Object.fromEntries(data);
+							return errors;
+						}}
+						onsubmitting={(data) => {
+							const form = Object.fromEntries(data);
 
-								if (Boolean(form.useBauhaus) !== useBauhaus) {
-									userSettings.useBauhaus = Boolean(form.useBauhaus);
-									toast.success(`Now using ${useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
-								}
+							// TODO: notify user of changes from binded userSettings, not on form submit.
+							if (Boolean(form.useBauhaus) !== useBauhaus) {
+								userSettings.useBauhaus = Boolean(form.useBauhaus);
+								toast.success(`Now using ${useBauhaus ? 'Bauhaus' : 'Beam'} avatar.`);
+							}
+							if (Number(form.budget) !== budget) {
+								userSettings.budget = Number(form.budget);
+								toast.success(`New budget ${form.budget} has been set.`);
+							}
 
-								if (user) {
-									if (user.name === form.username) {
-										return false;
-									}
-									user.name = String(form.username);
+							if (user) {
+								if (user.name === form.username) {
+									return false;
 								}
-								return true;
-							}}
-							onsucceeded={async (data) => {
-								await invalidateAll();
-								toggleAccount(closeModal)(new Event('close'));
-								toast.success(`Successfully updated.`);
-							}}
-							class="w-full space-y-6">
-							{#snippet children({ formData, valid, submitting, handleInput, handleBlurOrClick })}
-								<input
-									id="name"
-									name="username"
-									class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
-									type="text"
-									bind:value={formData.username}
-									onblur={handleBlurOrClick}
-									oninput={handleInput}
-									disabled={submitting} />
-								<label
-									class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
-									for="bauhaus">
-									<div class="space-y-0.5">
-										<span class="text-base font-bold leading-snug">Use Buasuah</span>
-										<p class="text-xs leading-snug text-muted-foreground">
-											change user image type, this is abstract art when on.
-										</p>
-									</div>
-									<Switch id="bauhaus" name="useBauhaus" bind:checked={userSettings.useBauhaus} disabled={submitting} />
-								</label>
-								<fieldset>
-									<legend class="mb-4 text-lg font-medium">App Preferences</legend>
-									<div class="space-y-4">
+								user.name = String(form.username);
+							}
+							return true;
+						}}
+						onsucceeded={async (data, invalidate, invalidateAll) => {
+							await invalidateAll();
+							toggleAccount(closeModal)(new Event('close'));
+							toast.success(`Successfully updated.`);
+						}}
+						class="w-full space-y-6">
+						{#snippet children({ formData, valid, submitting, handleInput, handleBlurOrClick })}
+							<input
+								id="name"
+								name="username"
+								class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+								type="text"
+								bind:value={formData.username}
+								onblur={handleBlurOrClick}
+								oninput={handleInput}
+								disabled={submitting} />
+							<label
+								class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
+								for="bauhaus">
+								<div class="space-y-0.5">
+									<span class="text-base font-bold leading-snug">Use Buasuah</span>
+									<p class="text-xs leading-snug text-muted-foreground">
+										change user image type, this is abstract art when on.
+									</p>
+								</div>
+								<Switch id="bauhaus" name="useBauhaus" bind:checked={userSettings.useBauhaus} disabled={submitting} />
+							</label>
+							<input
+								id="budget"
+								name="budget"
+								class="flex w-full justify-center p-1 transition-all hover:ring-1 hover:ring-gray-300 focus:ring-2 focus:ring-gray-300"
+								type="number"
+								bind:value={userSettings.budget}
+								disabled={submitting} />
+							<fieldset>
+								<legend class="mb-4 text-lg font-medium">App Preferences</legend>
+								<div class="space-y-4">
+									<Select.Root
+										name="widgetStyle"
+										selected={{ label: formData?.widgetStyle, value: formData?.widgetStyle }}
+										onSelectedChange={({ value }) =>
+											handleInput({
+												currentTarget: { name: 'widgetStyle', value },
+											})}
+										disabled={submitting}>
+										<input type="hidden" name="widgetStyle" value={formData?.widgetStyle} />
+										<Select.Trigger class="w-full">
+											<Select.Value placeholder="Select a widget style" />
+										</Select.Trigger>
+										<Select.Content>
+											{#each ['simple', 'dense'] as widgetStyle}
+												<Select.Item value={widgetStyle.toLowerCase()} label={widgetStyle} disabled={submitting} />
+											{/each}
+										</Select.Content>
+									</Select.Root>
+									<!-- TODO: move out from hidden menu to top of dashbaord page and make selected accounts filter everything. -->
+									<!-- TODO: use dropdown menu and checkbox items to select account(s) -->
+									{#await bankAccounts then accounts}
 										<Select.Root
-											name="widgetStyle"
-											selected={{ label: formData?.widgetStyle, value: formData?.widgetStyle }}
-											onSelectedChange={({ value }) =>
+											multiple
+											name="permittedBankAccounts"
+											selected={formData?.permittedBankAccounts?.map((value) => ({
+												label: accounts.find((account) => account.id === Number(value))?.name,
+												value: String(value),
+											}))}
+											onSelectedChange={(values) =>
 												handleInput({
-													currentTarget: { name: 'widgetStyle', value },
+													currentTarget: { name: 'permittedBankAccounts', value: values?.map(({ value }) => value) },
 												})}
 											disabled={submitting}>
-											<input type="hidden" name="widgetStyle" value={formData?.widgetStyle} />
+											{#each formData?.permittedBankAccounts ?? [] as bankAccount (bankAccount)}
+												<input type="hidden" name="permittedBankAccounts" value={bankAccount} />
+											{/each}
 											<Select.Trigger class="w-full">
-												<Select.Value placeholder="Select a widget style" />
+												<Select.Value placeholder="Select accounts to permit" />
 											</Select.Trigger>
 											<Select.Content>
-												{#each ['simple', 'dense'] as widgetStyle}
-													<Select.Item value={widgetStyle.toLowerCase()} label={widgetStyle} disabled={submitting} />
+												{#each accounts as { id: bankAccountId, name: bankAccountName } (bankAccountId)}
+													<Select.Item value={bankAccountId.toString()} label={bankAccountName} />
 												{/each}
 											</Select.Content>
 										</Select.Root>
-										{#await accounts then bankAccounts}
-											<Select.Root
-												multiple
-												name="permittedBankAccounts"
-												selected={formData?.permittedBankAccounts?.map((value) => ({
-													label: bankAccounts.find((account) => account.id === Number(value))?.name,
-													value: String(value),
-												}))}
-												onSelectedChange={(values) =>
-													handleInput({
-														currentTarget: { name: 'permittedBankAccounts', value: values?.map(({ value }) => value) },
-													})}
-												disabled={submitting}>
-												{#each formData?.permittedBankAccounts ?? [] as bankAccount (bankAccount)}
-													<input type="hidden" name="permittedBankAccounts" value={bankAccount} />
-												{/each}
-												<Select.Trigger class="w-full">
-													<Select.Value placeholder="Select accounts to permit" />
-												</Select.Trigger>
-												<Select.Content>
-													{#each bankAccounts as { id: bankAccountId, name: bankAccountName } (bankAccountId)}
-														<Select.Item value={bankAccountId.toString()} label={bankAccountName} />
-													{/each}
-												</Select.Content>
-											</Select.Root>
-										{/await}
-									</div>
-								</fieldset>
-								<fieldset>
-									<legend class="mb-4 text-lg font-medium">Notifications Preferences</legend>
-									<div class="space-y-4">
-										<label
-											class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
-											for="notifications">
-											<div class="space-y-0.5">
-												<span class="text-base font-bold leading-snug">Notifications</span>
-												<p class="text-xs leading-snug text-muted-foreground">
-													permit sending of in-app and email notifications.
-												</p>
-											</div>
-											<Switch
-												id="notifications"
-												name="enableNotifications"
-												includeInput={false}
-												bind:checked={formData.enableNotifications}
-												onclick={handleBlurOrClick}
-												onblur={handleBlurOrClick}
-												disabled={submitting} />
-											<input type="hidden" name="enableNotifications" value={formData.enableNotifications} />
-										</label>
-										<Select.Root
-											name="emailRate"
-											selected={{ label: formData?.emailRate, value: formData?.emailRate }}
-											onSelectedChange={({ value }) =>
-												handleInput({
-													currentTarget: { name: 'emailRate', value },
-												})}
-											disabled={submitting}>
-											<input type="hidden" name="emailRate" value={formData?.emailRate} />
-											<Select.Trigger class="w-full">
-												<Select.Value placeholder="Select an email rate" />
-											</Select.Trigger>
-											<Select.Content>
-												{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as emailRate}
-													<Select.Item value={emailRate.toLowerCase()} label={emailRate} disabled={submitting} />
-												{/each}
-											</Select.Content>
-										</Select.Root>
-										<Select.Root
-											name="inAppRate"
-											selected={{ label: formData?.inAppRate, value: formData?.inAppRate }}
-											onSelectedChange={({ value }) =>
-												handleInput({
-													currentTarget: { name: 'inAppRate', value },
-												})}
-											disabled={submitting}>
-											<input type="hidden" name="inAppRate" value={formData?.inAppRate} />
-											<Select.Trigger class="w-full">
-												<Select.Value placeholder="Select an in-app rate" />
-											</Select.Trigger>
-											<Select.Content>
-												{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as inAppRate}
-													<Select.Item value={inAppRate.toLowerCase()} label={inAppRate} disabled={submitting} />
-												{/each}
-											</Select.Content>
-										</Select.Root>
-									</div>
-								</fieldset>
-								<FormUi.Button aria-busy={submitting} disabled={!valid || submitting}>
-									<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
-									Save Settings
-								</FormUi.Button>
-							{/snippet}
-						</Form>
-					</div>
-				</div>
-
-				{#if user}
-					<div class="flex-shrink-0 py-4 max-md:px-4">
-						<SignOut
-							signOutPage="auth"
-							className="group flex w-full items-center space-x-2 rounded-lg transition-colors hover:bg-accent-500 hover:text-white">
-							<svelte:fragment slot="submitButton">
-								<span
-									aria-hidden="true"
-									class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600">
-									<svelte:component this={icons.LogOutIcon} class="h-6 w-6" height="auto" flip="vertical" />
-								</span>
-								<span>Sign Out</span>
-							</svelte:fragment>
-						</SignOut>
-					</div>
-				{/if}
-			</div>
-		</Modal>
-	{/if}
-
-	{#if notificationsState.open}
-		<Modal isOpen={notificationsState.open} onclose={toggleNotifications(closeModal)}>
-			<div aria-label="Notifications" class="flex h-full flex-col md:px-2">
-				<div class="flex flex-1 flex-col py-10">
-					<!-- notifications -->
-					<div class="flex flex-shrink-0 items-center justify-center pb-2">
-						<header>Notifications</header>
-					</div>
-					<ul
-						class={cn('flex h-full flex-shrink-0 flex-col gap-2 px-2 py-4', {
-							'justify-center': !$notifications?.length,
-						})}>
-						<AnimatePresence initial={false} show={notificationsState.open}>
-							{#if $notifications?.length}
-								{#each $notifications as notification (notification.id)}
-									{@const { icon, actions } = {
-										icon:
-											notification.type === 'invite'
-												? icons.InviteIcon
-												: notification.type === 'account'
-													? icons.MoneyIcon
-													: icons.BellIcon,
-										actions:
-											notification.type === 'invite'
-												? {
-														primary: { name: 'accept', action: () => {} },
-														secondary: { name: 'reject', action: () => {} },
-													}
-												: {
-														primary: {
-															name: 'seen',
-															action: () =>
-																api({ origin: current.origin }).notifications.seen.mutate({
-																	id: notification.id,
-																}),
-														},
-													},
-									}}
-									<Motion.li
-										initial={{ opacity: 0, height: 0 }}
-										animate={{ opacity: 1, height: 'auto' }}
-										exit={{ opacity: 0, height: 0 }}
-										transition={{ opacity: { duration: 0.2 } }}
-										class={cn('relative rounded-md text-xs transition-colors', {
-											'text-yellow-400 ring-yellow-600 hover:bg-yellow-600 hover:text-yellow-300': !notification.type,
-											'text-emerald-600 ring-emerald-800 hover:bg-emerald-800 hover:text-emerald-500':
-												notification.type === 'account',
-											'text-blue-200 ring-blue-400 hover:bg-blue-400 hover:text-blue-500':
-												notification.type === 'invite',
-										})}>
-										<div class="flex gap-1 p-2">
-											<a class="flex w-full items-center gap-2" href="/">
-												<div class="flex flex-shrink-0 items-center justify-center">
-													<svelte:component this={icon} class="h-8 w-6" height="auto" inline />
-												</div>
-												<div class="flex flex-col text-left">
-													<p class="text-balance">{notification.message}</p>
-													<time datetime={formatISO(parseJSON(notification.createdOn))}
-														>{intlFormatDistance(parseJSON(notification.createdOn), new Date())}</time>
-												</div>
-											</a>
-											<div class="flex flex-col items-end gap-2">
-												{#if !(notification.type === 'invite')}
-													<button
-														class={cn('w-4', {
-															'text-yellow-400 hover:text-yellow-200': !notification.type,
-															'text-emerald-600 hover:text-emerald-400': notification.type === 'account',
-															'text-blue-200 hover:text-blue-400': notification.type === 'invite',
-														})}
-														onclick={async () =>
-															api({ origin: current.origin }).notifications.delete.mutate({
-																id: notification.id,
-															})}>
-														<svelte:component this={icons.CloseIcon} class="h-4 w-4" height="auto" inline />
-													</button>
-												{/if}
-												<div class="flex flex-shrink-0 flex-col gap-2 font-bold leading-[1.3]">
-													<button
-														class={cn('rounded-md px-2 py-1 text-white transition-colors', {
-															'bg-yellow-700 hover:bg-yellow-500': !notification.type,
-															'bg-emerald-900 hover:bg-emerald-700': notification.type === 'account',
-															'bg-blue-500 hover:bg-blue-600': notification.type === 'invite',
-														})}
-														onclick={() => actions.primary.action}>{actions.primary.name}</button>
-													{#if actions?.secondary}
-														<button
-															class={cn('rounded-md px-2 py-1 font-normal ring-1', {
-																'text-yellow-400 ring-yellow-700 hover:text-yellow-500 hover:ring-yellow-400':
-																	!notification.type,
-																'text-emerald-600 ring-emerald-900 hover:text-emerald-700 hover:ring-emerald-600':
-																	notification.type === 'account',
-																'text-blue-200 ring-blue-500 hover:text-blue-600 hover:ring-blue-600':
-																	notification.type === 'invite',
-															})}>{actions?.secondary.name}</button>
-													{/if}
-												</div>
-											</div>
+									{/await}
+								</div>
+							</fieldset>
+							<fieldset>
+								<legend class="mb-4 text-lg font-medium">Notifications Preferences</legend>
+								<div class="space-y-4">
+									<label
+										class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
+										for="notifications">
+										<div class="space-y-0.5">
+											<span class="text-base font-bold leading-snug">Notifications</span>
+											<p class="text-xs leading-snug text-muted-foreground">
+												permit sending of in-app and email notifications.
+											</p>
 										</div>
-									</Motion.li>
-								{/each}
-							{:else}
-								<li class="flex flex-col items-center space-y-px stroke-slate-300">
-									<svg
-										id="SvgjsSvg1048"
-										width="215"
-										height="240"
-										xmlns="http://www.w3.org/2000/svg"
-										version="1.1"
-										xmlns:xlink="http://www.w3.org/1999/xlink"
-										xmlns:svgjs="http://svgjs.com/svgjs"
-										><defs id="SvgjsDefs1049"></defs><g id="SvgjsG1050"
-											><svg
-												xmlns="http://www.w3.org/2000/svg"
-												data-name="Layer 2"
-												viewBox="0 0 1000 1000"
-												width="215"
-												height="240"
-												><path
-													fill="currentColor"
-													d="m637.88,837.22c-16.28,60.79-71.75,105.56-137.67,105.56s-121.4-44.77-137.67-105.56h275.34Z"
-													class="colora7d0f9 svgShape"></path
-												><path
-													fill="currentColor"
-													d="m594.37,159.19c-27.72-6.42-59.33-9.94-95.38-9.94-31.09,0-58.89,2.62-83.74,7.46,4.06-45.86,42.56-81.81,89.47-81.81s86.79,37.25,89.65,84.28Z"
-													opacity=".75"
-													class="colora7d0f9 svgShape"></path
-												><path
-													fill="currentColor"
-													d="m807.33,596.7c-99.03-5.41-202.26-8.27-308.34-8.27s-209.31,2.87-308.34,8.27c1.46-5.12,2.76-10.31,3.89-15.55,20.43-94.56-32.55-375.07,220.71-424.43,24.84-4.84,52.64-7.46,83.74-7.46,36.05,0,67.66,3.51,95.38,9.94,240,55.6,188.97,328.87,209.07,421.96,1.13,5.25,2.44,10.43,3.89,15.55Z"
-													opacity=".25"
-													class="colora7d0f9 svgShape"></path
-												><path
-													fill="currentColor"
-													d="m747.95,267.64c-18.32-9.31-39.12-16.89-62.73-22.36-27.72-6.42-59.33-9.93-95.38-9.93-31.09,0-58.89,2.62-83.74,7.46-202.94,39.55-209.24,227.54-214.25,349.32-34.18,1.23-67.93,2.76-101.2,4.57,1.45-5.12,2.76-10.3,3.89-15.55,20.43-94.56-32.55-375.07,220.71-424.43,24.85-4.84,52.65-7.46,83.74-7.46,36.05,0,67.66,3.51,95.38,9.93,77.44,17.94,124.58,58.55,153.58,108.45Z"
-													opacity=".25"
-													class="colora7d0f9 svgShape"></path
-												><path
-													fill="currentColor"
-													d="m914.36,785.61h0c0,28.5-23.11,51.61-51.6,51.61H135.22c-28.49,0-51.6-23.11-51.6-51.6,0-6.63,1.27-13.14,3.69-19.18,2.4-6.04,5.96-11.64,10.55-16.42,24.22-25.3,72.74-82.59,92.79-153.32,99.03-5.41,202.26-8.27,308.34-8.27s209.31,2.87,308.34,8.27c20.07,70.72,68.59,128.01,92.79,153.32,9.16,9.58,14.24,22.33,14.24,35.59Z"
-													opacity=".5"
-													class="colora7d0f9 svgShape"></path
-												><path
-													fill="currentColor"
-													d="m862.76,840.22H135.22c-30.11,0-54.6-24.49-54.6-54.6,0-6.99,1.31-13.82,3.9-20.29,2.59-6.5,6.34-12.35,11.17-17.38,25.98-27.14,72.49-82.99,92.07-152.06,1.46-5.14,2.76-10.31,3.85-15.37,4.12-19.06,5.22-45.98,6.5-77.14,2.53-61.63,5.67-138.33,33.6-205.38,15.23-36.56,36.7-66.82,63.82-89.94,31.35-26.72,71.44-44.98,119.15-54.28,25.6-4.99,53.97-7.52,84.31-7.52,35.07,0,67.39,3.37,96.06,10.01,45.07,10.44,82.93,29.38,112.54,56.3,25.62,23.29,45.91,53.37,60.32,89.41,26.43,66.12,29.5,141.14,31.97,201.42,1.28,31.16,2.38,58.06,6.49,77.12,1.09,5.07,2.39,10.23,3.85,15.36,19.59,69.04,66.1,124.91,92.08,152.06,9.72,10.16,15.07,23.53,15.07,37.66,0,30.12-24.49,54.61-54.6,54.61ZM498.99,152.26c-29.96,0-57.94,2.49-83.16,7.41-199.21,38.83-206.74,222.45-211.72,343.95-1.29,31.44-2.4,58.6-6.63,78.17-1.12,5.18-2.44,10.48-3.94,15.74-19.94,70.31-67.15,127.02-93.51,154.57-4.29,4.47-7.63,9.67-9.93,15.45-2.31,5.77-3.47,11.85-3.47,18.07,0,26.8,21.8,48.6,48.6,48.6h727.54c26.8,0,48.6-21.8,48.6-48.6,0-12.59-4.76-24.49-13.4-33.52-26.36-27.56-73.57-84.28-93.51-154.57-1.49-5.25-2.82-10.55-3.94-15.74-4.22-19.56-5.33-46.71-6.62-78.14-4.86-118.66-12.2-297.98-200.19-341.53-28.23-6.54-60.09-9.86-94.7-9.86Z"
-													class="colora7d0f9 svgShape"></path
-												><rect
-													width="424.81"
-													height="6"
-													x="128.46"
-													y="736.27"
-													fill="currentColor"
-													class="colora7d0f9 svgShape"></rect
-												><rect
-													width="285.57"
-													height="6"
-													x="434.09"
-													y="762.24"
-													fill="currentColor"
-													class="colora7d0f9 svgShape"></rect
-												><rect
-													width="153.4"
-													height="6"
-													x="628.79"
-													y="736.27"
-													fill="currentColor"
-													class="colora7d0f9 svgShape"></rect
-												><path
-													fill="currentColor"
-													d="M734.4 392.85c-12.02-70.33-54.43-117.9-87.88-145.42-36.39-29.93-70.39-43.33-70.73-43.46l2.17-5.59c.35.13 35.1 13.8 72.21 44.29 21.81 17.92 40.2 38.07 54.66 59.9 18.09 27.33 30.03 57.36 35.49 89.27l-5.91 1.01zM409.92 443.35c-21.65 0-33.31-7.57-39.28-13.93-6.64-7.07-7.94-14.22-7.99-14.52l5.91-1.02-2.96.51 2.95-.53c.18.96 4.74 23.49 41.36 23.49s42.5-22.67 42.73-23.63l5.85 1.33c-.26 1.16-6.82 28.3-48.58 28.3zM589.17 443.35c-21.65 0-33.31-7.57-39.28-13.93-6.64-7.07-7.94-14.22-7.99-14.52l5.91-1.02-2.96.51 2.95-.53c.18.96 4.74 23.49 41.36 23.49s42.5-22.67 42.73-23.63l5.85 1.33c-.26 1.16-6.82 28.3-48.58 28.3z"
-													class="colora7d0f9 svgShape"></path
-												><g opacity=".75" fill="#000000" class="color000 svgShape"
-													><path
-														fill="currentColor"
-														d="m534.7,530.13c0,10.51-13.04,19.18-29.96,20.55h-.01c-1.54.15-3.13.21-4.73.21-19.16,0-34.7-9.29-34.7-20.76s15.54-20.75,34.7-20.75,34.7,9.29,34.7,20.75Z"
-														class="colora7d0f9 svgShape"></path
-													></g
-												><g opacity=".75" fill="#000000" class="color000 svgShape"
-													><path
-														fill="currentColor"
-														d="m531.64,611.38c-17.04,2.79-1.95-31.76-9.69-31.76s-.62,22.93-12.09,22c-11.45-.93-5.13-50.93-5.13-50.93h.01c16.91-1.38,29.96-10.06,29.96-20.57,0,0,13.97,78.47-3.06,81.25Z"
-														class="colora7d0f9 svgShape"></path
-													></g
-												><g opacity=".75" fill="#000000" class="color000 svgShape"
-													><path
-														fill="currentColor"
-														d="M773.52 185.69h44.27v17.18h-72.14v-11.77l44.15-63.61h-44.4v-17.24h71.95v11.45l-43.83 64zM857.42 138.88h34.36v13.33h-55.98v-9.13l34.26-49.36h-34.45v-13.38h55.83v8.89l-34.01 49.66z"
-														class="colora7d0f9 svgShape"></path
-													></g
-												><g opacity=".25" fill="#000000" class="color000 svgShape"
-													><path
-														fill="currentColor"
-														d="M87.21 580.44h107.48c8.26-39.31 4.24-109.96 14.43-182.85-11.35 5.41-24.05 8.45-37.47 8.45h-84.44c-48.16 0-87.21 39.04-87.21 87.21 0 24.08 9.76 45.88 25.54 61.65 15.79 15.79 37.58 25.54 61.66 25.54zM362.54 837.22h-227.32c-28.49 0-51.6-23.11-51.6-51.6 0-6.63 1.27-13.14 3.69-19.18 1.63-4.11 3.82-8 6.48-11.58h-6.57c-48.16 0-87.21 39.04-87.21 87.19 0 24.08 9.76 45.88 25.54 61.66 15.79 15.79 37.58 25.54 61.66 25.54h352.4c-37.55-17.67-66.15-51.24-77.07-92.04zM87.21 231.63h84.44c24.08 0 45.88 9.76 61.66 25.54 5.04 5.04 9.45 10.7 13.14 16.84 30.01-55.29 80.99-100.19 168.79-117.3 4.06-45.86 42.56-81.81 89.47-81.81s86.79 37.25 89.65 84.28c77.74 18.01 124.94 58.86 153.91 109.03 15.82-22.14 41.71-36.59 70.99-36.59h93.51c48.16 0 87.21-39.05 87.21-87.21 0-24.08-9.76-45.88-25.54-61.66-15.79-15.79-37.58-25.54-61.66-25.54H87.21C39.05 57.22 0 96.27 0 144.43c0 24.08 9.76 45.88 25.54 61.66 15.79 15.79 37.58 25.54 61.66 25.54zM835.61 80.34h55.83v8.89l-34.01 49.66h34.36v13.33h-55.98v-9.13l34.26-49.36h-34.45v-13.38zm-90.21 29.9h71.95v11.45l-43.83 64h44.27v17.18h-72.14v-11.77l44.15-63.61h-44.4v-17.24zM912.79 754.86h-8.6c6.58 8.84 10.17 19.62 10.17 30.75h0c0 28.5-23.11 51.61-51.6 51.61h-224.87c-10.93 40.8-39.53 74.36-77.08 92.04h351.99c48.16 0 87.21-39.05 87.21-87.21 0-24.08-9.76-45.88-25.54-61.65-15.79-15.79-37.58-25.54-61.66-25.54zM912.79 406.04h-93.51c-10.53 0-20.63-1.87-29.98-5.29 9.7 72.21 5.8 141.8 14.14 180.4 1.13 5.25 2.44 10.43 3.89 15.55 3.31 11.65 7.39 22.92 12.01 33.75 13.96-29.56 44.03-50.02 78.89-50.02h14.57c48.16 0 87.21-39.04 87.21-87.19 0-24.08-9.76-45.89-25.54-61.66-15.79-15.79-37.58-25.54-61.66-25.54z"
-														class="colora7d0f9 svgShape"></path
-													></g
-												></svg
-											></g
-										></svg>
-									<span class="text-lg font-bold">No Notifications</span>
-									<span class="text-bas">You're all caught up</span>
-								</li>
-							{/if}
-						</AnimatePresence>
-					</ul>
+										<Switch
+											id="notifications"
+											name="enableNotifications"
+											includeInput={false}
+											bind:checked={formData.enableNotifications}
+											onclick={handleBlurOrClick}
+											onblur={handleBlurOrClick}
+											disabled={submitting} />
+										<input type="hidden" name="enableNotifications" value={formData.enableNotifications} />
+									</label>
+									<Select.Root
+										name="emailRate"
+										selected={{ label: formData?.emailRate, value: formData?.emailRate }}
+										onSelectedChange={({ value }) =>
+											handleInput({
+												currentTarget: { name: 'emailRate', value },
+											})}
+										disabled={submitting}>
+										<input type="hidden" name="emailRate" value={formData?.emailRate} />
+										<Select.Trigger class="w-full">
+											<Select.Value placeholder="Select an email rate" />
+										</Select.Trigger>
+										<Select.Content>
+											{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as emailRate}
+												<Select.Item value={emailRate.toLowerCase()} label={emailRate} disabled={submitting} />
+											{/each}
+										</Select.Content>
+									</Select.Root>
+									<Select.Root
+										name="inAppRate"
+										selected={{ label: formData?.inAppRate, value: formData?.inAppRate }}
+										onSelectedChange={({ value }) =>
+											handleInput({
+												currentTarget: { name: 'inAppRate', value },
+											})}
+										disabled={submitting}>
+										<input type="hidden" name="inAppRate" value={formData?.inAppRate} />
+										<Select.Trigger class="w-full">
+											<Select.Value placeholder="Select an in-app rate" />
+										</Select.Trigger>
+										<Select.Content>
+											{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as inAppRate}
+												<Select.Item value={inAppRate.toLowerCase()} label={inAppRate} disabled={submitting} />
+											{/each}
+										</Select.Content>
+									</Select.Root>
+								</div>
+							</fieldset>
+							<Form.Button aria-busy={submitting} disabled={!valid || submitting}>
+								<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
+								Save Settings
+							</Form.Button>
+						{/snippet}
+					</Form.Root>
 				</div>
 			</div>
-		</Modal>
-	{/if}
+
+			{#if user}
+				<div class="flex-shrink-0 py-4 max-md:px-4">
+					<SignOut
+						signOutPage="auth"
+						className="group flex w-full items-center space-x-2 rounded-lg transition-colors hover:bg-accent-500 hover:text-white">
+						<svelte:fragment slot="submitButton">
+							<span
+								aria-hidden="true"
+								class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600">
+								<svelte:component this={icons.LogOutIcon} class="h-6 w-6" height="auto" flip="vertical" />
+							</span>
+							<span>Sign Out</span>
+						</svelte:fragment>
+					</SignOut>
+				</div>
+			{/if}
+		</div>
+	</Modal>
+
+	<Modal isOpen={notificationsState.open} onclose={toggleNotifications(closeModal)}>
+		<div aria-label="Notifications" class="flex h-full flex-col md:px-2">
+			<div class="flex flex-1 flex-col py-10">
+				<!-- notifications -->
+				<div class="flex flex-shrink-0 items-center justify-center pb-2">
+					<header>Notifications</header>
+				</div>
+				<ul
+					class={cn('flex h-full flex-shrink-0 flex-col gap-2 px-2 py-4', {
+						'justify-center': !$notifications?.length,
+					})}>
+					<AnimatePresence initial={false} show={notificationsState.open}>
+						{#each $notifications ?? [] as notification (notification.id)}
+							{@const { icon, actions } = {
+								icon:
+									notification.type === 'invite'
+										? icons.InviteIcon
+										: notification.type === 'account'
+											? icons.MoneyIcon
+											: icons.BellIcon,
+								actions:
+									notification.type === 'invite'
+										? {
+												primary: { name: 'accept', action: () => {} },
+												secondary: { name: 'reject', action: () => {} },
+											}
+										: {
+												primary: {
+													name: 'seen',
+													action: () =>
+														api({ origin: current.origin }).notifications.seen.mutate({
+															id: notification.id,
+														}),
+												},
+											},
+							}}
+							<Motion.li
+								initial={{ opacity: 0, height: 0 }}
+								animate={{ opacity: 1, height: 'auto' }}
+								exit={{ opacity: 0, height: 0 }}
+								transition={{ opacity: { duration: 0.2 } }}
+								class={cn('relative rounded-md text-xs transition-colors', {
+									'text-yellow-400 ring-yellow-600 hover:bg-yellow-600 hover:text-yellow-300': !notification.type,
+									'text-emerald-600 ring-emerald-800 hover:bg-emerald-800 hover:text-emerald-500':
+										notification.type === 'account',
+									'text-blue-200 ring-blue-400 hover:bg-blue-400 hover:text-blue-500': notification.type === 'invite',
+								})}>
+								<div class="flex gap-1 p-2">
+									<a class="flex w-full items-center gap-2" href="/">
+										<div class="flex flex-shrink-0 items-center justify-center">
+											<svelte:component this={icon} class="h-8 w-6" height="auto" inline />
+										</div>
+										<div class="flex flex-col text-left">
+											<p class="text-balance">{notification.message}</p>
+											<time datetime={notification.createdOn}>
+												{intlFormatDistance(Temporal.PlainDate.from(notification.createdOn), today())}
+											</time>
+										</div>
+									</a>
+									<div class="flex flex-col items-end gap-2">
+										{#if !(notification.type === 'invite')}
+											<button
+												class={cn('w-4', {
+													'text-yellow-400 hover:text-yellow-200': !notification.type,
+													'text-emerald-600 hover:text-emerald-400': notification.type === 'account',
+												})}
+												onclick={async () =>
+													api({ origin: current.origin }).notifications.delete.mutate({
+														id: notification.id,
+													})}>
+												<svelte:component this={icons.CloseIcon} class="h-4 w-4" height="auto" inline />
+											</button>
+										{/if}
+										<div class="flex flex-shrink-0 flex-col gap-2 font-bold leading-[1.3]">
+											<button
+												class={cn('rounded-md px-2 py-1 text-white transition-colors', {
+													'bg-yellow-700 hover:bg-yellow-500': !notification.type,
+													'bg-emerald-900 hover:bg-emerald-700': notification.type === 'account',
+													'bg-blue-500 hover:bg-blue-600': notification.type === 'invite',
+												})}
+												onclick={() => actions.primary.action}>{actions.primary.name}</button>
+											{#if actions?.secondary}
+												<button
+													class={cn('rounded-md px-2 py-1 font-normal ring-1', {
+														'text-yellow-400 ring-yellow-700 hover:text-yellow-500 hover:ring-yellow-400':
+															!notification.type,
+														'text-emerald-600 ring-emerald-900 hover:text-emerald-700 hover:ring-emerald-600':
+															notification.type === 'account',
+														'text-blue-200 ring-blue-500 hover:text-blue-600 hover:ring-blue-600':
+															notification.type === 'invite',
+													})}
+													onclick={() => actions.secondary.action}>{actions?.secondary.name}</button>
+											{/if}
+										</div>
+									</div>
+								</div>
+							</Motion.li>
+						{:else}
+							<li class="flex flex-col items-center space-y-px stroke-slate-300">
+								<svg
+									id="SvgjsSvg1048"
+									width="215"
+									height="240"
+									xmlns="http://www.w3.org/2000/svg"
+									version="1.1"
+									xmlns:xlink="http://www.w3.org/1999/xlink"
+									xmlns:svgjs="http://svgjs.com/svgjs"
+									><defs id="SvgjsDefs1049"></defs><g id="SvgjsG1050"
+										><svg
+											xmlns="http://www.w3.org/2000/svg"
+											data-name="Layer 2"
+											viewBox="0 0 1000 1000"
+											width="215"
+											height="240"
+											><path
+												fill="currentColor"
+												d="m637.88,837.22c-16.28,60.79-71.75,105.56-137.67,105.56s-121.4-44.77-137.67-105.56h275.34Z"
+												class="colora7d0f9 svgShape"></path
+											><path
+												fill="currentColor"
+												d="m594.37,159.19c-27.72-6.42-59.33-9.94-95.38-9.94-31.09,0-58.89,2.62-83.74,7.46,4.06-45.86,42.56-81.81,89.47-81.81s86.79,37.25,89.65,84.28Z"
+												opacity=".75"
+												class="colora7d0f9 svgShape"></path
+											><path
+												fill="currentColor"
+												d="m807.33,596.7c-99.03-5.41-202.26-8.27-308.34-8.27s-209.31,2.87-308.34,8.27c1.46-5.12,2.76-10.31,3.89-15.55,20.43-94.56-32.55-375.07,220.71-424.43,24.84-4.84,52.64-7.46,83.74-7.46,36.05,0,67.66,3.51,95.38,9.94,240,55.6,188.97,328.87,209.07,421.96,1.13,5.25,2.44,10.43,3.89,15.55Z"
+												opacity=".25"
+												class="colora7d0f9 svgShape"></path
+											><path
+												fill="currentColor"
+												d="m747.95,267.64c-18.32-9.31-39.12-16.89-62.73-22.36-27.72-6.42-59.33-9.93-95.38-9.93-31.09,0-58.89,2.62-83.74,7.46-202.94,39.55-209.24,227.54-214.25,349.32-34.18,1.23-67.93,2.76-101.2,4.57,1.45-5.12,2.76-10.3,3.89-15.55,20.43-94.56-32.55-375.07,220.71-424.43,24.85-4.84,52.65-7.46,83.74-7.46,36.05,0,67.66,3.51,95.38,9.93,77.44,17.94,124.58,58.55,153.58,108.45Z"
+												opacity=".25"
+												class="colora7d0f9 svgShape"></path
+											><path
+												fill="currentColor"
+												d="m914.36,785.61h0c0,28.5-23.11,51.61-51.6,51.61H135.22c-28.49,0-51.6-23.11-51.6-51.6,0-6.63,1.27-13.14,3.69-19.18,2.4-6.04,5.96-11.64,10.55-16.42,24.22-25.3,72.74-82.59,92.79-153.32,99.03-5.41,202.26-8.27,308.34-8.27s209.31,2.87,308.34,8.27c20.07,70.72,68.59,128.01,92.79,153.32,9.16,9.58,14.24,22.33,14.24,35.59Z"
+												opacity=".5"
+												class="colora7d0f9 svgShape"></path
+											><path
+												fill="currentColor"
+												d="m862.76,840.22H135.22c-30.11,0-54.6-24.49-54.6-54.6,0-6.99,1.31-13.82,3.9-20.29,2.59-6.5,6.34-12.35,11.17-17.38,25.98-27.14,72.49-82.99,92.07-152.06,1.46-5.14,2.76-10.31,3.85-15.37,4.12-19.06,5.22-45.98,6.5-77.14,2.53-61.63,5.67-138.33,33.6-205.38,15.23-36.56,36.7-66.82,63.82-89.94,31.35-26.72,71.44-44.98,119.15-54.28,25.6-4.99,53.97-7.52,84.31-7.52,35.07,0,67.39,3.37,96.06,10.01,45.07,10.44,82.93,29.38,112.54,56.3,25.62,23.29,45.91,53.37,60.32,89.41,26.43,66.12,29.5,141.14,31.97,201.42,1.28,31.16,2.38,58.06,6.49,77.12,1.09,5.07,2.39,10.23,3.85,15.36,19.59,69.04,66.1,124.91,92.08,152.06,9.72,10.16,15.07,23.53,15.07,37.66,0,30.12-24.49,54.61-54.6,54.61ZM498.99,152.26c-29.96,0-57.94,2.49-83.16,7.41-199.21,38.83-206.74,222.45-211.72,343.95-1.29,31.44-2.4,58.6-6.63,78.17-1.12,5.18-2.44,10.48-3.94,15.74-19.94,70.31-67.15,127.02-93.51,154.57-4.29,4.47-7.63,9.67-9.93,15.45-2.31,5.77-3.47,11.85-3.47,18.07,0,26.8,21.8,48.6,48.6,48.6h727.54c26.8,0,48.6-21.8,48.6-48.6,0-12.59-4.76-24.49-13.4-33.52-26.36-27.56-73.57-84.28-93.51-154.57-1.49-5.25-2.82-10.55-3.94-15.74-4.22-19.56-5.33-46.71-6.62-78.14-4.86-118.66-12.2-297.98-200.19-341.53-28.23-6.54-60.09-9.86-94.7-9.86Z"
+												class="colora7d0f9 svgShape"></path
+											><rect
+												width="424.81"
+												height="6"
+												x="128.46"
+												y="736.27"
+												fill="currentColor"
+												class="colora7d0f9 svgShape"></rect
+											><rect
+												width="285.57"
+												height="6"
+												x="434.09"
+												y="762.24"
+												fill="currentColor"
+												class="colora7d0f9 svgShape"></rect
+											><rect
+												width="153.4"
+												height="6"
+												x="628.79"
+												y="736.27"
+												fill="currentColor"
+												class="colora7d0f9 svgShape"></rect
+											><path
+												fill="currentColor"
+												d="M734.4 392.85c-12.02-70.33-54.43-117.9-87.88-145.42-36.39-29.93-70.39-43.33-70.73-43.46l2.17-5.59c.35.13 35.1 13.8 72.21 44.29 21.81 17.92 40.2 38.07 54.66 59.9 18.09 27.33 30.03 57.36 35.49 89.27l-5.91 1.01zM409.92 443.35c-21.65 0-33.31-7.57-39.28-13.93-6.64-7.07-7.94-14.22-7.99-14.52l5.91-1.02-2.96.51 2.95-.53c.18.96 4.74 23.49 41.36 23.49s42.5-22.67 42.73-23.63l5.85 1.33c-.26 1.16-6.82 28.3-48.58 28.3zM589.17 443.35c-21.65 0-33.31-7.57-39.28-13.93-6.64-7.07-7.94-14.22-7.99-14.52l5.91-1.02-2.96.51 2.95-.53c.18.96 4.74 23.49 41.36 23.49s42.5-22.67 42.73-23.63l5.85 1.33c-.26 1.16-6.82 28.3-48.58 28.3z"
+												class="colora7d0f9 svgShape"></path
+											><g opacity=".75" fill="#000000" class="color000 svgShape"
+												><path
+													fill="currentColor"
+													d="m534.7,530.13c0,10.51-13.04,19.18-29.96,20.55h-.01c-1.54.15-3.13.21-4.73.21-19.16,0-34.7-9.29-34.7-20.76s15.54-20.75,34.7-20.75,34.7,9.29,34.7,20.75Z"
+													class="colora7d0f9 svgShape"></path
+												></g
+											><g opacity=".75" fill="#000000" class="color000 svgShape"
+												><path
+													fill="currentColor"
+													d="m531.64,611.38c-17.04,2.79-1.95-31.76-9.69-31.76s-.62,22.93-12.09,22c-11.45-.93-5.13-50.93-5.13-50.93h.01c16.91-1.38,29.96-10.06,29.96-20.57,0,0,13.97,78.47-3.06,81.25Z"
+													class="colora7d0f9 svgShape"></path
+												></g
+											><g opacity=".75" fill="#000000" class="color000 svgShape"
+												><path
+													fill="currentColor"
+													d="M773.52 185.69h44.27v17.18h-72.14v-11.77l44.15-63.61h-44.4v-17.24h71.95v11.45l-43.83 64zM857.42 138.88h34.36v13.33h-55.98v-9.13l34.26-49.36h-34.45v-13.38h55.83v8.89l-34.01 49.66z"
+													class="colora7d0f9 svgShape"></path
+												></g
+											><g opacity=".25" fill="#000000" class="color000 svgShape"
+												><path
+													fill="currentColor"
+													d="M87.21 580.44h107.48c8.26-39.31 4.24-109.96 14.43-182.85-11.35 5.41-24.05 8.45-37.47 8.45h-84.44c-48.16 0-87.21 39.04-87.21 87.21 0 24.08 9.76 45.88 25.54 61.65 15.79 15.79 37.58 25.54 61.66 25.54zM362.54 837.22h-227.32c-28.49 0-51.6-23.11-51.6-51.6 0-6.63 1.27-13.14 3.69-19.18 1.63-4.11 3.82-8 6.48-11.58h-6.57c-48.16 0-87.21 39.04-87.21 87.19 0 24.08 9.76 45.88 25.54 61.66 15.79 15.79 37.58 25.54 61.66 25.54h352.4c-37.55-17.67-66.15-51.24-77.07-92.04zM87.21 231.63h84.44c24.08 0 45.88 9.76 61.66 25.54 5.04 5.04 9.45 10.7 13.14 16.84 30.01-55.29 80.99-100.19 168.79-117.3 4.06-45.86 42.56-81.81 89.47-81.81s86.79 37.25 89.65 84.28c77.74 18.01 124.94 58.86 153.91 109.03 15.82-22.14 41.71-36.59 70.99-36.59h93.51c48.16 0 87.21-39.05 87.21-87.21 0-24.08-9.76-45.88-25.54-61.66-15.79-15.79-37.58-25.54-61.66-25.54H87.21C39.05 57.22 0 96.27 0 144.43c0 24.08 9.76 45.88 25.54 61.66 15.79 15.79 37.58 25.54 61.66 25.54zM835.61 80.34h55.83v8.89l-34.01 49.66h34.36v13.33h-55.98v-9.13l34.26-49.36h-34.45v-13.38zm-90.21 29.9h71.95v11.45l-43.83 64h44.27v17.18h-72.14v-11.77l44.15-63.61h-44.4v-17.24zM912.79 754.86h-8.6c6.58 8.84 10.17 19.62 10.17 30.75h0c0 28.5-23.11 51.61-51.6 51.61h-224.87c-10.93 40.8-39.53 74.36-77.08 92.04h351.99c48.16 0 87.21-39.05 87.21-87.21 0-24.08-9.76-45.88-25.54-61.65-15.79-15.79-37.58-25.54-61.66-25.54zM912.79 406.04h-93.51c-10.53 0-20.63-1.87-29.98-5.29 9.7 72.21 5.8 141.8 14.14 180.4 1.13 5.25 2.44 10.43 3.89 15.55 3.31 11.65 7.39 22.92 12.01 33.75 13.96-29.56 44.03-50.02 78.89-50.02h14.57c48.16 0 87.21-39.04 87.21-87.19 0-24.08-9.76-45.89-25.54-61.66-15.79-15.79-37.58-25.54-61.66-25.54z"
+													class="colora7d0f9 svgShape"></path
+												></g
+											></svg
+										></g
+									></svg>
+								<span class="text-lg font-bold">No Notifications</span>
+								<span class="text-bas">You're all caught up</span>
+							</li>
+						{/each}
+					</AnimatePresence>
+				</ul>
+			</div>
+		</div>
+	</Modal>
 </aside>
 
 <div class="flex flex-1 flex-col overflow-hidden px-6 pb-16 pt-4 md:px-0 md:pr-8">
@@ -844,8 +854,11 @@
 					opacity: 0,
 					x: '100%',
 				}}
-				on:formdata={(e) => {
-					Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
+				onformdata={(e) => {
+					Array.from(e.formData.entries()).reduce((acc, [k, v]) => {
+						!v && e.formData.delete(k);
+						return acc;
+					});
 				}}>
 				<span class="mx-[0.625rem] my-[0.525rem] flex border-spacing-0 items-center rounded-full text-base font-bold">
 					<svelte:component this={icons.SearchIcon} inline />
@@ -863,7 +876,8 @@
 	</main>
 </div>
 
-<footer class="fixed bottom-20 right-5 flex items-center gap-4 md:bottom-5">
+<footer
+	class="fixed flex items-center justify-center gap-4 max-md:inset-x-36 max-md:bottom-4 max-md:z-10 md:bottom-5 md:right-5">
 	<a href="https://kit.svelte.dev" class="transform transition-transform hover:scale-125">
 		<span class="sr-only">SvelteKit</span>
 		<img class="h-8 w-8 object-contain" aria-hidden="true" src={logo} alt="SvelteKit" />

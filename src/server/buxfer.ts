@@ -1,7 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { format } from 'date-fns';
 import path from 'path';
-import { array, number, object, string, union, z, coerce, date, boolean } from 'zod';
+import { array, number, object, string, union, z, coerce, date, boolean, custom } from 'zod';
 import { fromFetch } from 'rxjs/fetch';
 import {
 	type Observable,
@@ -46,9 +45,10 @@ const transactionsPage = object({
 			id: number(),
 			description: string(),
 			isPending: boolean(),
-			date: string()
-				.or(date())
-				.transform((arg) => new Date(arg)),
+			date: coerce
+				.string()
+				.date()
+				.transform((arg) => Temporal.PlainDate.from(arg)),
 			type: string(),
 			amount: number(),
 			accountId: number(),
@@ -74,7 +74,7 @@ export const transactions = array(
 		id: number(),
 		description: string(),
 		isPending: boolean(),
-		date: date(),
+		date: custom<Temporal.PlainDate>((val) => Temporal.PlainDate.from(val)),
 		type: string(),
 		amount: number(),
 		accountId: number(),
@@ -135,16 +135,10 @@ export const login = object({
 });
 
 export const transactionsQueryParams = object({
-	startDate: date(),
-	endDate: date(),
-	page: number().nullish().default(1),
+	startDate: custom<Temporal.PlainDate>((val) => Temporal.PlainDate.from(val)).pipe(coerce.string()),
+	endDate: custom<Temporal.PlainDate>((val) => Temporal.PlainDate.from(val)).pipe(coerce.string()),
+	page: number().nullish().default(1).pipe(coerce.string()),
 });
-
-const transactionsQueryParamsInternal = transactionsQueryParams.transform(({ startDate, endDate, page }) => ({
-	startDate: format(startDate, DateFormat),
-	endDate: format(endDate, DateFormat),
-	page: String(page),
-}));
 
 // export const tokens = object({
 // 	access: token,
@@ -177,7 +171,7 @@ type BuxferProxyRequest =
 	| { url: typeof api.accounts; body: z.infer<typeof accessToken> }
 	| {
 			url: typeof api.transactions;
-			body: z.infer<typeof transactionsQueryParamsInternal> & z.infer<typeof accessToken>;
+			body: z.infer<typeof transactionsQueryParams> & z.infer<typeof accessToken>;
 	  };
 
 type BuxferProxyResponse<T extends BuxferProxyRequest> = Observable<
@@ -210,7 +204,7 @@ function buxferProxy(
 	endpoint: (typeof api)[keyof typeof api],
 	body:
 		| z.infer<typeof login>
-		| (z.infer<typeof transactionsQueryParamsInternal> & z.infer<typeof accessToken>)
+		| (z.infer<typeof transactionsQueryParams> & z.infer<typeof accessToken>)
 		| z.infer<typeof accessToken>
 ) {
 	const bodyConstruct = new URLSearchParams({ ...body });
@@ -275,7 +269,7 @@ function buxferProxy(
 				...(err?.stack && { stack: err.stack }),
 			}));
 		}),
-		tap(() => console.log('fetch: ', endpoint, new Date(Date.now()).toLocaleTimeString())),
+		tap(() => console.log('fetch: ', endpoint, Temporal.Now.zonedDateTime(Temporal.Now.timeZoneId()).toLocaleString())),
 		share()
 	);
 }
@@ -349,7 +343,7 @@ export function client<T extends BuxferRequest>(
 			return buxferProxy(url, { token: token.parse(access) }).pipe(
 				catchError((err) => throwError(() => err)),
 				map(({ accounts: accountsData }) => accounts.parse(accountsData)),
-				tap(() => console.log('client: ', url, new Date(Date.now()).toLocaleTimeString()))
+				tap(() => console.log('client: ', url, Temporal.Now.zonedDateTime(Temporal.Now.timeZoneId()).toLocaleString()))
 				// delay(pollingRate),
 				// repeat()
 			);
@@ -372,7 +366,7 @@ export function client<T extends BuxferRequest>(
 			}
 
 			return buxferProxy(url, {
-				...transactionsQueryParamsInternal.parse(data),
+				...transactionsQueryParams.parse(data),
 				token: token.parse(access),
 			}).pipe(
 				catchError((err) => throwError(() => err)),
@@ -386,12 +380,14 @@ export function client<T extends BuxferRequest>(
 				mergeMap(({ transactions, next }) => {
 					const transactions$ = of(transactions);
 					const next$ = next
-						? client('/transactions', transactionsQueryParams.parse({ ...body, page: next }), { headers: options?.headers ?? new Headers() })
-						: EMPTY
+						? client('/transactions', transactionsQueryParams.parse({ ...body, page: next }), {
+								headers: options?.headers ?? new Headers(),
+							})
+						: EMPTY;
 					return concat(transactions$, next$);
 				}),
 				reduce((acc, curr) => acc.concat(curr)),
-				tap(() => console.log('client: ', url, new Date(Date.now()).toLocaleTimeString()))
+				tap(() => console.log('client: ', url, Temporal.Now.zonedDateTime(Temporal.Now.timeZoneId()).toLocaleString()))
 				// connect((shared$) =>
 				// 	concat(shared$,
 				// 	defer(() => shared$).pipe(
@@ -416,7 +412,7 @@ function polling<T>(
 		const polling$ = timer(0, pollInterval).pipe(
 			switchMap(() => source$),
 			takeWhile(active, true),
-			tap(() => console.log('polling: ', new Date(Date.now()).toLocaleTimeString()))
+			tap(() => console.log('polling: ', Temporal.Now.zonedDateTime(Temporal.Now.timeZoneId()).toLocaleString()))
 		);
 		return emitOnlyLast ? polling$.pipe(last()) : polling$;
 	};

@@ -5,10 +5,11 @@
 // import Fieldset from "./form-fieldset.svelte";
 // import Legend from "./form-legend.svelte";
 // import ElementField from "./form-element-field.svelte";
-import Button from "./form-button.svelte";
+import Button from './form-button.svelte';
+import Root from '../../Form.svelte';
 
-
-export {
+export const Form = {
+	Root,
 	// Field,
 	// Control,
 	// Label,
@@ -19,6 +20,7 @@ export {
 	// Legend,
 	// ElementField,
 	//
+	// Root as Form,
 	// Field as FormField,
 	// Control as FormControl,
 	// Description as FormDescription,
@@ -27,5 +29,5 @@ export {
 	// Fieldset as FormFieldset,
 	// Legend as FormLegend,
 	// ElementField as FormElementField,
-	Button as FormButton,
+	// Button as FormButton,
 };

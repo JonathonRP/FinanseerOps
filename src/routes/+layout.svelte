@@ -19,10 +19,10 @@
 
 <AnimatePresence onExitComplete={progress?.reset} show={!!$navigating}>
 	<Motion.div exit={{ opacity: 0, transition: { duration: 1 } }} class="fixed w-full">
-		<NavProgress bind:this={progress} />
+		<NavProgress bind:this={progress}></NavProgress>
 	</Motion.div>
 </AnimatePresence>
-<Toaster position="top-center" />
+<Toaster position="top-center"></Toaster>
 <div data-vaul-drawer-wrapper class="app flex min-h-[100dvh] text-foreground">
 	{@render children()}
 </div>

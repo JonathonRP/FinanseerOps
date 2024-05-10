@@ -1,14 +1,58 @@
-import { uneval, stringify, parse } from 'devalue';
+import { custom } from 'zod';
+import superjson from 'superjson';
+
+/*
+  "Zod extras", use like z.
+  
+   date: zx.instant()
+*/
+
+export const zx = {
+	instant: () => custom<Temporal.Instant>((v) => Temporal.Instant.from(v)),
+
+	zonedDateTime: () => custom<Temporal.ZonedDateTime>((v) => Temporal.ZonedDateTime.from(v)),
+
+	plainDate: () => custom<Temporal.PlainDate>((v) => Temporal.PlainDate.from(v)),
+};
+
+superjson.registerCustom<Temporal.Instant, string>(
+	{
+		isApplicable: (v): v is Temporal.Instant => v instanceof Temporal.Instant,
+		serialize: (v) => v.toJSON(),
+		deserialize: (v) => Temporal.Instant.from(v),
+	},
+	'Temporal.Instant'
+);
+
+superjson.registerCustom<Temporal.ZonedDateTime, string>(
+	{
+		isApplicable: (v): v is Temporal.ZonedDateTime => v instanceof Temporal.ZonedDateTime,
+		serialize: (v) => v.toJSON(),
+		deserialize: (v) => Temporal.ZonedDateTime.from(v),
+	},
+	'Temporal.ZonedDateTime'
+);
+
+superjson.registerCustom<Temporal.PlainDate, string>(
+	{
+		isApplicable: (v): v is Temporal.PlainDate => v instanceof Temporal.PlainDate,
+		serialize: (v) => v.toJSON(),
+		deserialize: (v) => Temporal.PlainDate.from(v),
+	},
+	'Temporal.PlainDate'
+);
 
 export const transformer = {
-	input: {
-		serialize: (object: unknown) => stringify(object),
-		deserialize: (object: string) => parse(object) as unknown,
-	},
-	output: {
-		serialize: (object: unknown) => uneval(object),
-		deserialize: (object: string) => (0, eval)(`(${object})`) as unknown,
-	},
+	...superjson,
+	// input: {
+	// 	serialize: (object: unknown) => stringify(object),
+	// 	deserialize: (object: string) => parse(object) as unknown,
+	// },
+	// output: {
+	// 	serialize: (object: unknown) => uneval(object),
+	// 	deserialize: (object: string) => (0, eval)(`(${object})`) as unknown,
+	// },
+	// --------------------------------------------------------------------------------------
 	// serialize: (object: unknown) => uneval(object),
 	// eslint-disable-next-line no-eval
 	// deserialize: (object: string) => eval(`(${object})`),

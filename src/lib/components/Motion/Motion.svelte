@@ -1,4 +1,4 @@
-<svelte:options runes={true} namespace="svg" />
+<svelte:options runes={true} />
 
 <script lang="ts">
 	import type { SvelteHTMLElements } from 'svelte/elements';
@@ -17,7 +17,7 @@
 </script>
 
 <Motion {isSVG} {...restProps} let:motion let:props>
-	<svelte:element this={as} class={className} {...props} use:motion>
+	<svelte:element this={as} class={className} xmlns={isSVG ? 'http://www.w3.org/2000/svg' : null} {...props} use:motion>
 		{#if children}
 			{@render children()}
 		{/if}

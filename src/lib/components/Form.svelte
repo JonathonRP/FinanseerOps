@@ -1,6 +1,8 @@
 <svelte:options runes={true} />
 
 <script lang="ts" generics="T extends Record<string, unknown>">
+	import { invalidateAll as invalidateAllRoutes, invalidate as invalidateRoute } from '$app/navigation';
+
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { BehaviorSubject } from 'rxjs';
 	import { setContext, type Snippet } from 'svelte';
@@ -27,8 +29,12 @@
 		reset?: boolean;
 		values?: T;
 		validate?: (_values: typeof initialValues, errors: Errors<T>) => typeof errors;
-		onsubmitting: (data: FormData) => void;
-		onsucceeded: (data: FormData) => Promise<void>;
+		onsubmitting?: (data: FormData) => void;
+		onsucceeded?: (
+			data: FormData,
+			invalidate: typeof invalidateRoute,
+			invalidateAll: typeof invalidateAllRoutes
+		) => void | Promise<void>;
 		children: Snippet<
 			[
 				{
@@ -94,13 +100,13 @@
 
 	const submit: SubmitFunction = ({ formData }) => {
 		formSubmitting.next(true);
-		onsubmitting(formData);
+		onsubmitting?.(formData);
 
 		return async ({ result, update }) => {
 			switch (result.type) {
 				case 'success':
 					await update({ reset });
-					await onsucceeded(formData);
+					await onsucceeded?.(formData, invalidateRoute, invalidateAllRoutes);
 					break;
 				case 'failure': {
 					const [firstError] = Object.keys(result.data?.errors);

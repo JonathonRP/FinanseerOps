@@ -35,7 +35,7 @@ export const sendVerificationRequest = async (params: {
 			text: text({ url, host }),
 		});
 	} catch (error) {
-		throw Error(`resend error: ${  res?.error?.message}`);
+		throw Error(`resend error: ${res?.error?.message}`);
 	}
 };
 

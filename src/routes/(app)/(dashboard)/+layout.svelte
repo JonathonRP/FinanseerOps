@@ -2,9 +2,8 @@
 
 <script lang="ts">
 	import { type Snippet } from 'svelte';
-	import { formatDistanceToNow, isBefore, isSameDay, isSameMonth, startOfToday } from 'date-fns';
 	import { startWith, from, map } from 'rxjs';
-	import { cn, numberFormat } from '$lib/utils';
+	import { cn, intlFormatDistance, numberFormat, today } from '$lib/utils';
 	import { AnimatePresence, type Variants } from 'svelte-motion';
 	import { Motion } from '$lib/components';
 	import { icons } from '$/icons';
@@ -15,22 +14,24 @@
 	import DateSelect from './DateSelect.svelte';
 	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 	import { browser } from '$app/environment';
+	import { Button } from '$/lib/components/ui/button';
+	import { Drawer } from '$/lib/components/ui/drawer';
 
 	const { data, children }: { data: import('./$types').LayoutData; children: Snippet } = $props();
-	const { current, processedDate, searchFilter, transactions } = $derived(data);
+	const { current, processedDate, searchFilter, bankTransactions } = $derived(data);
 
 	const tab = $derived(current.pathname.split('/').pop() ?? 'overview');
 
-	const processedDay = $derived((processedDate && new Date(processedDate)) || startOfToday());
+	const processedDay = $derived(processedDate ? Temporal.PlainDate.from(processedDate) : today());
 
 	const mostRecentTransactions = $derived(
-		from(transactions).pipe(
+		from(bankTransactions).pipe(
 			map((result) =>
 				result
-					.filter(
-						({ date }) =>
-							isSameMonth(date, processedDay) && (isBefore(date, processedDay) || isSameDay(date, processedDay))
-					)
+					.filter(({ description, date }) => {
+						console.log(description, date);
+						return date.toPlainYearMonth() === processedDay.toPlainYearMonth() && date <= processedDay;
+					})
 					.splice(0, 10)
 			)
 		)
@@ -46,58 +47,58 @@
 	const direction = $derived(tab === 'overview' ? -1 : 1);
 
 	const horizontalSlide: Variants = {
-		hidden: (dir) => ({
-			position: 'fixed',
-			x: `${-100 * dir}%`,
+		hidden: (direct) => ({
+			x: `${-100 * direct}%`,
 			opacity: 0,
 			zIndex: 0,
+			transition: {
+				duration: 0.8,
+				ease,
+			},
 		}),
 		visible: {
-			position: 'relative',
 			x: '0%',
 			opacity: 1,
 			zIndex: 1,
+			transition: {
+				duration: 0.8,
+				ease,
+			},
 		},
-		leave: (dir) => ({
-			position: 'fixed',
-			x: `${100 * dir}%`,
+		leave: (direct) => ({
+			x: `${100 * direct}%`,
 			opacity: 0,
 			zIndex: 0,
+			transition: {
+				duration: 0.8,
+				ease,
+			},
 		}),
 	};
 
 	const freeFall: Variants = {
 		visible: {
-			display: 'flex',
 			y: '0%',
 			opacity: 1,
-			transition: {
-				ease,
-			},
 		},
 		leave: {
 			y: `100%`,
 			opacity: 0,
-			transition: {
-				ease,
-			},
 		},
 	};
 
 	const date: Variants = $derived({
 		visible: {
 			opacity: 1,
-			transition: {
-				opacity: {
-					duration: 0.8,
-					ease: 'easeInOut',
-					delay: tab === 'overview' ? 0 : 0.8,
-				},
-			},
 		},
 		leave: {
 			opacity: 0,
-			transition: { opacity: { duration: 0.2, ease: 'easeInOut' } },
+			transition: {
+				duration: 0.8,
+				opacity: {
+					duration: tab === 'overview' ? 0.5 : 0.25,
+				},
+			},
 		},
 	});
 
@@ -127,6 +128,8 @@
 	$effect(() => {
 		if (mounting) mounting = false;
 	});
+
+	// $inspect(mounting, loading);
 </script>
 
 <AnimatePresence initial={false} show={loading || mounting}>
@@ -134,61 +137,72 @@
 		initial={{ opacity: 0 }}
 		animate={{ opacity: 1 }}
 		exit={{ opacity: 0 }}
-		class="fixed inset-0 z-20 touch-none select-none backdrop-blur-[0.4rem]" />
+		class="fixed inset-0 z-20 hidden touch-none select-none backdrop-blur-[0.4rem]"></Motion.div>
 </AnimatePresence>
-<AnimatePresence initial={!mounting} show={!loading || !mounting} custom={direction}>
-	<div class="flex h-full w-full flex-col justify-between gap-4 md:px-4 md:py-2 lg:px-8 xl:flex-row">
+<AnimatePresence show={!loading && !mounting} custom={direction}>
+	<div class="flex h-full w-full flex-col justify-between space-y-2 md:gap-4 md:px-4 md:py-2 lg:px-8 xl:flex-row">
 		<Tabs.Root
 			value={tab}
 			activateOnFocus={false}
 			onValueChange={async (value) => {
 				if (browser) {
 					let location = `${base}`;
-					if (value === 'transactions') location = location.concat(current.pathname.split('/').pop() ?? '');
+					// if (value === 'transactions') location = location.concat(current.pathname.split('/').pop() ?? '');
 
-					await goto(`${location}/${value}`);
+					await goto(`${location}/${value?.concat(current.search)}`);
 				}
 			}}
-			class="xl:flex-grow xl:basis-[56rem]">
-			<!-- basis-[28.125rem] -->
-			<Tabs.List class="grid w-max grid-cols-2 lg:-ml-6">
+			class="xl:flex-grow xl:basis-[64rem]">
+			<Tabs.List class="hidden w-max grid-cols-2 md:grid lg:-ml-6">
 				<Tabs.Trigger value="overview">Overview</Tabs.Trigger>
 				<Tabs.Trigger value="transactions">Transactions</Tabs.Trigger>
 			</Tabs.List>
 
-			<Tabs.Content value="overview">
-				<Motion.section
-					initial="hidden"
-					animate={!loading && tab === 'overview' ? 'visible' : 'leave'}
-					variants={horizontalSlide}
-					transition={{ duration: 0.8, staggerChildren: 0.35, ease }}
-					custom={-1}
-					class="mx-auto h-full w-full @container sm:mt-0 md:mx-0 md:pr-4">
-					{@render children()}
-				</Motion.section>
-			</Tabs.Content>
-			<Tabs.Content value="transactions">
-				<Motion.section
-					initial="hidden"
-					animate={!loading && tab === 'transactions' ? 'visible' : 'leave'}
-					variants={horizontalSlide}
-					transition={{ duration: 0.8, staggerChildren: 0.35, ease }}
-					custom={1}
-					class="mx-auto h-full w-full @container sm:mt-0 md:mx-0 md:pr-4 xl:max-w-[calc(100dvw-30em)]">
-					{@render children()}
-				</Motion.section>
-			</Tabs.Content>
+			<Motion.div initial="hidden" animate="visible" exit="leave" custom={direction * -1}>
+				<Tabs.Content value={tab}>
+					<Motion.section
+						variants={horizontalSlide}
+						class="relative mx-auto h-full w-full @container sm:mt-0 md:mx-0 md:pr-4"
+						custom={direction}>
+						{@render children()}
+					</Motion.section>
+				</Tabs.Content>
+			</Motion.div>
 		</Tabs.Root>
-		<div class="flex-col gap-3 xl:flex">
-			<Motion.div animate={!loading ? 'visible' : 'leave'} exit="leave" variants={date} class="hidden xl:flex">
+
+		<Motion.div
+			initial="leave"
+			animate="visible"
+			exit="leave"
+			variants={{
+				visible: {
+					transition: {
+						duration: 0.8,
+						staggerChildren: 0.35,
+						opacity: {
+							duration: 0.35,
+							staggerChildren: 0.35,
+						},
+					},
+				},
+				leave: {
+					transition: {
+						duration: 0.8,
+						staggerChildren: 0.35,
+						staggerDirection: -1,
+						opacity: {
+							duration: 0.25,
+							staggerChildren: 0.12,
+							staggerDirection: -1,
+						},
+					},
+				},
+			}}
+			class="flex flex-col gap-3 xl:basis-[20vw]">
+			<Motion.div variants={date} class="hidden xl:flex">
 				<DateSelect />
 			</Motion.div>
-			<Motion.div
-				initial="leave"
-				animate={tab === 'overview' ? 'visible' : 'leave'}
-				exit="leave"
-				variants={freeFall}
-				class="ml-0.5 hidden flex-col">
+			<Motion.div variants={freeFall} class={cn('ml-0.5 flex flex-col', { hidden: tab === 'transactions' })}>
 				<span class="-mr-4 flex items-baseline justify-between">
 					<div class="flex flex-col items-start">
 						<p class="text-base font-medium">Recent Transactions</p>
@@ -208,9 +222,12 @@
 					</div>
 					<form
 						method="get"
-						action="overview/transactions"
-						on:formdata={(e) => {
-							Array.from(e.formData.entries()).forEach(([k, v]) => !v && e.formData.delete(k));
+						action="/transactions"
+						onformdata={(e) => {
+							Array.from(e.formData.entries()).reduce((acc, [k, v]) => {
+								!v && e.formData.delete(k);
+								return acc;
+							});
 						}}>
 						<input type="hidden" name="processedDate" value={processedDate} />
 						<input type="hidden" name="search" value={searchFilter} />
@@ -236,7 +253,7 @@
 				</span>
 				{#if $mostRecentTransactions?.length}
 					<div
-						class="-mr-2 ml-0.5 overflow-y-scroll scroll-smooth max-md:mb-8 max-md:basis-[calc(100dvh_-_34em)] md:basis-[calc(100dvh_-_36em)] xl:basis-[calc(100dvh_-_34em)]">
+						class="-mr-2 ml-0.5 overflow-y-scroll scroll-smooth max-md:basis-[calc(100dvh_-_34em)] md:basis-[calc(100dvh_-_36em)] xl:basis-[calc(100dvh_-_34em)]">
 						{#each $mostRecentTransactions as transaction, indx (transaction.id)}
 							<div
 								class="relative flex w-full divide-y-2 divide-stone-200 overflow-hidden dark:divide-stone-600 dark:divide-opacity-20">
@@ -246,7 +263,7 @@
 											{transaction.description}
 										</p>
 										<p class="flex text-xs text-muted-foreground">
-											{formatDistanceToNow(transaction.date)} ago
+											{intlFormatDistance(transaction.date, processedDay)}
 											<span><svelte:component this={icons.DotIcon} height="auto" inline /></span>
 											{transaction.tags || 'Uncategorized'}
 										</p>
@@ -273,6 +290,18 @@
 					</div>
 				{/if}
 			</Motion.div>
+		</Motion.div>
+		<div class="hidden justify-end gap-2 pb-2 max-md:flex">
+			{#each ['Cash Flow', 'Categories'] as nav}
+				<Drawer.Root shouldScaleBackground>
+					<Drawer.Trigger asChild let:builder>
+						<Button builders={[builder]}>
+							{nav}
+						</Button>
+					</Drawer.Trigger>
+					<Drawer.Content></Drawer.Content>
+				</Drawer.Root>
+			{/each}
 		</div>
 	</div>
 </AnimatePresence>

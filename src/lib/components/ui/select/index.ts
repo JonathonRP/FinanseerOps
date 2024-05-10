@@ -11,7 +11,7 @@ const { Group } = SelectPrimitive;
 const { Input } = SelectPrimitive;
 const { Value } = SelectPrimitive;
 
-export {
+export const Select = {
 	Root,
 	Item,
 	Group,
@@ -21,14 +21,4 @@ export {
 	Content,
 	Trigger,
 	Separator,
-	//
-	Root as Select,
-	Item as SelectItem,
-	Group as SelectGroup,
-	Input as SelectInput,
-	Label as SelectLabel,
-	Value as SelectValue,
-	Content as SelectContent,
-	Trigger as SelectTrigger,
-	Separator as SelectSeparator,
 };

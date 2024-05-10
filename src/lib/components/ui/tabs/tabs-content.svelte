@@ -11,10 +11,10 @@
 
 <TabsPrimitive.Content
 	class={cn(
-		'ring-offset-background focus-visible:ring-ring mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+		'mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 		className
 	)}
 	{value}
 	{...$$restProps}>
-	<slot />
+	<slot></slot>
 </TabsPrimitive.Content>

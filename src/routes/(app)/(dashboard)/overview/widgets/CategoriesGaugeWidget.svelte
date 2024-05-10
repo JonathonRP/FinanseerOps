@@ -1,36 +1,25 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import {
-		from,
-		reduce,
-		groupBy,
-		combineLatest,
-		map,
-		concatMap,
-		concatAll,
-		toArray,
-	} from 'rxjs';
-	import { isBefore, isSameDay, isSameMonth, startOfToday } from 'date-fns';
+	import { from, reduce, groupBy, combineLatest, map, concatMap, concatAll, toArray, mergeMap } from 'rxjs';
 	import * as d3 from 'd3';
 	import { Score } from '../score';
 	import { GaugeChart } from '../charts';
 	import DashboardWidget from '../DashboardWidget.svelte';
 	import { page } from '$app/stores';
 	import type { DefaultPropsType } from '.';
+	import { today } from '$/lib/utils';
 
 	const { class: className }: DefaultPropsType = $props();
-	const { processedDate, transactions } = $derived($page.data);
+	const { processedDate, bankTransactions } = $derived($page.data);
 
-	const processedDay = $derived((processedDate && new Date(processedDate)) || startOfToday());
+	const processedDay = $derived(processedDate ? Temporal.PlainDate.from(processedDate) : today());
 	const expenses = $derived(
-		from(transactions).pipe(
+		from(bankTransactions).pipe(
 			map((result) =>
 				result.filter(
 					({ date, type }) =>
-						isSameMonth(date, processedDay) &&
-						(isBefore(date, processedDay) || isSameDay(date, processedDay)) &&
-						type === 'expense'
+						date.toPlainYearMonth() === processedDay.toPlainYearMonth() && date <= processedDay && type === 'expense'
 				)
 			)
 		)
@@ -43,32 +32,33 @@
 		expenses.pipe(
 			concatAll(),
 			groupBy(({ tags }) => tags),
-			concatMap((group$) =>
-				group$.pipe(
-					reduce((acc, cur) => ({ category: cur.tags, amount: acc.amount + cur.amount }), { category: '', amount: 0 })
-				)
-			),
-			toArray()
+			mergeMap((group$) => group$.pipe(reduce((acc, cur) => [...acc, cur], <any>[])))
+			// concatMap((group$) =>
+			// 	group$.
+			// 		reduce((acc, cur) => ({ category: cur.tags, amount: acc.amount + cur.amount }), { category: '', amount: 0 })
+			// ),
+			// toArray()
 		)
 	);
-
-	const color = d3
-		.scaleOrdinal(d3.schemeTableau10)
-		.domain($categories.map(({ category }) => category))
-		.range(d3.schemeTableau10);
 
 	const categoryPercentagesOfExpenseTotal$ = $derived(
 		combineLatest([categories, monthExpenseTotal]).pipe(
-			map(([categories$, monthExpenseTotal$]) =>
-				categories$.map((cat) => ({
-					data: Math.round((cat.amount / monthExpenseTotal$) * 100),
-					seriesLabel: false,
-					label: cat.category,
-					seriesColor: color(cat.category),
-				}))
-			)
+			map(([categories$, monthExpenseTotal$]) => {
+				const color = d3
+					.scaleOrdinal(d3.schemeTableau10)
+					.domain(categories$?.map(({ tags }) => tags))
+					.range(d3.schemeTableau10);
+				return categories$.map((category) => ({
+					main: false,
+					value: Math.round((category.amount / monthExpenseTotal$) * 100),
+					label: category.tags,
+					seriesColor: color(category.tags),
+				}));
+			})
 		)
 	);
+
+	$inspect($categories);
 </script>
 
 <DashboardWidget class={className}>
@@ -77,7 +67,7 @@
 			<Score.Label>Categories</Score.Label>
 		</Score.Header>
 		<Score.Content>
-			<GaugeChart datasets={$categoryPercentagesOfExpenseTotal$} />
+			<GaugeChart data={$categoryPercentagesOfExpenseTotal$} />
 		</Score.Content>
 	</Score.Root>
 </DashboardWidget>

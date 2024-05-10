@@ -7,7 +7,7 @@ import forms from '@tailwindcss/forms';
 import containerqueries from '@tailwindcss/container-queries';
 
 export default {
-	content: ['./src/**/*.{html,js,svelte,ts}'],
+	content: ['./src/**/*.{html,js,svelte,ts}', './node_modules/layerchart/**/*.{svelte,js}'],
 	variants: {
 		extend: {
 			'background-image': ['autofill'],
@@ -56,8 +56,8 @@ export default {
 					309: '#cccccc',
 				},
 				primary: {
-					DEFAULT: "hsl(var(--primary) / <alpha-value>)",
-					foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
+					DEFAULT: 'hsl(var(--primary) / <alpha-value>)',
+					foreground: 'hsl(var(--primary-foreground) / <alpha-value>)',
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary) / <alpha-value>)',
@@ -119,8 +119,8 @@ export default {
 			matchUtilities(
 				{
 					'animation-delay': (value) => ({
-							'animation-delay': value,
-						}),
+						'animation-delay': value,
+					}),
 				},
 				{
 					values: theme('transitionDelay'),
@@ -129,6 +129,6 @@ export default {
 		}),
 		scrollbar,
 		forms,
-		containerqueries
+		containerqueries,
 	],
-} satisfies Config
+} satisfies Config;

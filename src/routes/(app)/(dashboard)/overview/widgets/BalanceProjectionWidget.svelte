@@ -2,40 +2,35 @@
 
 <script lang="ts">
 	import { reduce, combineLatest, from, map } from 'rxjs';
-	import { isSameMonth, startOfToday } from 'date-fns';
 	import { Score } from '../score';
 	import DashboardWidget from '../DashboardWidget.svelte';
 	import { page } from '$app/stores';
 	import type { DefaultPropsType } from '.';
+	import { today } from '$/lib/utils';
 
 	const { class: className }: DefaultPropsType = $props();
-	const { processedDate, accounts, transactions, user } = $derived($page.data);
+	const { processedDate, bankAccounts, bankTransactions } = $derived($page.data);
 
-	const processedDay = $derived((processedDate && new Date(processedDate)) || startOfToday());
+	const processedDay = $derived(processedDate ? Temporal.PlainDate.from(processedDate) : today());
 	const balance = $derived.by(() => {
-		const filter = user.permittedBankAccounts;
-		return from(accounts).pipe(
-			map((data) =>
-				data.filter(({ id }) => filter?.includes(id) ?? true).reduce((sum, { balance }) => sum + balance, 0)
-			)
-		);
+		return from(bankAccounts).pipe(map((data) => data.reduce((sum, { balance }) => sum + balance, 0)));
 	});
 
 	const monthExpenseTotal = $derived(
-		from(transactions).pipe(
+		from(bankTransactions).pipe(
 			map((data) =>
 				data
-					.filter(({ date, type }) => isSameMonth(date, processedDay) && type === 'expense')
+					.filter(({ date, type }) => date.toPlainYearMonth() === processedDay.toPlainYearMonth() && type === 'expense')
 					.reduce((acc, { amount }) => acc + amount, 0)
 			)
 		)
 	);
 
 	const monthIncomeTotal = $derived(
-		from(transactions).pipe(
+		from(bankTransactions).pipe(
 			map((data) =>
 				data
-					.filter(({ date, type }) => isSameMonth(date, processedDay) && type === 'income')
+					.filter(({ date, type }) => date.toPlainYearMonth() === processedDay.toPlainYearMonth() && type === 'income')
 					.reduce((acc, { amount }) => acc + amount, 0)
 			)
 		)
@@ -54,7 +49,7 @@
 			<Score.Label>Forecast</Score.Label>
 		</Score.Header>
 		<Score.Content>
-			<Score.Metric value={$forcast$} />
+			<Score.Metric value={$forcast$}></Score.Metric>
 		</Score.Content>
 	</Score.Root>
 </DashboardWidget>

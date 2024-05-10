@@ -19,7 +19,7 @@
 	<span
 		aria-hidden="true"
 		class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600">
-		<svelte:component this={icon} class="h-6 w-6" height="auto" />
+		<svelte:component this={icon} class="h-6 w-6" height="auto"></svelte:component>
 	</span>
 	{#if children}
 		<span class="invisible @[12rem]:visible">

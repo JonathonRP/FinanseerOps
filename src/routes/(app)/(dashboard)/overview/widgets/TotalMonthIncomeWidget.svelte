@@ -2,20 +2,19 @@
 
 <script lang="ts">
 	import { from, map } from 'rxjs';
-	import { isBefore, isSameDay, isSameMonth, startOfToday, subMonths } from 'date-fns';
-	import { cn } from '$lib/utils';
+	import { cn, today } from '$lib/utils';
 	import { Score } from '../score';
 	import DashboardWidget from '../DashboardWidget.svelte';
 	import { page } from '$app/stores';
 	import type { DefaultPropsType } from '.';
 
 	const { class: className }: DefaultPropsType = $props();
-	const { processedDate, transactions } = $derived($page.data);
+	const { processedDate, bankTransactions } = $derived($page.data);
 
-	const processedDay = $derived((processedDate && new Date(processedDate)) || startOfToday());
-	const prevMonth = $derived(subMonths(processedDay, 1));
+	const processedDay = $derived(processedDate ? Temporal.PlainDate.from(processedDate) : today());
+	const prevMonth = $derived(processedDay.subtract({ months: 1 }));
 	const biMonthlyIncomeTotals = $derived(
-		from(transactions).pipe(
+		from(bankTransactions).pipe(
 			map((data) =>
 				data
 					.filter(({ type }) => type === 'income')
@@ -23,10 +22,9 @@
 						({ currMonthIncome, prevMonthIncome }, { date, amount }) => ({
 							currMonthIncome:
 								currMonthIncome +
-								(isSameMonth(date, processedDay) && (isBefore(date, processedDay) || isSameDay(date, processedDay))
-									? amount
-									: 0),
-							prevMonthIncome: prevMonthIncome + (isSameMonth(date, prevMonth) ? amount : 0),
+								(date.toPlainYearMonth() === processedDay.toPlainYearMonth() && date <= processedDay ? amount : 0),
+							prevMonthIncome:
+								prevMonthIncome + (date.toPlainYearMonth() === prevMonth.toPlainYearMonth() ? amount : 0),
 						}),
 						{ currMonthIncome: 0, prevMonthIncome: 0 }
 					)

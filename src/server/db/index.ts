@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import type { InferInsertModel } from 'drizzle-orm';
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import * as schema from './schema';
 import { POSTGRES_URL } from '$env/static/private';
@@ -17,6 +17,7 @@ export const db = drizzle(connection, { schema });
 export type DB = typeof db;
 export type Users = InferInsertModel<typeof schema.users>;
 export type Accounts = InferInsertModel<typeof schema.accounts>;
+export type Notification = InferSelectModel<typeof schema.notifications>;
 
 export const user = createSelectSchema(schema.users);
 export const buxferAccount = createInsertSchema(schema.buxferAccounts);

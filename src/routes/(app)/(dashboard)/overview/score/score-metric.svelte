@@ -50,7 +50,7 @@
 					{#if !Number(digit) && digit !== '0'}
 						{digit}
 					{:else}
-						<AnimatedNumber value={digit} class="font-bold leading-snug" />
+						<AnimatedNumber value={digit} class="font-bold leading-snug"></AnimatedNumber>
 					{/if}
 				{/each}
 			</span>
@@ -74,7 +74,7 @@
 					}`
 				)}>
 				{numberFormat().format($differenceScore$ ?? 0)}
-				<svelte:component this={scoreIcons.get(compare)} inline />
+				<svelte:component this={scoreIcons.get(compare)} inline></svelte:component>
 			</p>
 		{/if}
 	{/if}

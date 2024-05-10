@@ -20,7 +20,7 @@
 					}
 					// console.log(entry.contentRect.height);
 				}}>
-				<slot />
+				<slot></slot>
 			</div>
 		</div>
 	</Motion>

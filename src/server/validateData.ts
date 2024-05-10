@@ -27,6 +27,6 @@ export const validateData = async (formData: FormData | unknown, schema: ZodSche
 			};
 		}
 
-		return error(500, err as App.Error);
+		throw new Error(err.message);
 	}
 };
