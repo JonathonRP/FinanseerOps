@@ -1,3 +1,4 @@
+import 'temporal-polyfill/global';
 import * as Sentry from '@sentry/sveltekit';
 
 import type { HandleClientError } from '@sveltejs/kit';

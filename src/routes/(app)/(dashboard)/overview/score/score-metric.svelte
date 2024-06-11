@@ -1,11 +1,11 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import type { ComponentType, SvelteComponent } from 'svelte';
-	import { cn, numberFormat, type Color } from '$/lib/utils';
-	import { spring, tweened } from 'svelte/motion';
 	import { scoreCardIcons } from '$/icons';
 	import AnimatedNumber from '$/lib/components/AnimatedNumber.svelte';
+	import { cn, numberFormat, type Color } from '$/lib/utils';
+	import type { ComponentType, SvelteComponent } from 'svelte';
+	import { spring, tweened } from 'svelte/motion';
 	import type { DefaultPropsType } from '.';
 
 	const {
@@ -44,8 +44,8 @@
 
 <div class="flex items-center">
 	{#if value !== null && value !== undefined}
-		<p class={cn('text-2xl font-bold', restProps.class)}>
-			<span class="flex min-w-[3ch] flex-nowrap items-baseline overflow-hidden">
+		<p class={cn('line-clamp-1 text-2xl font-bold', restProps.class)}>
+			<span class="line-clamp-1 flex min-w-[3ch] flex-nowrap items-baseline overflow-hidden">
 				{#each numberFormat().format($score$).split('') as digit}
 					{#if !Number(digit) && digit !== '0'}
 						{digit}
@@ -83,7 +83,7 @@
 	{@render children()}
 {/if}
 {#if comparison?.value}
-	<p class="absolute inset-x-0 bottom-0 pb-[1.2rem] pl-5 text-xs font-normal text-muted-foreground">
+	<p class="absolute inset-x-0 bottom-0 line-clamp-1 pb-[1.2rem] pl-5 text-xs font-normal text-muted-foreground">
 		Compared to ({numberFormat().format($comparisonScore$ ?? 0)} last month)
 	</p>
 {/if}

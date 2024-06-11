@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Select as SelectPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils';
+	import { Select as SelectPrimitive } from 'bits-ui';
 	import ChevronDown from '~icons/tabler/chevron-down';
 
 	type $$Props = SelectPrimitive.TriggerProps;
@@ -21,6 +21,6 @@
 	on:keydown>
 	<slot {builder}></slot>
 	<div>
-		<ChevronDown class="h-4 w-4 opacity-50"></ChevronDown>
+		<ChevronDown class="size-4 opacity-50"></ChevronDown>
 	</div>
 </SelectPrimitive.Trigger>

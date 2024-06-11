@@ -17,6 +17,10 @@
 		"ghcr.io/devcontainers/features/docker-in-docker": {}
 	},
 
+	"mounts": [
+		"source=/mnt/c/Users/jperry/svelte-motion,target=/mnt/c/Users/jperry/svelte-motion,type=bind,consistency=cached"
+	],
+
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [5000],
 	// "appPort": [5000]
@@ -33,8 +37,8 @@
 				"editor.formatOnPaste": true,
 				"editor.formatOnSave": true,
 				"editor.codeActionsOnSave": {
-					"source.fixAll.eslint": "always"
-					// "source.organizeImports": true
+					"source.fixAll.eslint": "always",
+					"source.organizeImports": true
 				},
 				"editor.formatOnSaveMode": "file",
 				"files.autoSave": "onFocusChange",
@@ -93,7 +97,6 @@
 				"svelte.svelte-vscode",
 				"bourhaouta.tailwindshades",
 				"bradlc.vscode-tailwindcss",
-				"Prisma.prisma",
 				"esbenp.prettier-vscode",
 				"dbaeumer.vscode-eslint",
 				"eamodio.gitlens",

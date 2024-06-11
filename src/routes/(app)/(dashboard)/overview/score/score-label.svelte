@@ -7,6 +7,6 @@
 	const { children, ...restProps }: DefaultPropsType = $props();
 </script>
 
-<p class={cn('text-base', restProps.class)}>
+<p class={cn('text-base line-clamp-1', restProps.class)}>
 	{@render children()}
 </p>

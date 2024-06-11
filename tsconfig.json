@@ -27,7 +27,8 @@
 		".*.cjs",
 		"*.js",
 		"*.ts",
-		"**/*.tsx"
+		"**/*.tsx",
+		"packages/vite-plugin-Temporal-polyfill/index.ts"
 	]
 	// "exclude": [
 	// 	"./svelte.config.js",

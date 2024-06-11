@@ -11,9 +11,10 @@ function eachIntervalDay({
 	end?: Temporal.PlainDate;
 }): Temporal.PlainDate[] {
 	const distance = start.until(end ?? start, { largestUnit: 'days' }).days;
+	const days = eachDay({ start });
 	return Array(distance)
 		.fill(0)
-		.map(() => eachDay({ start }).next().value);
+		.map(() => days.next().value);
 }
 
 export { eachIntervalDay as eachDay };

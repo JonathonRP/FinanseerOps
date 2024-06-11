@@ -1,21 +1,20 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { encrypt } from '$lib/utils/cryption';
-	import { ZodError, object, string } from 'zod';
 	import { icons } from '$/icons';
-	import toast from 'svelte-french-toast';
+	import { applyAction, enhance } from '$app/forms';
 	import Banner from '$lib/components/Banner.svelte';
-	import { enhance, applyAction } from '$app/forms';
+	import toast from 'svelte-french-toast';
+	import { ZodError, object, string } from 'zod';
 
 	const { data }: { data: import('./$types').PageData } = $props();
 	const { redirectReason } = $derived(data);
 </script>
 
 <div class="relative w-full max-md:flex max-md:flex-col max-md:items-center max-md:justify-center">
-	<Banner {redirectReason} class="md:absolute md:left-0 md:right-0 md:z-10" />
+	<Banner {redirectReason} class="md:absolute md:right-0 md:left-0 md:z-10" />
 	<div
-		class="flex w-full max-md:grid max-md:w-[368px] max-md:self-center max-md:justify-self-center max-md:overflow-hidden max-md:rounded-2xl max-md:bg-slate-200 max-md:px-8 md:h-full max-md:dark:bg-neutral-808">
+		class="max-md:dark:bg-neutral-808 flex w-full max-md:grid max-md:w-[368px] max-md:self-center max-md:justify-self-center max-md:overflow-hidden max-md:rounded-2xl max-md:bg-slate-200 max-md:px-8 md:h-full">
 		<div
 			class="i relative hidden w-1/2 items-center justify-around overflow-hidden bg-[url(https://www.buxfer.com/media/UIFrontPage/topbackground-image.jpg)] bg-cover bg-[100%_50%] bg-no-repeat md:flex">
 			<div class="px-6 font-['Lato',Arial,sans-serif] text-[20px] leading-[inherit] text-[#d4d5d5]">
@@ -27,7 +26,7 @@
 				<p>All at one secure place.</p>
 				<a
 					href="http://www.buxfer.com"
-					class="mb-2 mt-4 block w-28 rounded-xl bg-white py-2 text-center text-lg font-semibold text-orange-400"
+					class="mt-4 mb-2 block w-28 rounded-xl bg-white py-2 text-center text-lg font-semibold text-orange-400"
 					>Read More</a>
 			</div>
 		</div>
@@ -39,9 +38,7 @@
 					if (formData.has('password')) {
 						const expectAccount = object({
 							email: string().email().min(1),
-							password: string()
-								.min(1)
-								.transform((val) => encrypt(val)),
+							password: string().min(1),
 						});
 						const data = Object.fromEntries(formData);
 						let errors = null;
@@ -86,8 +83,8 @@
 						await applyAction(result);
 					};
 				}}>
-				<div class="mb-4 flex items-center rounded-2xl border-2 border-neutral-309 px-3 py-2 dark:border-neutral-500">
-					<svelte:component this={icons.Email} class="h-5 w-5 text-gray-400" height="auto" inline></svelte:component>
+				<div class="border-neutral-309 mb-4 flex items-center rounded-2xl border-2 py-4 px-3 dark:border-neutral-500">
+					<svelte:component this={icons.Email} class="size-5 text-gray-400" height="auto" inline></svelte:component>
 					<input
 						class="w-full appearance-none border-none bg-transparent pl-2 outline-none focus-visible:ring-0"
 						type="text"
@@ -95,8 +92,8 @@
 						id="email"
 						placeholder="Email" />
 				</div>
-				<div class="flex items-center rounded-2xl border-2 border-neutral-309 px-3 py-2 dark:border-neutral-500">
-					<svelte:component this={icons.Password} class="h-5 w-5 text-gray-400" height="auto" inline></svelte:component>
+				<div class="border-neutral-309 flex items-center rounded-2xl border-2 py-4 px-3 dark:border-neutral-500">
+					<svelte:component this={icons.Password} class="size-5 text-gray-400" height="auto" inline></svelte:component>
 					<input
 						class="w-full appearance-none border-none bg-transparent pl-2 outline-none forced-color-adjust-none focus-visible:ring-0"
 						type="password"
@@ -106,7 +103,7 @@
 				</div>
 				<button
 					type="submit"
-					class="mb-2 mt-4 block h-16 w-full rounded-xl bg-orange-600 py-2 text-lg font-semibold leading-6 text-white"
+					class="mt-4 mb-2 block h-16 w-full rounded-xl bg-orange-600 py-2 text-lg font-semibold leading-6 text-white"
 					>Connect</button>
 			</form>
 		</div>

@@ -1,22 +1,25 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { Chart, Svg, LinearGradient, Bars, Axis, Rule, Highlight, Labels, Bar, Group, Text, Point } from 'layerchart';
-	import type { ClassValue } from 'clsx';
 	import { twEasing } from '$/lib/animations/ease';
-	import { cubicBezier } from '$/lib/utils/cubic-bezier';
-	import { mean, scaleBand } from 'd3';
 	import { cn, numberFormat } from '$/lib/utils';
+	import { cubicBezier } from '$/lib/utils/cubic-bezier';
+	import type { ClassValue } from 'clsx';
+	import { mean } from 'd3-array';
+	import { scaleBand } from 'd3-scale';
+	import { Axis, Bars, Chart, Labels, LinearGradient, Rule, Svg, Text } from 'layerchart';
 
 	const {
 		data,
-		axisFormat,
+		x,
+		tickFormat,
 		showAverage,
 		showHighlightAsRule,
 		...restProps
 	}: {
-		data: { date?: Temporal.PlainDate; value: number; highlight: boolean; ignore: boolean }[];
-		axisFormat?: any;
+		data: { date?: Temporal.PlainDate; value: number; highlight: boolean; ignore: boolean; label: string }[];
+		x?: Chart['$$prop_def']['x'];
+		tickFormat?: Axis['$$prop_def']['format'];
 		showAverage?: boolean;
 		showHighlightAsRule?: boolean;
 		class?: ClassValue;
@@ -26,7 +29,7 @@
 <div class={cn(restProps.class)}>
 	<Chart
 		data={data.filter((d) => !d.ignore) ?? []}
-		x="date"
+		{x}
 		xScale={scaleBand().padding(0.4)}
 		y="value"
 		yDomain={[0, null]}
@@ -36,7 +39,7 @@
 		let:yScale
 		let:data={filteredData}>
 		<Svg>
-			<Axis placement="bottom" format={axisFormat} />
+			<Axis placement="bottom" format={tickFormat} />
 			<LinearGradient vertical units="userSpaceOnUse" let:url>
 				<Bars
 					initialY={width - 16 * 2 - 2 - 24}
@@ -68,17 +71,23 @@
 					class="text-sm tabular-nums" />
 			{/if}
 			{#if showHighlightAsRule}
-				{@const highlight = data.find((d) => d.highlight)?.value}
+				{@const highlight = data.find((d) => d.highlight)}
 				<Rule
-					y={highlight}
+					y={highlight?.value}
 					class="stroke-slate-500 stroke-1 [stroke-dasharray:1] [stroke-linecap:round] dark:stroke-slate-400 " />
-				<Text textAnchor="end" verticalAnchor="end" x={0} y={yScale(highlight)} value={'Avg.'} class="text-sm" />
+				<Text
+					textAnchor="end"
+					verticalAnchor="end"
+					x={0}
+					y={yScale(highlight?.value)}
+					value={highlight?.label}
+					class="text-sm" />
 				<Text
 					textAnchor="start"
 					verticalAnchor="middle"
 					x={width}
-					y={yScale(highlight)}
-					value={numberFormat().format(highlight ?? 0)}
+					y={yScale(highlight?.value)}
+					value={numberFormat().format(highlight?.value ?? 0)}
 					class="text-sm tabular-nums" />
 			{/if}
 		</Svg>

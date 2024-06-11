@@ -1,18 +1,15 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { from, map } from 'rxjs';
-	import { cn, today } from '$lib/utils';
-	import { Score } from '../score';
-	import DashboardWidget from '../DashboardWidget.svelte';
 	import { page } from '$app/stores';
-	import type { DefaultPropsType } from '.';
+	import { cn, compareDates, compareMonths } from '$lib/utils';
+	import { from, map } from 'rxjs';
+	import DashboardWidget from '../DashboardWidget.svelte';
+	import { Score } from '../score';
 
-	const { class: className }: DefaultPropsType = $props();
-	const { processedDate, bankTransactions } = $derived($page.data);
+	const { processedDay, bankTransactions } = $derived($page.data);
 
-	const processedDay = $derived(processedDate ? Temporal.PlainDate.from(processedDate) : today());
-	const prevMonth = $derived(processedDay.subtract({ months: 1 }));
+	const prevMonth = $derived(Temporal.PlainYearMonth.from(processedDay).subtract({ months: 1 }));
 	const biMonthlyExpenseTotals = $derived(
 		from(bankTransactions).pipe(
 			map((data) =>
@@ -22,8 +19,8 @@
 						({ currMonthSpent, prevMonthSpent }, { date, amount }) => ({
 							currMonthSpent:
 								currMonthSpent +
-								(date.toPlainYearMonth() === processedDay.toPlainYearMonth() && date <= processedDay ? amount : 0),
-							prevMonthSpent: prevMonthSpent + (date.toPlainYearMonth() === prevMonth.toPlainYearMonth() ? amount : 0),
+								(compareMonths(date, processedDay) && compareDates(date, processedDay) <= 0 ? amount : 0),
+							prevMonthSpent: prevMonthSpent + (compareMonths(date, prevMonth) === 0 ? amount : 0),
 						}),
 						{ currMonthSpent: 0, prevMonthSpent: 0 }
 					)
@@ -32,7 +29,7 @@
 	);
 </script>
 
-<DashboardWidget class={cn(className, 'px-5 pb-12 pt-5')}>
+<DashboardWidget class={cn({ 'pb-12': false })}>
 	<Score.Root>
 		<Score.Header>
 			<Score.Label>Spent</Score.Label>

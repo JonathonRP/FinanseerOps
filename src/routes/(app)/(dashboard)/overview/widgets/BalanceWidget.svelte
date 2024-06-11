@@ -1,13 +1,11 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { from, map } from 'rxjs';
-	import { Score } from '../score';
-	import DashboardWidget from '../DashboardWidget.svelte';
 	import { page } from '$app/stores';
-	import type { DefaultPropsType } from '.';
+	import { from, map } from 'rxjs';
+	import DashboardWidget from '../DashboardWidget.svelte';
+	import { Score } from '../score';
 
-	const { class: className }: DefaultPropsType = $props();
 	const { bankAccounts } = $derived($page.data);
 
 	const balance = $derived.by(() => {
@@ -15,7 +13,7 @@
 	});
 </script>
 
-<DashboardWidget class={className}>
+<DashboardWidget>
 	<Score.Root>
 		<Score.Header>
 			<Score.Label>Balance</Score.Label>

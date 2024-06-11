@@ -1,12 +1,11 @@
-import { redirect, fail, error } from '@sveltejs/kit';
 import { validateData } from '$/server';
-import { object, string } from 'zod';
-import { decrypt } from '$lib/utils/cryption';
+import { createContext } from '$/server/api/context.js';
+import { appRouter, createCallerFactory } from '$/server/api/root.js';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { TRPCError } from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
-import { appRouter, createCallerFactory } from '$/server/api/root.js';
-import { createContext } from '$/server/api/context.js';
-import { catchError, delayWhen, tap, throwError } from 'rxjs';
+import { catchError, delayWhen, share, tap, throwError } from 'rxjs';
+import { object, string } from 'zod';
 
 export const actions = {
 	default: async (event) => {
@@ -16,7 +15,7 @@ export const actions = {
 
 		const expectLogin = object({
 			email: string().email().min(1),
-			password: string().transform((val) => decrypt(val)),
+			password: string(),
 		});
 
 		const { data, errors } = await validateData(formData, expectLogin);
@@ -37,7 +36,8 @@ export const actions = {
 					sameSite: true,
 					secure: true,
 				})
-			)
+			),
+			share()
 		);
 		try {
 			const loginResult = await new Promise((resolve, reject) => {

@@ -13,26 +13,22 @@
 		{
 			"name": "chrome",
 			"request": "launch",
-			"type": "chrome",
-			"url": "http://localhost:5000"
+			"type": "chrome"
 		},
 		{
 			"name": "edge",
 			"request": "launch",
-			"type": "msedge",
-			"url": "http://localhost:5000"
+			"type": "msedge"
 		},
 		{
 			"name": "chrome pwa",
 			"request": "launch",
-			"type": "pwa-chrome",
-			"url": "http://localhost:5000"
+			"type": "pwa-chrome"
 		},
 		{
 			"name": "edge pwa",
 			"request": "launch",
-			"type": "pwa-msedge",
-			"url": "http://localhost:5000"
+			"type": "pwa-msedge"
 		},
 		{
 			"name": "full stack chrome",
@@ -43,8 +39,8 @@
 			"console": "integratedTerminal",
 			"skipFiles": ["<node_internals>/**"],
 			"serverReadyAction": {
-				"pattern": "http://localhost:.*m([0-9]+)",
-				"uriFormat": "http://localhost:%s",
+				"pattern": "https://localhost:.*m([0-9]+)",
+				"uriFormat": "https://localhost:%s/overview",
 				"action": "debugWithChrome"
 			}
 		},
@@ -57,8 +53,8 @@
 			"console": "integratedTerminal",
 			"skipFiles": ["<node_internals>/**"],
 			"serverReadyAction": {
-				"pattern": "http://localhost:.*m([0-9]+)",
-				"uriFormat": "http://localhost:%s/overview",
+				"pattern": "https://localhost:.*m([0-9]+)",
+				"uriFormat": "https://localhost:%s/overview",
 				"action": "debugWithEdge"
 			}
 		}

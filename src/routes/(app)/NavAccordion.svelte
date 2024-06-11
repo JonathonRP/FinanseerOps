@@ -1,10 +1,10 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { accordion } from '$/lib/utils';
 	import { icons, navItemIcons } from '$/icons';
-	import type { ComponentType, SvelteComponent } from 'svelte';
+	import { accordion } from '$/lib/utils';
 	import { base } from '$app/paths';
+	import type { ComponentType, SvelteComponent } from 'svelte';
 	import NavLink from './NavLink.svelte';
 
 	const navIcons = { ...navItemIcons };
@@ -32,14 +32,14 @@
 			<span
 				aria-hidden="true"
 				class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600 group-aria-[current=page]:text-white">
-				<svelte:component this={icon} class="h-6 w-6" flip="horizontal" height="auto"></svelte:component>
+				<svelte:component this={icon} class="size-6" height="auto" inline />
 			</span>
 			<span>{label}</span>
 		</a>
 		<span
 			aria-hidden="true"
 			class="flex items-baseline px-2 text-stone-50 transition-transform group-open/menu:-scale-y-100 dark:text-stone-800">
-			<svelte:component this={icons.UpChevron} flip="vertical" class="h-7 w-7" height="auto"></svelte:component>
+			<svelte:component this={icons.UpChevron} flip="vertical" class="size-4" height="auto" inline />
 		</span>
 	</summary>
 	<ul class="mt-2 flex-1 space-y-2 overflow-hidden hover:overflow-auto">

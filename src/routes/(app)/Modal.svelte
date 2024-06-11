@@ -6,6 +6,7 @@
 	import { Drawer } from '$lib/components/ui/drawer';
 
 	import { writable } from 'svelte/store';
+	import { browser } from '$app/environment';
 
 	const {
 		isOpen,
@@ -16,8 +17,8 @@
 	const open = writable(false);
 	// const dragControls = useDragControls();
 	// const animateControls = useAnimation();
-	const md = window.matchMedia('(max-width:768px)');
-	const mdState = $state({ isMobile: md.matches });
+	const md = browser ? window.matchMedia('(max-width:768px)') : undefined;
+	const mdState = $state({ isMobile: md?.matches ?? false });
 
 	// const overlayVariants: Variants = {
 	// 	hidden: { opacity: 0, scale: 0.8, transition: { opacity: { duration: 0.2 }, scale: { duration: 1.5 } } },
@@ -79,16 +80,16 @@
 {#if $open && !mdState.isMobile}
 	<div
 		in:classes={{
-			duration: 800,
-			base: 'md:transition md:duration-800',
-			from: 'md:-translate-x-full md:opacity-0',
+			duration: 350,
+			base: 'md:transition md:duration-350',
+			from: 'md:-translate-x-1/2 md:opacity-0',
 			to: 'md:translate-x-0 md:opacity-100',
 		}}
 		out:classes={{
-			duration: 800,
-			base: 'md:transition md:duration-800',
+			duration: 150,
+			base: 'md:transition md:duration-150',
 			from: 'md:translate-x-0 md:opacity-100',
-			to: 'md:-translate-x-1/3 md:opacity-0',
+			to: 'md:-translate-x-1/2 md:opacity-0',
 		}}
 		class="hidden md:static md:inset-y-0 md:left-16 md:mx-0 md:block md:h-auto md:w-72 md:bg-inherit md:shadow-none md:dark:bg-inherit">
 		{@render children()}

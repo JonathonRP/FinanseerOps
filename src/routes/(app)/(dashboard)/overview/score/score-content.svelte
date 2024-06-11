@@ -8,8 +8,8 @@
 </script>
 
 <dd
-	class={cn('flex w-[164.57px] items-start pt-1', restProps.class, {
-		'h-[64px]': children,
+	class={cn('flex min-w-[164.57px] items-start', restProps.class, {
+		'h-full min-h-[64px]': children,
 	})}>
 	{@render children()}
 </dd>

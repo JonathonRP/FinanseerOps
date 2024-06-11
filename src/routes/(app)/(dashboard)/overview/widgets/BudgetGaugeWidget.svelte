@@ -1,22 +1,21 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { from, map } from 'rxjs';
-	import { cn, today } from '$/lib/utils';
-	import * as d3 from 'd3';
-	import { Score } from '../score';
-	import { GaugeChart } from '../charts';
-	import DashboardWidget from '../DashboardWidget.svelte';
+	import { compareDates, compareMonths } from '$/lib/utils';
 	import { page } from '$app/stores';
-	import type { DefaultPropsType } from '.';
 	import { userSettings } from '$lib/stores/userSettings.svelte';
+	import { scaleOrdinal } from 'd3-scale';
+	import { schemeTableau10 } from 'd3-scale-chromatic';
+	import { combineLatest, from, map, of } from 'rxjs';
+	import DashboardWidget from '../DashboardWidget.svelte';
+	import { GaugeChart } from '../charts';
+	import { Score } from '../score';
 
-	const { class: className }: DefaultPropsType = $props();
-	const { processedDate, bankTransactions } = $derived($page.data);
+	const { processedDay, bankTransactions } = $derived($page.data);
 
-	const processedDay = $derived(processedDate ? Temporal.PlainDate.from(processedDate) : today());
 	const budget = $derived(userSettings.budget);
-	const percentDayOfMonth = $derived(Math.round((processedDay.day / processedDay.daysInMonth) * 100));
+	const processedDate = $derived(Temporal.PlainDate.from(processedDay));
+	const percentDayOfMonth = $derived(Math.round((processedDate.day / processedDate.daysInMonth) * 100));
 
 	const monthExpenseTotal = $derived(
 		from(bankTransactions).pipe(
@@ -24,7 +23,7 @@
 				result
 					.filter(
 						({ date, type }) =>
-							date.toPlainYearMonth() === processedDay.toPlainYearMonth() && date <= processedDay && type === 'expense'
+							compareMonths(date, processedDay) === 0 && compareDates(date, processedDay) <= 0 && type === 'expense'
 					)
 					.reduce((acc, { amount }) => acc + amount, 0)
 			)
@@ -35,41 +34,40 @@
 		monthExpenseTotal.pipe(map((expenseTotal) => Math.round((expenseTotal / budget) * 100)))
 	);
 
-	const color = d3
-		.scaleOrdinal(d3.schemeTableau10)
-		.domain(['expense of budget', 'day out of days in month'])
-		.range([d3.schemeTableau10[0], d3.schemeTableau10[6]]);
+	const data$ = $derived(
+		combineLatest([percentSpentOfBudget, of(percentDayOfMonth)]).pipe(
+			map((budgetData) => {
+				// [
+				// 	{ main: true, value: percentSpentOfBudget$, label: 'spent of budget' },
+				// 	{ main: false, value: percentDayOfMonth$, label: 'day of month' },
+				// ]
+				const color = scaleOrdinal(schemeTableau10)
+					.domain(budgetData.map((_, indx) => indx))
+					.range([schemeTableau10[0], schemeTableau10[6]]);
+				return budgetData.map((value, indx) => ({
+					main: indx === 0,
+					value,
+					label: indx === 0 ? 'spent of budget' : 'day of month',
+					seriesColor: color(indx),
+				}));
+			})
+		)
+	);
 </script>
 
 <DashboardWidget
-	class={cn(
-		className,
-		'bg-yellow-100 text-yellow-400 shadow-yellow-50/20 dark:bg-yellow-900 dark:text-amber-400 dark:shadow-yellow-300/40',
-		{
-			'bg-green-100 text-green-600 shadow-green-50/20 dark:bg-green-900 dark:text-emerald-400 dark:shadow-green-300/40':
-				$percentSpentOfBudget <= percentDayOfMonth,
-			'bg-red-100 text-red-600 shadow-red-50/20 dark:bg-red-900 dark:text-red-300 dark:shadow-red-300/40':
-				$percentSpentOfBudget > 100 - percentDayOfMonth,
-		}
-	)}>
+	variant={$percentSpentOfBudget <= percentDayOfMonth
+		? 'success'
+		: $percentSpentOfBudget > 100 - percentDayOfMonth
+			? 'danger'
+			: 'warning'}>
 	<Score.Root>
 		<Score.Header>
 			<Score.Label>Budget</Score.Label>
 		</Score.Header>
 		<Score.Content>
 			<Score.Metric value={budget}>
-				<GaugeChart
-					data={[
-						{ main: true, value: $percentSpentOfBudget, label: 'spent of budget' },
-						{ main: false, value: percentDayOfMonth, label: 'day of month' },
-					].map(({ value, label, main }) => ({
-						main,
-						value,
-						label,
-						seriesColor: color(label),
-					}))}
-					class={($percentSpentOfBudget <= percentDayOfMonth && 'text-green-600 dark:text-emerald-400') ||
-						($percentSpentOfBudget > 100 - percentDayOfMonth && 'text-red-600 dark:text-red-300')} />
+				<GaugeChart data={$data$} />
 			</Score.Metric>
 		</Score.Content>
 	</Score.Root>

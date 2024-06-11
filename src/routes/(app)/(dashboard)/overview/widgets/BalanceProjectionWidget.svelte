@@ -1,49 +1,42 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { reduce, combineLatest, from, map } from 'rxjs';
-	import { Score } from '../score';
-	import DashboardWidget from '../DashboardWidget.svelte';
 	import { page } from '$app/stores';
-	import type { DefaultPropsType } from '.';
-	import { today } from '$/lib/utils';
+	import { compareMonths } from '$lib/utils';
+	import { combineLatest, from, map, reduce } from 'rxjs';
+	import DashboardWidget from '../DashboardWidget.svelte';
+	import { Score } from '../score';
 
-	const { class: className }: DefaultPropsType = $props();
-	const { processedDate, bankAccounts, bankTransactions } = $derived($page.data);
+	const { processedDay, bankAccounts, bankTransactions } = $derived($page.data);
 
-	const processedDay = $derived(processedDate ? Temporal.PlainDate.from(processedDate) : today());
 	const balance = $derived.by(() => {
 		return from(bankAccounts).pipe(map((data) => data.reduce((sum, { balance }) => sum + balance, 0)));
 	});
 
-	const monthExpenseTotal = $derived(
+	const monthTotals = $derived(
 		from(bankTransactions).pipe(
 			map((data) =>
 				data
-					.filter(({ date, type }) => date.toPlainYearMonth() === processedDay.toPlainYearMonth() && type === 'expense')
-					.reduce((acc, { amount }) => acc + amount, 0)
-			)
-		)
-	);
-
-	const monthIncomeTotal = $derived(
-		from(bankTransactions).pipe(
-			map((data) =>
-				data
-					.filter(({ date, type }) => date.toPlainYearMonth() === processedDay.toPlainYearMonth() && type === 'income')
-					.reduce((acc, { amount }) => acc + amount, 0)
+					.filter(({ date }) => compareMonths(date, processedDay) === 0)
+					.reduce(
+						({ income, expense }, { amount, type }) => ({
+							income: income - (type === 'income' ? amount : 0),
+							expense: expense + (type === 'expense' ? amount : 0),
+						}),
+						{ income: 0, expense: 0 }
+					)
 			)
 		)
 	);
 
 	const forcast$ = $derived(
-		combineLatest([balance, monthExpenseTotal, monthIncomeTotal]).pipe(
-			reduce((acc, [bal, exp, income]) => acc + (bal + (acc - exp) + income), 0)
+		combineLatest([balance, monthTotals]).pipe(
+			reduce((acc, [bal, { expense, income }]) => acc + (bal + (acc - expense) + income), 0)
 		)
 	);
 </script>
 
-<DashboardWidget class={className}>
+<DashboardWidget>
 	<Score.Root>
 		<Score.Header>
 			<Score.Label>Forecast</Score.Label>

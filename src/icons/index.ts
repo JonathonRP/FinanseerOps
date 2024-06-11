@@ -25,6 +25,9 @@ import InfoIcon from '~icons/tabler/info-circle';
 
 import ReorderIcon from '~icons/tabler/drag-drop-2';
 
+import RadialIcon from '~icons/tabler/chart-arcs';
+import RadarIcon from '~icons/tabler/chart-radar';
+
 export const icons = {
 	Email,
 	Password,
@@ -52,4 +55,9 @@ export const navItemIcons = {
 export const scoreCardIcons = {
 	UpTrendIcon,
 	DownTrendIcon,
+};
+
+export const charts = {
+	RadialIcon,
+	RadarIcon,
 };

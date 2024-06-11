@@ -1,30 +1,39 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { cn, eachDay, today as getToday } from '$lib/utils';
-	import { from, map } from 'rxjs';
-	import { tick } from 'svelte';
-	import { AnimatePresence, type Variants } from 'svelte-motion';
-	import { Motion } from '$lib/components';
-	import ResizePanel from '$lib/components/ResizePanel.svelte';
 	import { icons } from '$/icons';
 	import { ease } from '$/lib/animations';
 	import { page } from '$app/stores';
+	import { Motion } from '$lib/components';
+	import ResizePanel from '$lib/components/ResizePanel.svelte';
+	import {
+		cn,
+		compareDates,
+		compareMonths,
+		eachDay,
+		endOfMonth,
+		endOfWeek,
+		today as getToday,
+		startOfMonth,
+		startOfWeek,
+	} from '$lib/utils';
+	import { from, map } from 'rxjs';
+	import { tick } from 'svelte';
+	import { AnimatePresence, type Variants } from 'svelte-motion';
 
-	const { current, processedDate, searchFilter, bankTransactions } = $derived($page.data);
+	const { current, processedDay, searchFilter, bankTransactions } = $derived($page.data);
 	const today = getToday();
 
 	let direction: number = $state(0);
 
-	const processedDay = $derived(processedDate ? Temporal.PlainDate.from(processedDate) : today);
-	let currentMonth = $state(processedDay.toPlainYearMonth());
+	let currentMonth = $state(Temporal.PlainYearMonth.from(processedDay));
 	const { daysOfCalendarMonth, next, previous, calendarMonthTransactions } = $derived.by(() => {
 		const prevPeriod = currentMonth.subtract({ months: 1 });
 		const nextPeriod = currentMonth.add({ months: 1 });
-		const startOfMonth = currentMonth.toPlainDate({ day: 1 });
-		const monthStartOfWeek = startOfMonth.subtract({ days: startOfMonth.daysInWeek - startOfMonth.dayOfWeek });
-		const endOfMonth = currentMonth.toPlainDate({ day: currentMonth.daysInMonth });
-		const monthEndOfWeek = endOfMonth.add({ days: endOfMonth.daysInWeek - endOfMonth.dayOfWeek });
+		const monthStart = startOfMonth(currentMonth);
+		const monthStartOfWeek = startOfWeek(monthStart);
+		const monthEnd = endOfMonth(currentMonth);
+		const monthEndOfWeek = endOfWeek(monthEnd);
 
 		return {
 			daysOfCalendarMonth: eachDay({
@@ -42,7 +51,11 @@
 				currentMonth = prevPeriod;
 			},
 			calendarMonthTransactions: from(bankTransactions).pipe(
-				map((result) => result.filter(({ date }) => date >= monthStartOfWeek && date < monthEndOfWeek))
+				map((result) =>
+					result.filter(
+						({ date }) => compareDates(date, monthStartOfWeek) >= 0 && compareDates(date, monthEndOfWeek) < 0
+					)
+				)
 			),
 		};
 	});
@@ -94,6 +107,8 @@
 			},
 		}),
 	};
+
+	// $inspect(currentMonth, daysOfCalendarMonth);
 </script>
 
 <AnimatePresence
@@ -101,7 +116,9 @@
 		{
 			key: currentMonth,
 			// title: format(currentMonth, 'yyyy, MMM'),
-			title: Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' }).format(currentMonth),
+			title: Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' }).format(
+				currentMonth.toPlainDate({ day: 1 })
+			),
 			// title output: 2023, Jan
 			days: daysOfCalendarMonth.map((day, indx) => ({ key: day.toString(), indx, date: day })),
 		},
@@ -110,7 +127,7 @@
 	custom={direction}
 	let:item={month}>
 	<div
-		class="mx-auto min-w-[17rem] max-w-[17rem] flex-shrink-0 overflow-hidden rounded-xl border border-slate-50 px-3 py-3 dark:border-slate-600">
+		class="mx-auto min-w-[17rem] max-w-[17rem] flex-shrink-0 overflow-hidden rounded-xl border border-slate-50 bg-slate-200/80 px-3 py-3 dark:border-slate-600/50 dark:bg-neutral-808/45 dark:backdrop-blur-sm">
 		<Motion.div
 			initial="hidden"
 			animate="visible"
@@ -127,7 +144,7 @@
 					onclick={previous}
 					class="-my-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309">
 					<span class="sr-only">Previous month</span>
-					<svelte:component this={icons.LeftChevronIcon} class="h-5 w-5" aria-hidden />
+					<svelte:component this={icons.LeftChevronIcon} class="size-5" aria-hidden />
 				</button>
 				<button
 					id="next"
@@ -135,7 +152,7 @@
 					onclick={next}
 					class="-my-1.5 -mr-2 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:enabled:text-gray-500 dark:enabled:text-neutral-309">
 					<span class="sr-only">Next month</span>
-					<svelte:component this={icons.RightChevronIcon} class="h-5 w-5" aria-hidden />
+					<svelte:component this={icons.RightChevronIcon} class="size-5" aria-hidden />
 				</button>
 			</div>
 			<div class="mt-5 grid grid-cols-7 text-center text-xs leading-6">
@@ -155,14 +172,18 @@
 								dayIsStartOfMonth,
 								dayIsStartOfWeek,
 								dayIsEndOfWeek,
+								dayIsBeforeOrEqualToSelected,
+								dayIsBeforeToday,
 							} = {
-								isSelected: day.date === processedDay,
-								dayIsToday: day.date === today,
-								dayIsPartOfMonth: day.date.toPlainYearMonth() === currentMonth,
-								selectedIsSameMonth: processedDay.toPlainYearMonth() === currentMonth,
-								dayIsStartOfMonth: day.date === day.date.toPlainYearMonth().toPlainDate({ day: 1 }),
-								dayIsStartOfWeek: day.date.dayOfWeek === 1,
-								dayIsEndOfWeek: day.date.dayOfWeek === day.date.daysInWeek,
+								isSelected: compareDates(day.date, processedDay) === 0,
+								dayIsToday: compareDates(day.date, today) === 0,
+								dayIsPartOfMonth: compareMonths(day.date, currentMonth) === 0,
+								selectedIsSameMonth: compareMonths(day.date, processedDay) === 0,
+								dayIsStartOfMonth: compareDates(day.date, day.date.toPlainYearMonth().toPlainDate({ day: 1 })) === 0,
+								dayIsStartOfWeek: compareDates(day.date, startOfWeek(day.date)) === 0,
+								dayIsEndOfWeek: compareDates(day.date, endOfWeek(day.date)) === 0,
+								dayIsBeforeOrEqualToSelected: compareDates(day.date, processedDay) <= 0,
+								dayIsBeforeToday: compareDates(day.date, today) < 0,
 							}}
 							<div
 								class={cn('py-1', {
@@ -170,24 +191,25 @@
 										day.indx > 6,
 								})}>
 								<span
-									class={cn('mx-auto flex h-full w-full items-center justify-center', {
-										'bg-accent-400/20': selectedIsSameMonth && day.date <= processedDay,
-										'rounded-e-full': selectedIsSameMonth && day.date <= processedDay && (dayIsEndOfWeek || isSelected),
+									class={cn('mx-auto flex size-full items-center justify-center', {
+										'bg-accent-400/20': selectedIsSameMonth && dayIsBeforeOrEqualToSelected,
+										'rounded-e-full':
+											selectedIsSameMonth && dayIsBeforeOrEqualToSelected && (dayIsEndOfWeek || isSelected),
 										'rounded-s-full':
-											selectedIsSameMonth && day.date <= processedDay && (dayIsStartOfMonth || dayIsStartOfWeek),
+											selectedIsSameMonth && dayIsBeforeOrEqualToSelected && (dayIsStartOfMonth || dayIsStartOfWeek),
 									})}>
 									<a
 										href={`${current.pathname}${
-											((day.date < today || searchFilter) &&
+											((dayIsBeforeToday || searchFilter) &&
 												`?${new URLSearchParams({
-													...(day.date < today && {
+													...(dayIsBeforeToday && {
 														processedDate: day.key,
 													}),
 													...(searchFilter && { searchFilter }),
 												})}`) ||
 											''
 										}`}
-										class={cn('mx-auto flex h-8 w-8 items-center justify-center rounded-full', {
+										class={cn('mx-auto flex size-8 items-center justify-center rounded-full', {
 											'text-muted-foreground': !isSelected && !dayIsToday && !dayIsPartOfMonth,
 											'font-medium': !isSelected && !dayIsToday && dayIsPartOfMonth,
 											'font-semibold ring-1 ring-inset ring-accent-400 dark:ring-accent-500': isSelected,
@@ -199,9 +221,9 @@
 											{Intl.DateTimeFormat(undefined, { day: 'numeric' }).format(day.date)}
 											{#if $calendarMonthTransactions
 												?.filter(({ type }) => type === 'expense')
-												?.some(({ date }) => date === day.date)}
+												?.some(({ date }) => compareDates(date, day.date) === 0)}
 												<div
-													class="absolute -right-1.5 -top-0 mx-auto h-1 w-1 max-w-[0.25rem] rounded-full bg-accent-400">
+													class="absolute -right-1.5 -top-0 mx-auto size-1 max-w-[0.25rem] rounded-full bg-accent-400">
 												</div>
 											{/if}
 										</time>

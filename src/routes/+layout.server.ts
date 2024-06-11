@@ -1,4 +1,4 @@
-import { sleep } from '$lib/utils';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 export async function load({ locals: { session, user }, url: { searchParams } }) {
 	let redirectTo = searchParams.getAll('redirectTo').pop();

@@ -1,8 +1,8 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import type { Snippet, SvelteComponent, ComponentType } from 'svelte';
 	import { navItemIcons } from '$/icons';
+	import type { ComponentType, Snippet, SvelteComponent } from 'svelte';
 
 	const {
 		active,
@@ -13,16 +13,16 @@
 </script>
 
 <a
-	class="group relative flex w-3 items-center space-x-2 rounded-lg transition-colors aria-[current=page]:bg-accent-500 aria-[current=page]:text-white hover:bg-accent-500 hover:text-white md:w-full"
+	class="group aria-[current=page]:bg-accent-500 hover:bg-accent-500 relative flex w-3 items-center space-x-2 rounded-lg transition-colors hover:text-white aria-[current=page]:text-white md:w-full"
 	aria-current={active ? 'page' : undefined}
 	href={route}>
 	<span
 		aria-hidden="true"
-		class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600">
-		<svelte:component this={icon} class="h-6 w-6" height="auto"></svelte:component>
+		class="group-hover:bg-accent-600 group-aria-[current=page]:bg-accent-600 flex items-center rounded-lg p-3 transition-colors group-hover:text-white">
+		<svelte:component this={icon} class="size-6" height="auto" inline />
 	</span>
 	{#if children}
-		<span class="invisible @[12rem]:visible">
+		<span class="invisible @min-[12rem]:visible">
 			{@render children()}
 		</span>
 	{/if}

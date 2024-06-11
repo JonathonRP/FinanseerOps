@@ -5,9 +5,9 @@
 // for information about these interfaces
 // and what to do when importing types
 
-import type { ZodIssue } from 'zod';
 import type { Session } from '@auth/sveltekit';
 import type { AdapterUser } from '@auth/sveltekit/adapters';
+import type { ZodIssue } from 'zod';
 import type { Accounts, Transactions } from './lib/api';
 
 declare global {
@@ -25,9 +25,13 @@ declare global {
 			stack?: any;
 		}
 		interface PageData {
-			processedDay: Temporal.PlainDate;
+			processedDay: string;
 			bankAccounts: Promise<Parameters<Parameters<Accounts['subscribe']>['0']>['0']>;
 			bankTransactions: Promise<Parameters<Parameters<Transactions['subscribe']>['0']>['0']>;
+		}
+
+		interface PageState {
+			subpage: any;
 		}
 		// interface Platform {}
 	}

@@ -1,39 +1,40 @@
 import { createContext } from '$/server/api/context.js';
 import { appRouter, createCallerFactory } from '$/server/api/root.js';
-import { combineLatest, fromEventPattern, takeUntil } from 'rxjs';
-import { events, extend, findBeacon } from 'sveltekit-sse';
+import { combineLatest, fromEventPattern, takeUntil, merge, zip, concat, startWith } from 'rxjs';
+import { produce } from 'sveltekit-sse';
 
 export function POST({ request, ...event }) {
-	const beacon = findBeacon({ request });
-	if (beacon) {
-		console.log('Stream extended.');
-		return extend({ beacon });
-	}
 	const api = createCallerFactory(appRouter)(createContext({ request, ...event }));
 	const abort = fromEventPattern(
 		(handle) => request.signal.addEventListener('abort', handle),
 		(handle) => request.signal.removeEventListener('abort', handle)
 	);
 
-	return events({
-		request,
-		headers: {
-			'X-Accel-Buffering': 'no',
-		},
-		async start({ emit, lock }) {
+	return produce(
+		async function start({ emit, lock }) {
 			try {
 				await new Promise(async (resolve, reject) => {
 					const notifications = await api.user.notifications();
 					const notificationsUnreadCount = await api.user.unreadNotificationsCount();
 					const latestNotification = await api.user.latestNotification();
 
-					combineLatest([notifications, notificationsUnreadCount])
+					return merge(combineLatest([notifications, notificationsUnreadCount]), latestNotification)
 						.pipe(takeUntil(abort))
 						.subscribe({
-							next: ([messages, unreadCount]) => {
+							next: (result) => {
 								let error;
-								({ error } = emit('unreadCount', JSON.stringify(unreadCount)));
-								({ error } = emit('messages', JSON.stringify(messages)));
+								let messages;
+								let unreadCount;
+								let latestNotification;
+								Array.isArray(result) ? ([messages, unreadCount] = result) : (latestNotification = result);
+
+								if (messages && unreadCount) {
+									({ error } = emit('unreadCount', JSON.stringify(unreadCount)));
+									({ error } = emit('messages', JSON.stringify(messages)));
+								}
+								if (latestNotification) {
+									({ error } = emit('latestNotification', JSON.stringify(latestNotification)));
+								}
 								if (error) {
 									reject(error);
 								}
@@ -42,17 +43,6 @@ export function POST({ request, ...event }) {
 								resolve(undefined);
 							},
 						});
-					latestNotification.pipe(takeUntil(abort)).subscribe({
-						next: (message) => {
-							const { error } = emit('message', JSON.stringify(message));
-							if (error) {
-								reject(error);
-							}
-						},
-						complete: () => {
-							resolve(undefined);
-						},
-					});
 				});
 			} catch (err) {
 				lock.set(false);
@@ -66,5 +56,10 @@ export function POST({ request, ...event }) {
 				console.log('Stream canceled.');
 			};
 		},
-	});
+		{
+			headers: {
+				'X-Accel-Buffering': 'no',
+			},
+		}
+	);
 }

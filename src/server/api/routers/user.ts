@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { coerce, object } from 'zod';
-import { concat, shareReplay, switchMap } from 'rxjs';
+import { concat, shareReplay, switchMap, map } from 'rxjs';
 import { notificationsChanges, notificationsInserted } from '$/server/db/events';
 import { familyLeaderProcedure, procedure, router } from '../trpc';
 import { users, notifications, buxferAccounts } from '../../db/schema';
@@ -77,13 +77,13 @@ export const userRouter = router({
 	notifications: procedure.subscription(({ ctx }) =>
 		concat(
 			ctx.db.query.notifications.findMany({
-				where: (notifs, { eq }) => eq(notifs.recipientId, ctx.user?.id ?? ''),
+				where: sql`${notifications.recipientId} = ${ctx.user?.id ?? ''}`,
 				orderBy: (notifs, { desc }) => [desc(notifs.createdOn)],
 			}),
 			notificationsChanges.pipe(
 				switchMap(() =>
 					ctx.db.query.notifications.findMany({
-						where: (notifs, { eq }) => eq(notifs.recipientId, ctx.user?.id ?? ''),
+						where: sql`${notifications.recipientId} = ${ctx.user?.id ?? ''}`,
 						orderBy: (notifs, { desc }) => [desc(notifs.createdOn)],
 					})
 				)
@@ -97,14 +97,7 @@ export const userRouter = router({
 
 	latestNotification: procedure.subscription(({ ctx }) =>
 		notificationsInserted.pipe(
-			switchMap(() =>
-				ctx.db.query.notifications
-					.findMany({
-						where: (notifs, { eq }) => eq(notifs.recipientId, ctx.user?.id ?? '') && eq(notifs.seen, false),
-						orderBy: (notifs, { desc }) => [desc(notifs.createdOn)],
-					})
-					.then((res) => res[0].message)
-			),
+			map(({ new: newNotification }) => newNotification.message as string),
 			shareReplay(1)
 		)
 	),

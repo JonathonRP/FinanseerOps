@@ -1,14 +1,14 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { Chart, Svg, Group, LinearGradient, Arc, Text } from 'layerchart';
+	import { twEasing } from '$/lib/animations/ease';
+	import { cn } from '$/lib/utils';
+	import { cubicBezier } from '$/lib/utils/cubic-bezier';
 	import { Motion } from '$lib/components';
 	import type { ClassValue } from 'clsx';
+	import { Arc, Chart, Group, LinearGradient, Svg, Text, Tooltip } from 'layerchart';
 	import { tick } from 'svelte';
 	import { MotionValue } from 'svelte-motion';
-	import { twEasing } from '$/lib/animations/ease';
-	import { cubicBezier } from '$/lib/utils/cubic-bezier';
-	import { cn } from '$/lib/utils';
 
 	const {
 		data,
@@ -47,13 +47,13 @@
 
 <Motion.div
 	initial={{ opacity: 0 }}
-	animate={data?.find((data) => data.main)?.value ? { opacity: 1 } : { opacity: 0 }}
-	class={cn('h-full w-full p-4 opacity-0 @container', restProps.class)}>
-	<Chart Svg>
-		<Svg viewBox="0 0 74 42">
-			<Group center y={32}>
-				{#each data as { value, main, label, seriesColor }, indx (label)}
-					{@const padding = 3.5 * indx}
+	animate={data?.length ? { opacity: 1 } : { opacity: 0 }}
+	class={cn('size-full p-4 @container', restProps.class)}>
+	<Chart {data} Svg let:data={chartData} let:tooltip>
+		<Svg>
+			<Group center>
+				{#each chartData as { value, main, label, seriesColor }, indx (label)}
+					{@const padding = 5 * indx}
 					{#if main}
 						<LinearGradient
 							stops={[seriesColor, `color-mix(in oklch, ${seriesColor} 45%, var(--tw-gradient-to))`]}
@@ -66,10 +66,12 @@
 								outerRadius={interiorRadius + innerSize - padding}
 								innerRadius={radis - innerSize * indx - innerSize * indx - padding}
 								cornerRadius={8}
-								let:value={clampedValue}
 								tweened={{ duration: 800, easing: cubicBezier(...twEasing) }}
 								fill={url}
-								track={{ class: 'fill-gray-900/10 dark:fill-zinc-100/10' }}>
+								track={{ class: 'fill-muted-foreground/10 stroke-muted-foreground/10' }}
+								on:pointermove={(e) => tooltip?.show(e, { value, label })}
+								on:pointerleave={(e) => tooltip?.hide()}
+								let:value={clampedValue}>
 								<Text
 									value={Math.round(clampedValue) + '%'}
 									textAnchor="middle"
@@ -88,11 +90,68 @@
 							cornerRadius={8}
 							tweened={{ duration: 800, delay: 450 * indx, easing: cubicBezier(...twEasing) }}
 							fill={seriesColor}
-							track={{ class: 'fill-gray-900/10 dark:fill-zinc-100/10' }}>
+							track={{ class: 'fill-muted-foreground/10 stroke-muted-foreground/10' }}
+							on:pointermove={(e) => tooltip?.show(e, { value, label })}
+							on:pointerleave={(e) => tooltip?.hide()}>
 						</Arc>
 					{/if}
 				{/each}
 			</Group>
 		</Svg>
+		<Tooltip let:data x="data" y="data">
+			<span class="fixed z-10 h-14 w-max rounded-lg bg-slate-500 px-2 text-foreground shadow-lg">
+				<div class="mask-legend h-12 overflow-hidden scroll-smooth py-4">
+					{#each chartData as dataPoint (dataPoint.label)}
+						<div class="legend-item flex scroll-my-1 items-center gap-2 text-xs">
+							<span class="inline-block size-4 rounded-full" style:background={dataPoint.seriesColor}></span>
+							{dataPoint.label}: {dataPoint.value}%
+						</div>
+					{/each}
+				</div>
+			</span>
+		</Tooltip>
 	</Chart>
 </Motion.div>
+
+<!-- <Motion.span
+	class="fixed -left-4 -top-5 z-10 h-14 w-max rounded-lg bg-slate-500 px-2 opacity-0 shadow-lg"
+	style={{
+		translateX: hoverX,
+		translateY: hoverY,
+		// originX: useMotionTemplate`${mousePositionX ?? useMotionValue(0)}px`,
+		originY: 'bottom',
+	}}
+	animate={{
+		opacity: Number(hover),
+		scaleX: Number(hover),
+		scaleY: Number(hover),
+		transition: {
+			duration: 0.4,
+			opacity: {
+				duration: 0.8,
+			},
+		},
+	}}>
+	<div class="mask-legend h-12 overflow-hidden scroll-smooth py-4">
+		{#if hover}
+			{#each data as dataPoint (dataPoint.label)}
+				<div class={cn('legend-item flex scroll-my-1 items-center gap-2 text-sm')}>
+					<span class="inline-block size-4" style:background={dataPoint.seriesColor}></span>
+					{dataPoint.label}: {dataPoint.value}%
+				</div>
+			{/each}
+		{/if}
+	</div>
+</Motion.span>
+
+<style>
+	.mask-legend {
+		mask-image: linear-gradient(transparent, black 45%, black 55%, transparent 100%);
+	}
+</style> -->
+
+<style>
+	.mask-legend {
+		mask-image: linear-gradient(transparent, black 45%, black 55%, transparent 100%);
+	}
+</style>

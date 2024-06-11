@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import path from 'path';
-import { array, number, object, string, union, z, coerce, date, boolean, custom } from 'zod';
+import { array, number, object, string, union, z, coerce, boolean, custom } from 'zod';
 import { fromFetch } from 'rxjs/fetch';
 import {
 	type Observable,
@@ -21,6 +21,14 @@ import {
 	concat,
 } from 'rxjs';
 import * as Sentry from '@sentry/sveltekit';
+
+export const temporal = {
+	instant: () => custom<Temporal.Instant>((v) => Temporal.Instant.from(v)),
+
+	zonedDateTime: () => custom<Temporal.ZonedDateTime>((v) => Temporal.ZonedDateTime.from(v)),
+
+	plainDate: () => custom<Temporal.PlainDate>((v) => Temporal.PlainDate.from(v)),
+};
 
 const DateFormat = 'yyyy-MM-dd';
 
@@ -45,10 +53,9 @@ const transactionsPage = object({
 			id: number(),
 			description: string(),
 			isPending: boolean(),
-			date: coerce
-				.string()
-				.date()
-				.transform((arg) => Temporal.PlainDate.from(arg)),
+			date: union([temporal.plainDate(), coerce.string().date()])
+				.transform((date) => Temporal.PlainDate.from(date))
+				.pipe(coerce.string().date().pipe(temporal.plainDate())),
 			type: string(),
 			amount: number(),
 			accountId: number(),
@@ -58,7 +65,7 @@ const transactionsPage = object({
 	totalRecords: number().default(0),
 	totalPages: number().default(0),
 	next: number().optional(),
-	current: number(),
+	current: union([number(), string()]).pipe(coerce.number()),
 	previous: number().optional(),
 }).transform(({ totalTransactionsCount, current, transactions }) => ({
 	transactions,
@@ -74,7 +81,7 @@ export const transactions = array(
 		id: number(),
 		description: string(),
 		isPending: boolean(),
-		date: custom<Temporal.PlainDate>((val) => Temporal.PlainDate.from(val)),
+		date: temporal.plainDate(),
 		type: string(),
 		amount: number(),
 		accountId: number(),
@@ -137,7 +144,7 @@ export const login = object({
 export const transactionsQueryParams = object({
 	startDate: custom<Temporal.PlainDate>((val) => Temporal.PlainDate.from(val)).pipe(coerce.string()),
 	endDate: custom<Temporal.PlainDate>((val) => Temporal.PlainDate.from(val)).pipe(coerce.string()),
-	page: number().nullish().default(1).pipe(coerce.string()),
+	page: union([number(), string()]).nullish().default(1).pipe(coerce.string()),
 });
 
 // export const tokens = object({
@@ -269,7 +276,7 @@ function buxferProxy(
 				...(err?.stack && { stack: err.stack }),
 			}));
 		}),
-		tap(() => console.log('fetch: ', endpoint, Temporal.Now.zonedDateTime(Temporal.Now.timeZoneId()).toLocaleString())),
+		tap(() => console.log('fetch: ', endpoint, Temporal.Now.zonedDateTimeISO().toLocaleString())),
 		share()
 	);
 }
@@ -343,7 +350,7 @@ export function client<T extends BuxferRequest>(
 			return buxferProxy(url, { token: token.parse(access) }).pipe(
 				catchError((err) => throwError(() => err)),
 				map(({ accounts: accountsData }) => accounts.parse(accountsData)),
-				tap(() => console.log('client: ', url, Temporal.Now.zonedDateTime(Temporal.Now.timeZoneId()).toLocaleString()))
+				tap(() => console.log('client: ', url, Temporal.Now.zonedDateTimeISO().toLocaleString()))
 				// delay(pollingRate),
 				// repeat()
 			);
@@ -387,7 +394,7 @@ export function client<T extends BuxferRequest>(
 					return concat(transactions$, next$);
 				}),
 				reduce((acc, curr) => acc.concat(curr)),
-				tap(() => console.log('client: ', url, Temporal.Now.zonedDateTime(Temporal.Now.timeZoneId()).toLocaleString()))
+				tap(() => console.log('client: ', url, Temporal.Now.zonedDateTimeISO().toLocaleString()))
 				// connect((shared$) =>
 				// 	concat(shared$,
 				// 	defer(() => shared$).pipe(
@@ -412,7 +419,7 @@ function polling<T>(
 		const polling$ = timer(0, pollInterval).pipe(
 			switchMap(() => source$),
 			takeWhile(active, true),
-			tap(() => console.log('polling: ', Temporal.Now.zonedDateTime(Temporal.Now.timeZoneId()).toLocaleString()))
+			tap(() => console.log('polling: ', Temporal.Now.zonedDateTimeISO().toLocaleString()))
 		);
 		return emitOnlyLast ? polling$.pipe(last()) : polling$;
 	};

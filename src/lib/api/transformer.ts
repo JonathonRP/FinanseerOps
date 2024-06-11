@@ -1,19 +1,4 @@
-import { custom } from 'zod';
 import superjson from 'superjson';
-
-/*
-  "Zod extras", use like z.
-  
-   date: zx.instant()
-*/
-
-export const zx = {
-	instant: () => custom<Temporal.Instant>((v) => Temporal.Instant.from(v)),
-
-	zonedDateTime: () => custom<Temporal.ZonedDateTime>((v) => Temporal.ZonedDateTime.from(v)),
-
-	plainDate: () => custom<Temporal.PlainDate>((v) => Temporal.PlainDate.from(v)),
-};
 
 superjson.registerCustom<Temporal.Instant, string>(
 	{

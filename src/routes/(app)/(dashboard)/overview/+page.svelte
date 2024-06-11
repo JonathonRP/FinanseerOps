@@ -1,10 +1,11 @@
 <svelte:options runes={true} />
 
 <script lang="ts">
-	import { useDragControls, type Variants } from 'svelte-motion';
+	import { icons } from '$/icons';
+	import { cn } from '$/lib/utils';
 	import { ease } from '$lib/animations';
 	import { Reorder } from '$lib/components/Reorder';
-	import { icons } from '$/icons';
+	import { useDragControls, type Variants } from 'svelte-motion';
 	import { defaultWidgets, denseWidgets } from './widgets';
 	import SpendingBehaviorWidget from './widgets/SpendingBehaviorWidget.svelte';
 
@@ -58,36 +59,42 @@
 
 {#if mdState.isMobile}
 	<SpendingBehaviorWidget />
-{/if}
-
-<Reorder.Group
-	layout
-	onReorder={(keys) => {
-		dashboardUserLayout.sort((a, b) => keys.indexOf(a) - keys.indexOf(b));
-	}}
-	values={dashboardUserLayout}
-	initial="hidden"
-	animate="visible"
-	exit={{ opacity: 0, zIndex: 0, position: 'fixed' }}
-	transition={{ duration: 0.8, staggerChildren: 0.35 }}
-	class="relative hidden flex-wrap items-center justify-center gap-4 overflow-visible pb-3 scrollbar-none sm:items-start sm:justify-start md:flex md:max-w-none">
-	{#each dashboardUserLayout as widget (widget)}
-		{@const dragControls = useDragControls()}
-		{@const               startDrag = (event: MouseEvent | TouchEvent | PointerEvent) => {
+{:else}
+	<Reorder.Group
+		layout
+		onReorder={(keys) => {
+			dashboardUserLayout.sort((a, b) => keys.indexOf(a) - keys.indexOf(b));
+		}}
+		values={dashboardUserLayout}
+		initial="hidden"
+		animate="visible"
+		exit={{ opacity: 0, zIndex: 0, position: 'fixed' }}
+		transition={{ duration: 0.8, staggerChildren: 0.35 }}
+		class="relative mx-auto hidden grid-cols-1 gap-4 overflow-visible pb-3 md:grid md:max-w-screen-xl md:grid-cols-[repeat(auto-fill,_minmax(250px,_1fr))]">
+		{#each dashboardUserLayout as widget (widget)}
+			{@const dragControls = useDragControls()}
+			{@const startDrag = (event: PointerEvent) => {
 				dragControls.start(event);
 			}
 		}
-		<Reorder.Item drag dragListener={false} {dragControls} value={widget} variants={fadeUp} class="relative">
-			<svelte:component this={widgets.get(widget)}></svelte:component>
-			<span
-				class="absolute right-2 top-2 cursor-grab rounded-sm bg-background bg-opacity-25 active:cursor-grabbing dark:mix-blend-overlay"
-				onpointerdown={(e) => {
-					e.preventDefault();
-					e.stopPropagation();
-					startDrag(e);
-				}}>
-				<svelte:component this={icons.ReorderIcon} height="auto" class="h-5 w-5"></svelte:component>
-			</span>
-		</Reorder.Item>
-	{/each}
-</Reorder.Group>
+			<Reorder.Item
+				drag
+				dragListener={false}
+				{dragControls}
+				value={widget}
+				variants={fadeUp}
+				class={cn('relative h-full', { 'lg:row-span-2': widget === 'categories' })}>
+				<svelte:component this={widgets.get(widget)} />
+				<span
+					class="absolute right-2 top-2 cursor-grab rounded-sm bg-background bg-opacity-25 active:cursor-grabbing dark:mix-blend-overlay"
+					onpointerdown={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						startDrag(e);
+					}}>
+					<svelte:component this={icons.ReorderIcon} height="auto" class="size-5" />
+				</span>
+			</Reorder.Item>
+		{/each}
+	</Reorder.Group>
+{/if}

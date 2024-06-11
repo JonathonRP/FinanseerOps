@@ -1,10 +1,10 @@
-import { defineConfig, loadEnv } from 'vite';
-import { sveltekit } from '@sveltejs/kit/vite';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import Icons from 'unplugin-icons/vite';
 import { sentrySvelteKit } from '@sentry/sveltekit';
-// import basicSsl from '@vitejs/plugin-basic-ssl';
+import { sveltekit } from '@sveltejs/kit/vite';
+import tailwindcss from '@tailwindcss/vite';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import 'temporal-polyfill/global';
+import Icons from 'unplugin-icons/vite';
+import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ command, mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
@@ -12,9 +12,6 @@ export default defineConfig(({ command, mode }) => {
 		define: {
 			'process.env': env,
 		},
-		// optimizeDeps: {
-		// 	exclude: ['temporal-polyfill/global'],
-		// },
 		server: {
 			port: 5000,
 			strictPort: true,
@@ -29,12 +26,8 @@ export default defineConfig(({ command, mode }) => {
 			//   "/api": "https://www.buxfer.com",
 			// },
 		},
-		// esbuild: {
-		// 	define: {
-		// 		Temporal: 'Temporal',
-		// 	},
-		// },
 		plugins: [
+			basicSsl(),
 			sentrySvelteKit({
 				sourceMapsUploadOptions: {
 					org: 'self-qw6',
@@ -43,7 +36,7 @@ export default defineConfig(({ command, mode }) => {
 			}),
 			sveltekit(),
 			Icons({ compiler: 'svelte', autoInstall: true }),
-			nodePolyfills({ include: ['stream'] }),
+			tailwindcss(),
 		],
 	};
 });

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Switch as SwitchPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils';
+	import { Switch as SwitchPrimitive } from 'bits-ui';
 
 	type $$Props = SwitchPrimitive.Props;
 	type $$Events = SwitchPrimitive.Events;
@@ -21,6 +21,6 @@
 	on:keydown>
 	<SwitchPrimitive.Thumb
 		class={cn(
-			'pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0'
+			'pointer-events-none block size-5 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0'
 		)}></SwitchPrimitive.Thumb>
 </SwitchPrimitive.Root>

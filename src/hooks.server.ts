@@ -1,11 +1,11 @@
+import { ensureLoggedIn, formatError, returnTo } from '$lib/utils';
 import * as Sentry from '@sentry/sveltekit';
 import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { returnTo, formatError, ensureLoggedIn } from '$lib/utils';
 
-import { setupSidecar } from '@spotlightjs/spotlight/sidecar';
-import { auth as authjs, api_keys } from './server';
 import { dev } from '$app/environment';
+import { setupSidecar } from '@spotlightjs/spotlight/sidecar';
+import { api_keys, auth as authjs } from './server';
 
 Sentry.init({
 	dsn: 'https://997785fc8294fedf8043d05970029853@o4506588389900288.ingest.sentry.io/4506588421095424',

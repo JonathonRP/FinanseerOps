@@ -17,7 +17,7 @@ export const db = drizzle(connection, { schema });
 export type DB = typeof db;
 export type Users = InferInsertModel<typeof schema.users>;
 export type Accounts = InferInsertModel<typeof schema.accounts>;
-export type Notification = InferSelectModel<typeof schema.notifications>;
+export type Notifications = InferSelectModel<typeof schema.notifications>;
 
 export const user = createSelectSchema(schema.users);
 export const buxferAccount = createInsertSchema(schema.buxferAccounts);

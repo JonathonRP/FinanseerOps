@@ -4,29 +4,30 @@
 	import { cn, intlFormatDistance, merge, today } from '$lib/utils';
 	import { SignOut } from '@auth/sveltekit/components';
 
+	import { Motion } from '$lib/components';
 	import toast from 'svelte-french-toast';
 	import { AnimatePresence } from 'svelte-motion';
-	import { Motion } from '$lib/components';
 	import { source } from 'sveltekit-sse';
 
 	import logo from '$lib/images/svelte-logo.svg';
 	// import dashboard from '@iconify/icons-tabler/chart-infographic';
 
-	import type { Snippet } from 'svelte';
-	import { Form } from '$lib/components/ui/form';
 	import { icons, navItemIcons } from '$/icons';
-	import { userSettings } from '$lib/stores/userSettings.svelte';
-	import { api } from '$lib/api';
-	import AnimatedNumber from '$lib/components/AnimatedNumber.svelte';
-	import { ease } from '$/lib/animations';
-	import { Select } from '$lib/components/ui/select';
-	import { Switch } from '$lib/components/ui/switch';
+	import { Input } from '$/lib/components/ui/input';
+	import { Label } from '$/lib/components/ui/label';
+	import type { Notifications } from '$/server/db';
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
-	import NavLink from './NavLink.svelte';
+	import { api } from '$lib/api';
+	import AnimatedNumber from '$lib/components/AnimatedNumber.svelte';
+	import { Form } from '$lib/components/ui/form';
+	import { Select } from '$lib/components/ui/select';
+	import { Switch } from '$lib/components/ui/switch';
+	import { userSettings } from '$lib/stores/userSettings.svelte';
+	import type { Snippet } from 'svelte';
 	import DesktopMenuItem from './DesktopMenuItem.svelte';
 	import Modal from './Modal.svelte';
-	import type { Notification } from '$/server/db';
+	import NavLink from './NavLink.svelte';
 
 	type ModalState =
 		| {
@@ -71,10 +72,10 @@
 
 	const { pathname, origin, search } = $derived($page.url);
 	const current = $derived({ pathname, origin, search });
-	const { processedDate, searchFilter, bankAccounts } = $derived($page.data);
+	const { processedDay, searchFilter, bankAccounts } = $derived($page.data);
 
 	const appRoutes = [{ route: `overview` }] as const;
-	const preserveState = $derived(processedDate || searchFilter ? current.search : undefined);
+	const preserveState = $derived(processedDay || searchFilter ? current.search : undefined);
 	const links = $derived(appRoutes.map(({ route }) => ({ route: `${base}/${route}${preserveState ?? ''}` }) as const));
 
 	const routes = $derived(merge([{ icon: navIcons.ChartHistogram, label: 'dashboard' }] as const, links));
@@ -89,8 +90,8 @@
 		},
 	});
 	const count = connection.select('unreadCount').json<string>();
-	const notifications = connection.select('messages').json<Notification[]>();
-	const notification = connection.select('message').json<Notification>();
+	const notifications = connection.select('messages').json<Notifications[]>();
+	const notification = connection.select('latestNotification').json<string>();
 
 	const useBauhaus = $derived(userSettings.useBauhaus);
 	const userImage = $derived(userSettings.genertateImage(user));
@@ -213,12 +214,12 @@
 				toggleInvitation(closeModal);
 				toast.success(`Sent invitation to ${data.get('email')}.`);
 			}}
-			class="flex w-full items-center border-b py-2 transition-colors focus-within:border-accent-500 hover:border-accent-400">
+			class="focus-within:border-accent-500 hover:border-accent-400 flex w-full items-center border-b py-2 transition-colors">
 			<svelte:component this={icons.PlusUserIcon} class="mr-2 flex h-6 w-12 items-center" height="auto" inline />
 			<input
 				id="email"
 				name="email"
-				class="mr-3 w-full appearance-none border-none bg-transparent px-2 py-1 leading-tight focus:outline-none focus:ring-0"
+				class="mr-3 w-full appearance-none border-none bg-transparent py-1 px-2 leading-tight focus:ring-0 focus:outline-none"
 				type="email"
 				inputmode="email"
 				onblur={handleBlurOrClick}
@@ -227,14 +228,14 @@
 				required
 				aria-label="email"
 				disabled={submitting} />
-			<button type="button" formmethod="dialog" value="cancel" class="absolute right-0 top-0">
+			<button type="button" formmethod="dialog" value="cancel" class="absolute top-0 right-0">
 				<span class="flex items-center justify-center">
-					<svelte:component this={icons.CloseIcon} class="h-6 w-6" height="auto" inline />
+					<svelte:component this={icons.CloseIcon} class="size-6" height="auto" inline />
 				</span>
 			</button>
 			<button
 				type="submit"
-				class="item-center flex flex-shrink-0 justify-center rounded-full border-4 border-accent-500 bg-accent-500 px-2 py-1 text-sm text-white transition-colors hover:border-accent-600 hover:bg-accent-600 focus:outline-none focus:ring focus:ring-accent-600 focus:ring-offset-2 disabled:border-accent-700 disabled:bg-accent-700 dark:focus:ring-offset-neutral-808"
+				class="item-center flex-shrink-0 border-accent-500 bg-accent-500 hover:border-accent-600 hover:bg-accent-600 focus:ring-accent-600 disabled:border-accent-700 disabled:bg-accent-700 dark:focus:ring-offset-neutral-808 flex justify-center rounded-full border-4 py-1 px-2 text-sm text-white transition-colors focus:ring focus:ring-offset-2 focus:outline-none"
 				aria-busy={submitting}
 				disabled={!valid || submitting}>
 				<svelte:component this={icons.LoadingIcon} class="{submitting ? 'flex' : 'hidden'} fixed" inline />
@@ -244,12 +245,12 @@
 	</dialog>
 {/if}
 <!-- side-bar -->
-<aside class="flex flex-shrink-0 transition-all">
+<aside class="flex-shrink-0 flex transition-all">
 	<div class="fixed inset-0 z-10 hidden w-16 md:flex" class:sm:hidden={accountState.status === 'closed'} />
 	<!-- Mobile bottom bar -->
 	<nav
 		aria-label="Options"
-		class="shadow-t fixed inset-x-0 bottom-0 z-10 flex items-center justify-between rounded-t-2xl bg-white px-3 py-2 md:hidden dark:bg-gray-800 dark:shadow-neutral-309/20">
+		class="shadow-t dark:shadow-neutral-309/20 fixed inset-x-0 bottom-0 z-10 flex items-center justify-between rounded-t-2xl bg-white py-2 px-3 md:hidden dark:bg-gray-800">
 		<!-- Links -->
 		<ul class="flex-1 space-x-2 overflow-hidden hover:overflow-auto">
 			{#each routes as { icon, route, label }, id (id)}
@@ -265,9 +266,9 @@
 				<button
 					type="button"
 					onclick={toggleInvitation()}
-					class="rounded-lg opacity-80 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-808">
+					class="focus-visible:ring-accent-600 dark:focus-visible:ring-offset-neutral-808 rounded-lg opacity-80 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none">
 					<span class="flex items-center justify-center rounded-lg p-1 shadow-md">
-						<svelte:component this={icons.PlusUserIcon} class="h-6 w-6" height="auto" inline />
+						<svelte:component this={icons.PlusUserIcon} class="size-6" height="auto" inline />
 					</span>
 					<span class="sr-only">expand invitation</span>
 				</button>
@@ -275,12 +276,12 @@
 			<button
 				type="button"
 				onclick={toggleNotifications()}
-				class="rounded-lg opacity-80 shadow-sm transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white @[5rem]:mx-4 @[5rem]:w-11/12 @[5rem]:space-x-2 dark:shadow-neutral-600 dark:focus-visible:ring-offset-neutral-808">
-				<span class="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg shadow-md">
+				class="focus-visible:ring-accent-600 dark:focus-visible:ring-offset-neutral-808 rounded-lg opacity-80 shadow-sm transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none @min-[5rem]:mx-4 @min-[5rem]:w-11/12 @min-[5rem]:space-x-2 dark:shadow-neutral-600">
+				<span class="flex-shrink-0 relative flex size-10 items-center justify-center rounded-lg shadow-md">
 					<svelte:component this={icons.BellIcon} class="h-8 w-6" height="auto" inline />
 					{#if $count && Number($count) > 0}
 						<span
-							class="absolute right-0.5 top-1.5 flex items-center justify-center overflow-hidden rounded-lg bg-accent-400 px-1 ring-2 ring-slate-200 ring-offset-1 ring-offset-neutral-808 dark:ring-neutral-808">
+							class="bg-accent-400 ring-offset-neutral-808 dark:ring-neutral-808 absolute top-1.5 right-0.5 flex items-center justify-center overflow-hidden rounded-lg px-1 ring-2 ring-slate-200 ring-offset-1">
 							<AnimatedNumber value={$count} class="text-[10px] font-black leading-tight" />
 						</span>
 					{/if}
@@ -290,8 +291,8 @@
 			<button
 				type="button"
 				onclick={toggleAccount()}
-				class="rounded-lg opacity-80 shadow-sm transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:shadow-neutral-600 dark:focus-visible:ring-offset-neutral-808">
-				<img class="h-8 w-8 rounded-lg shadow-md" src={userImage} alt="user profile" />
+				class="focus-visible:ring-accent-600 dark:focus-visible:ring-offset-neutral-808 rounded-lg opacity-80 shadow-sm transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white focus-visible:outline-none dark:shadow-neutral-600">
+				<img class="size-8 rounded-lg shadow-md" src={userImage} alt="user profile" />
 				<span class="sr-only">User menu</span>
 			</button>
 		</div>
@@ -300,16 +301,16 @@
 	<!-- Left mini bar -->
 	<nav
 		aria-label="Options"
-		class="fixed inset-0 z-20 hidden w-16 flex-shrink-0 flex-col items-center py-4 transition-[width] duration-300 @container md:static md:flex dark:shadow-neutral-309/20"
+		class="flex-shrink-0 dark:shadow-neutral-309/20 @container fixed inset-0 z-20 hidden w-16 flex-col items-center py-4 transition-[width] duration-300 md:static md:flex"
 		class:w-64={menuState.open}
 		class:sm:w-72={menuState.open}
 		class:rounded-none={false}
 		class:border-r-0={false}
 		class:shadow-none={false}>
 		<!-- Logo -->
-		<div class="flex flex-shrink-0 px-4 py-4">
-			<h2 class="text-xl font-bold @2xs:hidden">fz</h2>
-			<h2 class="hidden text-xl font-bold @[5rem]:flex @[5rem]:flex-1 @[5rem]:justify-center">{name}</h2>
+		<div class="flex-shrink-0 flex py-4 px-4">
+			<h2 class="text-xl font-bold @min-[15rem]:hidden">fz</h2>
+			<h2 class="hidden text-xl font-bold @min-[5rem]:flex @min-[5rem]:flex-1 @min-[5rem]:justify-center">{name}</h2>
 		</div>
 		<div class="flex w-full flex-1 flex-col items-center space-y-3 p-2">
 			<!-- Menu button -->
@@ -329,7 +330,7 @@
 				</svg>
 			</button> -->
 			<!-- Links -->
-			<ul class="w-full flex-1 space-y-2 @[6rem]:px-4">
+			<ul class="w-full flex-1 space-y-2 @min-[6rem]:px-4">
 				{#each routes as { icon, route, label }, id (id)}
 					<li>
 						<NavLink active={current.pathname.includes(route)} {icon} {route}>
@@ -342,26 +343,26 @@
 			{#if user?.role === 'admin'}
 				<DesktopMenuItem label="invintation" ariaLabel="expand invitation" onclick={toggleInvitation()}>
 					<span class="flex items-center p-3">
-						<svelte:component this={icons.PlusUserIcon} class="h-6 w-6" height="auto" inline />
+						<svelte:component this={icons.PlusUserIcon} class="size-6" height="auto" inline />
 					</span>
 				</DesktopMenuItem>
 			{/if}
 		</div>
 		<div class="mt-2 flex w-full flex-col items-center justify-between gap-2 px-2">
 			<DesktopMenuItem onclick={toggleNotifications()} label="notifications" ariaLabel="Toggle notifications">
-				<span class="relative flex items-center px-[0.688rem] py-2">
+				<span class="relative flex items-center py-2 px-[0.688rem]">
 					<svelte:component this={icons.BellIcon} class="h-8 w-[26px]" height="auto" inline />
 					{#if $count && Number($count) > 0}
 						<span
-							class="absolute right-2 top-3 flex items-center justify-center overflow-hidden rounded-lg bg-accent-400 px-1 ring-2 ring-slate-200 ring-offset-1 ring-offset-neutral-808 dark:ring-neutral-808">
+							class="bg-accent-400 ring-offset-neutral-808 dark:ring-neutral-808 absolute top-3 right-2 flex items-center justify-center overflow-hidden rounded-lg px-1 ring-2 ring-slate-200 ring-offset-1">
 							<AnimatedNumber value={$count} class="text-[10px] font-normal leading-tight" />
 						</span>
 					{/if}
 				</span>
 			</DesktopMenuItem>
 			<DesktopMenuItem onclick={toggleAccount()} label={user.name ?? 'User Account'} ariaLabel="User menu">
-				<span class="flex flex-shrink-0 items-center rounded-lg p-0.5">
-					<img class="h-11 w-11" src={userImage} alt="user profile" />
+				<span class="flex-shrink-0 relative flex items-center rounded-lg p-0.5">
+					<img class="size-11" src={userImage} alt="user profile" />
 				</span>
 			</DesktopMenuItem>
 		</div>
@@ -371,28 +372,26 @@
 		<div aria-label="User Account Settings" class="flex h-full flex-col md:px-4">
 			<div class="flex flex-1 flex-col py-10">
 				<!-- Account -->
-				<div class="flex flex-shrink-0 items-center justify-center">
-					<button type="button" class="h-20 w-20 rounded-full">
+				<div class="flex-shrink-0 flex items-center justify-center">
+					<button type="button" class="size-20 rounded-full">
 						<img src={userImage} alt="user profile" />
 					</button>
 				</div>
 
 				<!-- UserSetting -->
-				<div class="flex flex-shrink-0 px-4 py-2">
+				<div class="flex-shrink-0 flex pt-2 px-4">
 					<Form.Root
 						method="post"
 						action="/user?/update"
 						values={(({
 								name: username,
 								widgetStyle,
-								permittedBankAccounts,
 								enableNotifications,
 								emailRate,
 								inAppRate,
-							}: Partial<{ name: string | null, widgetStyle: 'simple' | 'dense' | null, permittedBankAccounts: number[] | null, enableNotifications: boolean | null, emailRate: 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'bi-monthly' | null, inAppRate: 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'bi-monthly' | null }>) => ({
+							}: Partial<{ name: string | null, widgetStyle: 'simple' | 'dense' | null, enableNotifications: boolean | null, emailRate: 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'bi-monthly' | null, inAppRate: 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | 'bi-monthly' | null }>) => ({
 								username,
 								widgetStyle,
-								permittedBankAccounts,
 								enableNotifications,
 								emailRate,
 								inAppRate,
@@ -401,7 +400,6 @@
 							if (
 								values?.username === user?.name &&
 								values?.widgetStyle === user?.widgetStyle &&
-								values?.permittedBankAccounts === user?.permittedBankAccounts &&
 								values?.enableNotifications === user?.enableNotifications &&
 								values?.emailRate === user?.emailRate &&
 								values?.inAppRate === user?.inAppRate
@@ -409,7 +407,6 @@
 								const errorMessage = 'No changes to submit.';
 								errors.username = errorMessage;
 								errors.widgetStyle = errorMessage;
-								errors.permittedBankAccounts = errorMessage;
 								errors.enableNotifications = errorMessage;
 								errors.emailRate = errorMessage;
 								errors.inAppRate = errorMessage;
@@ -444,94 +441,72 @@
 							toast.success(`Successfully updated.`);
 						}}
 						class="w-full space-y-6">
-						{#snippet children({ formData, valid, submitting, handleInput, handleBlurOrClick })}
+						{#snippet children({ formData, handleBlurOrClick, handleInput, submitting, valid })}
 							<input
 								id="name"
 								name="username"
-								class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+								class="flex w-full appearance-none justify-center rounded-full border-none bg-transparent p-1 text-center transition-all hover:ring-1 hover:ring-gray-300 focus:ring-2 focus:ring-gray-300 focus:outline-none"
 								type="text"
 								bind:value={formData.username}
 								onblur={handleBlurOrClick}
 								oninput={handleInput}
 								disabled={submitting} />
 							<label
-								class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
+								class="dark:bg-neutral-808 flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4"
 								for="bauhaus">
 								<div class="space-y-0.5">
 									<span class="text-base font-bold leading-snug">Use Buasuah</span>
-									<p class="text-xs leading-snug text-muted-foreground">
+									<p class="text-muted-foreground text-xs leading-snug">
 										change user image type, this is abstract art when on.
 									</p>
 								</div>
 								<Switch id="bauhaus" name="useBauhaus" bind:checked={userSettings.useBauhaus} disabled={submitting} />
 							</label>
-							<input
-								id="budget"
-								name="budget"
-								class="flex w-full justify-center p-1 transition-all hover:ring-1 hover:ring-gray-300 focus:ring-2 focus:ring-gray-300"
-								type="number"
-								bind:value={userSettings.budget}
-								disabled={submitting} />
 							<fieldset>
-								<legend class="mb-4 text-lg font-medium">App Preferences</legend>
+								<legend class="mb-3.5 text-lg font-medium">App Preferences</legend>
 								<div class="space-y-4">
-									<Select.Root
-										name="widgetStyle"
-										selected={{ label: formData?.widgetStyle, value: formData?.widgetStyle }}
-										onSelectedChange={({ value }) =>
-											handleInput({
-												currentTarget: { name: 'widgetStyle', value },
-											})}
-										disabled={submitting}>
-										<input type="hidden" name="widgetStyle" value={formData?.widgetStyle} />
-										<Select.Trigger class="w-full">
-											<Select.Value placeholder="Select a widget style" />
-										</Select.Trigger>
-										<Select.Content>
-											{#each ['simple', 'dense'] as widgetStyle}
-												<Select.Item value={widgetStyle.toLowerCase()} label={widgetStyle} disabled={submitting} />
-											{/each}
-										</Select.Content>
-									</Select.Root>
-									<!-- TODO: move out from hidden menu to top of dashbaord page and make selected accounts filter everything. -->
-									<!-- TODO: use dropdown menu and checkbox items to select account(s) -->
-									{#await bankAccounts then accounts}
+									<Label class="grid w-full max-w-sm items-center gap-1.5" for="budget">
+										<span class="leading-snug">Budget</span>
+										<Input
+											id="budget"
+											name="budget"
+											type="number"
+											bind:value={userSettings.budget}
+											disabled={submitting} />
+									</Label>
+									<Label class="grid w-full max-w-sm items-center gap-1.5" for="widgetStyle">
+										<span class="leading-snug">Widget Style</span>
 										<Select.Root
-											multiple
-											name="permittedBankAccounts"
-											selected={formData?.permittedBankAccounts?.map((value) => ({
-												label: accounts.find((account) => account.id === Number(value))?.name,
-												value: String(value),
-											}))}
-											onSelectedChange={(values) =>
+											id="widgetStyle"
+											name="widgetStyle"
+											selected={{ label: formData?.widgetStyle, value: formData?.widgetStyle }}
+											onSelectedChange={({ value }) =>
 												handleInput({
-													currentTarget: { name: 'permittedBankAccounts', value: values?.map(({ value }) => value) },
+													currentTarget: { name: 'widgetStyle', value },
 												})}
 											disabled={submitting}>
-											{#each formData?.permittedBankAccounts ?? [] as bankAccount (bankAccount)}
-												<input type="hidden" name="permittedBankAccounts" value={bankAccount} />
-											{/each}
+											<input type="hidden" name="widgetStyle" value={formData?.widgetStyle} />
 											<Select.Trigger class="w-full">
-												<Select.Value placeholder="Select accounts to permit" />
+												<Select.Value placeholder="Select a widget style" />
 											</Select.Trigger>
 											<Select.Content>
-												{#each accounts as { id: bankAccountId, name: bankAccountName } (bankAccountId)}
-													<Select.Item value={bankAccountId.toString()} label={bankAccountName} />
+												{#each ['simple', 'dense'] as widgetStyle}
+													<Select.Item value={widgetStyle.toLowerCase()} label={widgetStyle} disabled={submitting} />
 												{/each}
 											</Select.Content>
 										</Select.Root>
-									{/await}
+									</Label>
 								</div>
 							</fieldset>
 							<fieldset>
-								<legend class="mb-4 text-lg font-medium">Notifications Preferences</legend>
+								<legend class="mb-3.5 text-lg font-medium">Notifications Preferences</legend>
 								<div class="space-y-4">
 									<label
-										class="flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4 dark:bg-neutral-808"
+										class="dark:bg-neutral-808 flex flex-row items-center justify-between rounded-lg border bg-slate-200 p-4"
 										for="notifications">
 										<div class="space-y-0.5">
 											<span class="text-base font-bold leading-snug">Notifications</span>
-											<p class="text-xs leading-snug text-muted-foreground">
+											<p class="text-muted-foreground text-xs leading-snug">
 												permit sending of in-app and email notifications.
 											</p>
 										</div>
@@ -545,42 +520,50 @@
 											disabled={submitting} />
 										<input type="hidden" name="enableNotifications" value={formData.enableNotifications} />
 									</label>
-									<Select.Root
-										name="emailRate"
-										selected={{ label: formData?.emailRate, value: formData?.emailRate }}
-										onSelectedChange={({ value }) =>
-											handleInput({
-												currentTarget: { name: 'emailRate', value },
-											})}
-										disabled={submitting}>
-										<input type="hidden" name="emailRate" value={formData?.emailRate} />
-										<Select.Trigger class="w-full">
-											<Select.Value placeholder="Select an email rate" />
-										</Select.Trigger>
-										<Select.Content>
-											{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as emailRate}
-												<Select.Item value={emailRate.toLowerCase()} label={emailRate} disabled={submitting} />
-											{/each}
-										</Select.Content>
-									</Select.Root>
-									<Select.Root
-										name="inAppRate"
-										selected={{ label: formData?.inAppRate, value: formData?.inAppRate }}
-										onSelectedChange={({ value }) =>
-											handleInput({
-												currentTarget: { name: 'inAppRate', value },
-											})}
-										disabled={submitting}>
-										<input type="hidden" name="inAppRate" value={formData?.inAppRate} />
-										<Select.Trigger class="w-full">
-											<Select.Value placeholder="Select an in-app rate" />
-										</Select.Trigger>
-										<Select.Content>
-											{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as inAppRate}
-												<Select.Item value={inAppRate.toLowerCase()} label={inAppRate} disabled={submitting} />
-											{/each}
-										</Select.Content>
-									</Select.Root>
+									<Label class="grid w-full max-w-sm items-center gap-1.5" for="emailRate">
+										<span class="leading-snug">Email Rate</span>
+										<Select.Root
+											id="emailRate"
+											name="emailRate"
+											selected={{ label: formData?.emailRate, value: formData?.emailRate }}
+											onSelectedChange={({ value }) =>
+												handleInput({
+													currentTarget: { name: 'emailRate', value },
+												})}
+											disabled={submitting}>
+											<input type="hidden" name="emailRate" value={formData?.emailRate} />
+											<Select.Trigger class="w-full">
+												<Select.Value placeholder="Select an email rate" />
+											</Select.Trigger>
+											<Select.Content>
+												{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as emailRate}
+													<Select.Item value={emailRate.toLowerCase()} label={emailRate} disabled={submitting} />
+												{/each}
+											</Select.Content>
+										</Select.Root>
+									</Label>
+									<Label class="grid w-full max-w-sm items-center gap-1.5" for="inAppRate">
+										<span class="leading-snug">In-App Rate</span>
+										<Select.Root
+											id="inAppRate"
+											name="inAppRate"
+											selected={{ label: formData?.inAppRate, value: formData?.inAppRate }}
+											onSelectedChange={({ value }) =>
+												handleInput({
+													currentTarget: { name: 'inAppRate', value },
+												})}
+											disabled={submitting}>
+											<input type="hidden" name="inAppRate" value={formData?.inAppRate} />
+											<Select.Trigger class="w-full">
+												<Select.Value placeholder="Select an in-app rate" />
+											</Select.Trigger>
+											<Select.Content>
+												{#each ['daily', 'weekly', 'bi-weekly', 'monthly', 'bi-monthly'] as inAppRate}
+													<Select.Item value={inAppRate.toLowerCase()} label={inAppRate} disabled={submitting} />
+												{/each}
+											</Select.Content>
+										</Select.Root>
+									</Label>
 								</div>
 							</fieldset>
 							<Form.Button aria-busy={submitting} disabled={!valid || submitting}>
@@ -593,15 +576,15 @@
 			</div>
 
 			{#if user}
-				<div class="flex-shrink-0 py-4 max-md:px-4">
+				<div class="flex-shrink-0 pb-3.5 max-md:px-4">
 					<SignOut
 						signOutPage="auth"
 						className="group flex w-full items-center space-x-2 rounded-lg transition-colors hover:bg-accent-500 hover:text-white">
 						<svelte:fragment slot="submitButton">
 							<span
 								aria-hidden="true"
-								class="flex items-center rounded-lg p-3 transition-colors group-hover:bg-accent-600 group-hover:text-white group-aria-[current=page]:bg-accent-600">
-								<svelte:component this={icons.LogOutIcon} class="h-6 w-6" height="auto" flip="vertical" />
+								class="group-hover:bg-accent-600 group-aria-[current=page]:bg-accent-600 flex items-center rounded-lg p-3 transition-colors group-hover:text-white">
+								<svelte:component this={icons.LogOutIcon} class="size-6" height="auto" flip="vertical" />
 							</span>
 							<span>Sign Out</span>
 						</svelte:fragment>
@@ -615,11 +598,11 @@
 		<div aria-label="Notifications" class="flex h-full flex-col md:px-2">
 			<div class="flex flex-1 flex-col py-10">
 				<!-- notifications -->
-				<div class="flex flex-shrink-0 items-center justify-center pb-2">
+				<div class="flex-shrink-0 flex items-center justify-center pb-2">
 					<header>Notifications</header>
 				</div>
 				<ul
-					class={cn('flex h-full flex-shrink-0 flex-col gap-2 px-2 py-4', {
+					class={cn('flex-shrink-0 flex h-full flex-col gap-2 py-4 px-2', {
 						'justify-center': !$notifications?.length,
 					})}>
 					<AnimatePresence initial={false} show={notificationsState.open}>
@@ -660,7 +643,7 @@
 								})}>
 								<div class="flex gap-1 p-2">
 									<a class="flex w-full items-center gap-2" href="/">
-										<div class="flex flex-shrink-0 items-center justify-center">
+										<div class="flex-shrink-0 flex items-center justify-center">
 											<svelte:component this={icon} class="h-8 w-6" height="auto" inline />
 										</div>
 										<div class="flex flex-col text-left">
@@ -681,12 +664,12 @@
 													api({ origin: current.origin }).notifications.delete.mutate({
 														id: notification.id,
 													})}>
-												<svelte:component this={icons.CloseIcon} class="h-4 w-4" height="auto" inline />
+												<svelte:component this={icons.CloseIcon} class="size-4" height="auto" inline />
 											</button>
 										{/if}
-										<div class="flex flex-shrink-0 flex-col gap-2 font-bold leading-[1.3]">
+										<div class="flex-shrink-0 flex flex-col gap-2 font-bold leading-[1.3]">
 											<button
-												class={cn('rounded-md px-2 py-1 text-white transition-colors', {
+												class={cn('rounded-md py-1 px-2 text-white transition-colors', {
 													'bg-yellow-700 hover:bg-yellow-500': !notification.type,
 													'bg-emerald-900 hover:bg-emerald-700': notification.type === 'account',
 													'bg-blue-500 hover:bg-blue-600': notification.type === 'invite',
@@ -694,7 +677,7 @@
 												onclick={() => actions.primary.action}>{actions.primary.name}</button>
 											{#if actions?.secondary}
 												<button
-													class={cn('rounded-md px-2 py-1 font-normal ring-1', {
+													class={cn('rounded-md py-1 px-2 font-normal ring-1', {
 														'text-yellow-400 ring-yellow-700 hover:text-yellow-500 hover:ring-yellow-400':
 															!notification.type,
 														'text-emerald-600 ring-emerald-900 hover:text-emerald-700 hover:ring-emerald-600':
@@ -816,15 +799,15 @@
 	</Modal>
 </aside>
 
-<div class="flex flex-1 flex-col overflow-hidden px-6 pb-16 pt-4 md:px-0 md:pr-8">
+<div class="flex h-full flex-1 flex-col overflow-hidden pt-4 px-6 pb-16 md:max-h-screen md:px-0 md:pr-8">
 	<nav class="mx-1 hidden items-center justify-start md:flex md:h-16 md:gap-2">
 		<button
-			class="rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:bg-accent-600 hover:text-white focus-visible:bg-accent-600 focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 dark:bg-gray-800 dark:shadow-neutral-309/20 dark:focus:ring-offset-neutral-808"
+			class="hover:bg-accent-600 focus-visible:bg-accent-600 focus-visible:ring-accent-600 dark:shadow-neutral-309/20 dark:focus:ring-offset-neutral-808 rounded-lg bg-white p-2 text-gray-500 shadow-md transition-colors hover:text-white focus-visible:text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none dark:bg-gray-800"
 			onclick={toggleMenuWidth()}>
 			<span class="sr-only">Toggle sidebar</span>
 			<svg
 				aria-hidden="true"
-				class="h-6 w-6"
+				class="size-6"
 				xmlns="http://www.w3.org/2000/svg"
 				fill="none"
 				viewBox="0 0 24 24"
@@ -832,55 +815,17 @@
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
 			</svg>
 		</button>
-		<AnimatePresence show={current.pathname.includes('transactions')}>
-			<Motion.form
-				action=""
-				method="get"
-				class={cn(
-					'mx-2 my-auto hidden h-10 w-full rounded-full border-2 border-neutral-808 sm:hidden md:flex dark:border-neutral-309'
-				)}
-				transition={{ duration: 0.8, staggerChildren: 0.35, ease }}
-				initial={!mounting
-					? {
-							opacity: 0,
-							x: '100%',
-						}
-					: false}
-				animate={{
-					opacity: 1,
-					x: 0,
-				}}
-				exit={{
-					opacity: 0,
-					x: '100%',
-				}}
-				onformdata={(e) => {
-					Array.from(e.formData.entries()).reduce((acc, [k, v]) => {
-						!v && e.formData.delete(k);
-						return acc;
-					});
-				}}>
-				<span class="mx-[0.625rem] my-[0.525rem] flex border-spacing-0 items-center rounded-full text-base font-bold">
-					<svelte:component this={icons.SearchIcon} inline />
-				</span>
-				<input type="hidden" name="processedDate" value={processedDate} />
-				<input
-					name="search"
-					class="w-full rounded-full border-none bg-inherit px-3 autofill:bg-none max-sm:text-xs lg:text-lg"
-					value={searchFilter} />
-			</Motion.form>
-		</AnimatePresence>
 	</nav>
-	<main class="mt-2 grid h-full md:rounded-2xl md:bg-slate-200 lg:flex lg:overflow-hidden md:dark:bg-neutral-808">
+	<main class="md:dark:bg-neutral-808 my-2 grid h-full md:overflow-hidden md:rounded-2xl md:bg-slate-200">
 		{@render children()}
 	</main>
 </div>
 
 <footer
-	class="fixed flex items-center justify-center gap-4 max-md:inset-x-36 max-md:bottom-4 max-md:z-10 md:bottom-5 md:right-5">
+	class="fixed flex items-center justify-center gap-4 max-md:inset-x-36 max-md:bottom-4 max-md:z-10 md:right-5 md:bottom-5">
 	<a href="https://kit.svelte.dev" class="transform transition-transform hover:scale-125">
 		<span class="sr-only">SvelteKit</span>
-		<img class="h-8 w-8 object-contain" aria-hidden="true" src={logo} alt="SvelteKit" />
+		<img class="size-8 object-contain" aria-hidden="true" src={logo} alt="SvelteKit" />
 	</a>
 	<a
 		href="https://github.com/JonathonRP/PersonalFinanceDashboard"
@@ -890,7 +835,7 @@
 		<span class="sr-only">Github</span>
 		<svg
 			aria-hidden="true"
-			class="h-8 w-8 text-black"
+			class="size-8 text-black"
 			fill="currentColor"
 			xmlns="http://www.w3.org/2000/svg"
 			viewBox="0 0 24 24">

@@ -17,7 +17,7 @@
 		reset = false,
 		values: initialValues,
 		validate = (_values, errors) =>
-			Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), <typeof errors>{}),
+			Object.keys(_values ?? {}).reduce((res, k) => ({ ...res, [k]: '' }), {} as typeof errors),
 		onsubmitting,
 		onsucceeded,
 		children,
@@ -46,7 +46,7 @@
 				},
 			]
 		>;
-		class: string;
+		class?: string;
 	} = $props();
 
 	// work on this type...
@@ -73,7 +73,7 @@
 							(type !== 'checkbox' && type !== 'number' && value) ||
 							checked,
 					}),
-					<T>{}
+					{} as T
 				)
 	);
 	const formSubmitting = new BehaviorSubject(false);

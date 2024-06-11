@@ -1,26 +1,21 @@
+import { dev } from '$app/environment';
 import { TRPCClientError } from '@trpc/client';
 import { TRPCError } from '@trpc/server';
 import { ZodError } from 'zod';
-import { dev } from '$app/environment';
 
 export { default as accordion } from './accordion';
+export { datePeriods, eachDay, eachDayInWeek, endOfMonth, endOfWeek, startOfMonth, startOfWeek, today } from './date';
 export { default as form } from './form';
-export { eachDay } from './eachDay';
-export { startOfMonth } from './startOfMonth';
-export { startOfWeek } from './startOfWeek';
-export { endOfMonth } from './endOfMonth';
-export { endOfWeek } from './endOfWeek';
-export { today, startOfToday } from './today';
 export { intlFormatDistance } from './intlFormatDistance';
+export const compareDates = Temporal.PlainDate.compare;
+export const compareMonths = Temporal.PlainYearMonth.compare;
 
 export type { Color } from './Color';
+export { cn } from './cn';
+export { cubicBezier as cubic_bezier } from './cubic-bezier';
+export { flyAndScale } from './flyAndScale';
 export { merge } from './merge';
 export { SvelteSubject } from './svelteSubject';
-export { cubicBezier as cubic_bezier } from './cubic-bezier';
-export { cn } from './cn';
-export { flyAndScale } from './flyAndScale';
-
-export const dateFormat = 'MM/dd/yyyy';
 
 export const numberFormat = (
 	locale: string | string[] | undefined = undefined,
@@ -72,10 +67,6 @@ export function returnTo(url: URL, after: `/${string}`, reason?: string) {
 export function ensureLoggedIn(url: URL, redirectReason?: string) {
 	const loginEndpoint = '/auth';
 	return returnTo(url, loginEndpoint, redirectReason);
-}
-
-export function sleep(ms: number) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function bearer(token: string) {
